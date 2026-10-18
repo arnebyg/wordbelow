@@ -28,15 +28,16 @@ var App = (function () {
     each(v.stats, function (x) { return '<div class="' + x.cls + '"><span class="k">' + esc(x.k) + '</span><span class="v">' + esc(x.v) + '</span></div>'; }) +
   '</div>' +
   '<div class="msg tone-' + esc(v.tone || "info") + '" aria-live="polite">' + esc(v.msg) + '</div>' +
-  '<div class="board">' +
+  '<div class="board' + (v.slide ? ' slide-' + v.slide : '') + '"' + (v.canSwipe ? ' data-swipe="swipe"' : '') + '>' +
     '<div style="' + esc(v.boardBox) + '">' +
       each(v.tiles, function (t) {
-        return '<button type="button" class="' + t.cls + '" style="' + esc(t.pos) + '"' + (t.blocked ? ' disabled' : '') + ' aria-label="' + esc(t.label) + '"' + on(t.pick) + '>' +
+        return '<button type="button" class="' + t.cls + (t.blocked ? ' blocked' : '') + '" style="' + esc(t.pos) + '"' + (t.blocked ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t.label) + '"' + on(t.pick) + '>' +
           (t.bonus ? '<span class="' + t.bnCls + '">' + esc(t.bonus) + '</span>' : '') +
           '<span class="ch">' + esc(t.ch) + '</span><span class="pt">' + esc(t.p) + '</span></button>';
       }) +
     '</div>' +
     (v.pop ? '<div class="pop" aria-hidden="true">' + esc(v.pop) + '</div>' : '') +
+    (v.dots ? '<div class="bdots" aria-hidden="true">' + each(v.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' : '') +
     (v.picking ? '<div class="over" role="dialog" aria-label="Velg bokstav for jokeren">' +
       '<div class="overtop"><span>Hvilken bokstav er jokeren?</span><button type="button" class="small"' + on(v.cancelPick) + '>Avbryt</button></div>' +
       '<span class="note">Jokeren gir 0 poeng, men ordbonusen gjelder. Det er to jokere i posen.</span>' +
@@ -143,7 +144,15 @@ var App = (function () {
   function newGameView(v) {
     return '<div class="screen sub">' + head("Nytt spill", v.goHome) + '<div class="scroll">' +
       (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
-      '<div class="boardpick"><span class="lbl">Brett for nye spill</span>' + chipRows(v) + '</div>' +
+      '<div class="boardpick"><span class="lbl">Brett for nye spill · sveip for å bla</span>' +
+        '<div class="preview' + (v.preview.slide ? ' slide-' + v.preview.slide : '') + '" data-swipe="swipe">' +
+          '<button type="button" class="pvar" aria-label="Forrige brett"' + on(v.preview.prev) + '>' + IC.back + '</button>' +
+          '<div class="pvboard" aria-hidden="true"><div style="' + esc(v.preview.box) + '">' + each(v.preview.tiles, function (t) { return '<span class="' + t.cls + '" style="' + esc(t.pos) + '"></span>'; }) + '</div></div>' +
+          '<div class="pvinfo"><span class="pvg">' + esc(v.preview.group) + '</span><span class="pvn">' + esc(v.preview.name) + '</span><span class="pvs">' + esc(v.preview.sub) + '</span><span class="pvs">' + esc(v.preview.open) + '</span></div>' +
+          '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
+        '</div>' +
+        '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +
+        chipRows(v) + '</div>' +
       '<div class="group">' +
         opt(IC.person, "Venn", "Velg blant vennene dine", v.goFriends) +
         opt(IC.share, "Kontakt", "Send en invitasjon med lenke og kode", v.goInvite) +
@@ -205,7 +214,7 @@ var App = (function () {
       }) + '</div></div>';
   }
 
-  var lastPhase = null;
+  var lastPhase = null, lastLay = null, swipe = null, noClickUntil = 0;
   function patch(html) {
     var t = document.createElement("template"); t.innerHTML = html;
     t.content.querySelectorAll("[data-region]").forEach(function (r) {
@@ -230,7 +239,10 @@ var App = (function () {
     lastPhase = v.phase;
     root.innerHTML = html;
     root.querySelectorAll("[data-keep]").forEach(function (el) { var k = el.getAttribute("data-keep"); if (keep[k]) el.scrollLeft = keep[k]; });
-    if (v.isPlay && !keep.lay) { var on1 = root.querySelector('[data-keep="lay"] .chip.on'); if (on1) on1.scrollIntoView({ block: "nearest", inline: "nearest" }); }
+    if (v.lname !== lastLay || !keep.lay) {
+      root.querySelectorAll('[data-keep] .chip.on').forEach(function (c) { var row = c.parentNode; row.scrollLeft = Math.max(0, c.offsetLeft - row.offsetLeft - (row.clientWidth - c.offsetWidth) / 2); });
+      lastLay = v.lname;
+    }
     if (focusId) { var fe = root.querySelector("#" + focusId); if (fe) { fe.focus(); try { fe.setSelectionRange(focusSel[0], focusSel[1]); } catch (e) {} } }
     App.lastVals = v;
   }
@@ -252,7 +264,22 @@ var App = (function () {
 
   function boot() {
     root = document.getElementById("app");
+    // A sideways swipe on an element marked data-swipe calls that handler with +1 (finger to the left) or -1.
+    root.addEventListener("pointerdown", function (e) {
+      var el = e.target.closest("[data-swipe]");
+      swipe = el ? { x: e.clientX, y: e.clientY, k: el.getAttribute("data-swipe") } : null;
+    });
+    window.addEventListener("pointerup", function (e) {
+      if (!swipe) return;
+      var dx = e.clientX - swipe.x, dy = e.clientY - swipe.y, k = swipe.k; swipe = null;
+      if (Math.abs(dx) < 45 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+      noClickUntil = Date.now() + 300;
+      var fn = App.lastVals && App.lastVals[k];
+      if (typeof fn === "function") fn(dx < 0 ? 1 : -1);
+    });
+    window.addEventListener("pointercancel", function () { swipe = null; });
     root.addEventListener("click", function (e) {
+      if (Date.now() < noClickUntil) { e.preventDefault(); return; }
       var el = e.target.closest("[data-h]");
       if (!el || el.disabled) return;
       var fn = H[+el.getAttribute("data-h")];

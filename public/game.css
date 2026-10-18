@@ -6,7 +6,7 @@ a{color:#F2C46B}a:hover{color:#FFE2A6}
 .tile.l2,.tile.l3,.tile.l4,.tile.l5{box-shadow:0 3px 0 #E3D3B2,0 6px 0 #C2702C,2px 7px 0 #8E4C17,0 16px 14px rgba(0,0,0,.5)}
 .tile.jk{background:#EADCF5}
 .tile.jk .ch{color:#5B2A86}
-.tile:disabled{cursor:default;filter:saturate(.55) brightness(.86)}
+.tile:disabled,.tile.blocked{cursor:default;filter:saturate(.55) brightness(.86)}
 .tile.sel{background:#FFE7A8;transform:translateY(-6px);outline:3px solid #F2C46B;outline-offset:1px}
 .tile .ch{position:absolute;left:0;right:0;top:7px;text-align:center;font-size:29px;font-weight:800;line-height:1}
 .tile.bonus .ch{top:16px}

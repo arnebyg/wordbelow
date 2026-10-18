@@ -614,6 +614,25 @@ class Component extends DCLogic {
     this.setState({ submitted: true });
   }
   goHome() { this.timers.forEach(clearTimeout); this.timers = []; this.setState({ phase: "home", confirm: null, busy: false, online: null, ngMsg: "" }); this.refreshGames(); }
+  // A sideways swipe moves to the next or previous of all twelve boards: in a game only before the first move,
+  // on the new-game screen any time.
+  cycleLay(dir, inGame) {
+    var self = this, st = this.state, n = LAYOUTS.length, i = 0;
+    LAYOUTS.forEach(function (L, k) { if (L.id === st.lay) i = k; });
+    var next = LAYOUTS[(i + dir + n) % n];
+    if (inGame) {
+      if (this.online() || st.busy || this.cpuTurn()) return;
+      if (this.started()) { this.setState({ tone: "bad", msg: "Brettet kan bare byttes før første trekk. Trykk et navn i raden over for å begynne på nytt på et annet." }); return; }
+      this.switchTo(next.id);
+    } else {
+      lsSet("ordspill/klassiker/brett/v1", next.id);
+      this.setState(Object.assign(this.fresh(next.id), { phase: st.phase, msg: st.msg }));
+    }
+    this.setState({ slide: dir > 0 ? "l" : "r" });
+    clearTimeout(this.slideT);
+    this.slideT = setTimeout(function () { self.setState({ slide: null }); }, 400);
+  }
+  dots() { var st = this.state; return LAYOUTS.map(function (L) { return { cls: "dot" + (L.id === st.lay ? " on" : "") + (L.grp === "grow" ? " grow" : "") }; }); }
   boardChips(lockedFn, confirm) {
     var self = this, st = this.state, S = this.S();
     var go = function (id, name) {
@@ -684,6 +703,15 @@ class Component extends DCLogic {
       v.ngMsg = st.ngMsg;
       v.diffs = DIFFS.map(function (d) { var on = d.id === st.diff; return { name: d.name, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { self.setState({ diff: d.id }); } }; });
       v.diffSay = DIFFS.filter(function (d) { return d.id === st.diff; })[0].say;
+      var PS = 0.42, SP = this.S();
+      v.preview = {
+        name: SP.L.name, sub: SP.L.sub, open: openSay(SP.L).replace(/^./, function (x) { return x.toUpperCase(); }), group: GROUPS.filter(function (G) { return G.id === SP.L.grp; })[0].name,
+        box: "position:absolute;left:0;top:0;width:" + (BOX_W / SCALE) + "px;height:" + (BOX_H / SCALE) + "px;transform:scale(" + PS + ");transform-origin:0 0",
+        tiles: SP.pos.map(function (p) { return { cls: "mt l" + p.l, pos: "left:" + (SP.offX + p.c * 49 - p.l * 4) + "px;top:" + (SP.offY + p.r * 60 - p.l * 7) + "px;z-index:" + Math.round(p.l * 1000 + p.r * 20 + p.c * 2 + 1) }; }),
+        dots: this.dots(), slide: st.slide,
+        prev: function () { self.cycleLay(-1, false); }, next: function () { self.cycleLay(1, false); }
+      };
+      v.swipe = function (dir) { self.cycleLay(dir, false); };
       v.goFriends = function () { self.openFriends(); };
       v.goInvite = function () { self.invite(); };
       v.goRandom = function () { self.random(); };
@@ -741,6 +769,10 @@ class Component extends DCLogic {
     if (st.phase === "play") {
       var live = this.live(), nFree = 0;
       if (!online) { var bc2 = this.boardChips(function () { return locked; }, true); v.groups = bc2.groups; v.chips = bc2.chips; }
+      v.canSwipe = !online && !this.started();
+      v.swipe = function (dir) { self.cycleLay(dir, true); };
+      v.dots = v.canSwipe ? this.dots() : null;
+      v.slide = st.slide;
       v.left = Object.keys(live).length;
       v.boardBox = "position:absolute;left:0;top:0;width:" + (BOX_W / SCALE) + "px;height:" + (BOX_H / SCALE) + "px;transform:scale(" + SCALE + ");transform-origin:0 0";
       v.tiles = S.pos.filter(function (p) { return live[p.id]; }).map(function (p) {
@@ -790,7 +822,7 @@ class Component extends DCLogic {
         } };
       });
       v.rackEmpty = st.sel.length === 0;
-      v.rackHint = this.cpuTurn() ? "Maskinen tenker …" : this.waitTurn() ? (st.online.status === "waiting" ? "Spillet starter når motspilleren er med." : "Venter på " + st.online.oppName + ". Du får se trekket her.") :
+      v.rackHint = v.canSwipe && !st.sel.length && !st.pocket.length && !this.cpuTurn() ? "Sveip brettet sidelengs for å bytte brett, så lenge ingen har lagt et ord." : this.cpuTurn() ? "Maskinen tenker …" : this.waitTurn() ? (st.online.status === "waiting" ? "Spillet starter når motspilleren er med." : "Venter på " + st.online.oppName + ". Du får se trekket her.") :
         st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : "Trykk en brikke i lommen for å bruke den i et ord.") : (duel ? "Legg et ord, ta en brikke i lommen eller stå over." : "Lommen tar to brikker. Det som er igjen der til slutt, trekkes fra.");
       v.pocket = st.pocket.map(function (ch, i) {
         var pid = "p" + i, on = st.sel.indexOf(pid) >= 0;
