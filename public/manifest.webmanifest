@@ -1,0 +1,17 @@
+{
+  "name": "WordBelow",
+  "short_name": "WordBelow",
+  "description": "Ordspill med 100 brikker i lag. Legg ord av de åpne brikkene.",
+  "lang": "nb",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E3B35",
+  "theme_color": "#0E3B35",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
