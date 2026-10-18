@@ -2,6 +2,14 @@
 
 Ordspill med 100 brikker i lag. Du legger ord av brikkene som er åpne – ingen brikke oppå, og fri på minst én side – og hvert ord åpner nye brikker under. Tolv brett i to grupper: «Stramme» (få åpne hele veien) og «Åpner seg» (8–11 åpne i starten, 14–18 midtveis). Lommen tar to brikker.
 
+Tre måter å spille på (velges på startsiden):
+
+- **Alene** – så mange poeng du kan, toppliste per brett.
+- **Duell mot maskinen** – dere bytter på å legge ord på samme brett, hver med sin egen lomme. Et trekk er et ord, en brikke i lommen eller å stå over. Spillet slutter når brettet er tomt eller begge står over etter hverandre. Tre nivåer: Lett (korte ord, tilfeldig blant de 12 beste), Middels (tilfeldig blant de 6 beste), Sterk (det beste den finner).
+- **To spillere på én telefon** – samme duell, telefonen sendes over bordet.
+
+Duellen er bygd slik at en motspiller over nett senere kan ta maskinens plass (`cpuTurn`, `endTurn` i `logic.js`).
+
 Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund (`public/words/nsf-2026.txt`, uendret).
 
 ## Filer
@@ -9,7 +17,7 @@ Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund (`public/words/nsf-2026.txt`,
 | Fil | Hva |
 |---|---|
 | `public/index.html` | Siden |
-| `public/logic.js` | Spillet: brett, bokstaver, poeng, lommen. Kopiert uendret fra Klassiker-tegnebrettet i Design-lerretet på claude.ai (bare `NSF_URL` peker hit) |
+| `public/logic.js` | Spillet: brett, bokstaver, poeng, lommen. Startet som en kopi av Klassiker-tegnebrettet i Design-lerretet på claude.ai; duellen og startsiden finnes bare her |
 | `public/runtime.js` | Tegner spillet som vanlig HTML og skalerer 390 × 844 til skjermen |
 | `public/game.css`, `public/layout.css` | Utseendet |
 | `public/manifest.webmanifest`, `public/icons/` | PWA: navn, ikoner, fullskjerm |
