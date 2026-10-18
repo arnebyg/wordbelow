@@ -171,8 +171,9 @@ function dealRamp(S, R) {
   });
   return m;
 }
-function genBoard(S) {
-  var R = rng(strSeed("klassiker/" + S.L.id));
+// The same layout always deals the same letters; an online game adds its own seed so each game is new.
+function genBoard(S, seed) {
+  var R = rng(strSeed("klassiker/" + S.L.id + (seed ? "/" + seed : "")));
   var letters = S.L.grp === "grow" ? dealRamp(S, R) : deal(S, R), b = {};
   var on = function (l) { return S.pos.filter(function (p) { return p.l === l && letters[p.id] !== "*"; }); };
   var top = Math.max.apply(null, S.pos.map(function (p) { return p.l; }));
@@ -184,13 +185,36 @@ function openSay(L) { return L.grp === "grow" ? "starter med " + L.start + " åp
 function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
+// Screens: "home" (your games), "newgame", "account" (pick a username), "find" (search players), "friends",
+// "settings", "stats", "play" and "done".
 // Modes: "solo" (one player, leaderboard per board) and "duel" (two players take turns on the same board).
-// In a duel the opponent is the computer ("cpu", three levels) or a second player on the same phone ("local").
+// In a duel the opponent is the computer ("cpu", three levels), a second player on the same phone ("local"),
+// or another player over the net ("online", through the server in src/worker.js).
 // A turn is a word, a tile into the pocket, or a pass; the game ends when the board is cleared or both pass in a row.
 // The active player's score, pocket and words live in st.score, st.pocket and st.words, as in solo;
 // st.P holds both players and is brought up to date at the end of every turn.
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
-var MODE_KEY = "ordspill/klassiker/modus/v1";
+var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1";
+var API = "/api";
+
+function api(path, opts) {
+  opts = opts || {};
+  var acc = lsGet(ACCOUNT_KEY), headers = { "content-type": "application/json" };
+  if (acc && acc.token) headers.authorization = "Bearer " + acc.token;
+  return fetch(API + path, { method: opts.method || "GET", headers: headers, body: opts.body ? JSON.stringify(opts.body) : undefined }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (d) {
+      if (!r.ok) { var e = new Error(d.error || ("Feil " + r.status)); e.status = r.status; throw e; }
+      return d;
+    });
+  }, function () { var e = new Error("Får ikke kontakt med serveren. Er du på nett?"); e.status = 0; throw e; });
+}
+function ago(ms) {
+  var m = Math.round((Date.now() - ms) / 60000);
+  if (m < 1) return "nå nettopp"; if (m < 60) return m + " min siden";
+  var h = Math.round(m / 60); if (h < 24) return h + " t siden";
+  var d = Math.round(h / 24); return d === 1 ? "i går" : d + " dager siden";
+}
+function addStat(rec) { var all = lsGet(STATS_KEY) || []; if (rec.key && all.some(function (r) { return r.key === rec.key; })) return; all.push(Object.assign({ at: Date.now() }, rec)); lsSet(STATS_KEY, all.slice(-500)); }
 
 class Component extends DCLogic {
   constructor(p) {
@@ -198,22 +222,38 @@ class Component extends DCLogic {
     this.timers = [];
     var id = lsGet("ordspill/klassiker/brett/v1") || LAYOUTS[0].id, m = lsGet(MODE_KEY) || {};
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
-      mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels" };
-    Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "menu" });
+      mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
+      account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", games: null, gamesMsg: "", friends: [],
+      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "" };
+    Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
-  fresh(id, msg) {
-    var S = layoutOf(id), g = genBoard(S), duel = this.state && this.state.mode === "duel";
-    return { lay: S.L.id, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], pop: null,
+  fresh(id, msg, seed) {
+    var S = layoutOf(id), g = genBoard(S, seed), duel = this.state && this.state.mode === "duel";
+    return { lay: S.L.id, seed: seed || 0, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], pop: null,
       turn: 0, passes: 0, busy: false, P: [{ score: 0, pocket: [], words: [] }, { score: 0, pocket: [], words: [] }],
       phase: "play", played: null, submitted: false, confirm: null,
       msg: msg || (duel ? this.turnSay(0) + " " : "") + S.L.name + ": " + S.L.sub + ". " + openSay(S.L).replace(/^./, function (x) { return x.toUpperCase(); }) + ".", tone: "info" };
   }
   componentDidMount() {
     var self = this;
-    if (!DICT) loadDict(function (ok) { self.setState({ msg: ok ? "Ordlista er klar. Ord på to bokstaver teller også." : "Fant ikke ordlista. Bruker en liten testliste.", tone: ok ? "info" : "bad" }); });
+    if (!DICT) loadDict(function (ok) { if (!ok) self.setState({ homeMsg: "Fant ikke ordlista. Bruker en liten testliste." }); });
     this.connect();
+    if (window.applyTheme) window.applyTheme(this.state.theme);
+    var join = (location.search.match(/[?&]join=([A-Za-z0-9]{4,10})/) || [])[1];
+    if (join) { try { history.replaceState(null, "", location.pathname); } catch (e) {} this.state.codeIn = join.toUpperCase(); if (this.state.account) this.joinCode(); else this.setState({ phase: "account", after: "join" }); }
+    this.refreshGames();
+    this.poll = setInterval(function () { self.tick(); }, 5000);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) self.tick(true); });
   }
-  componentWillUnmount() { this.timers.forEach(clearTimeout); if (this.unsub) this.unsub(); }
+  componentWillUnmount() { this.timers.forEach(clearTimeout); clearInterval(this.poll); if (this.unsub) this.unsub(); }
+  // Every 5 s while the app is open: the home screen every 20 s, and an online game where it is the other player's turn.
+  tick(now) {
+    if (document.hidden) return;
+    var st = this.state;
+    this.ticks = (this.ticks || 0) + 1;
+    if (st.phase === "home" && (now || this.ticks % 4 === 0)) this.refreshGames();
+    if ((st.phase === "play" || st.phase === "done") && st.online && (now || st.online.status === "waiting" || (st.phase === "play" && st.turn !== st.online.you))) this.loadOnline(st.online.id, true);
+  }
   // The shared leaderboard lives in the artifact's database when the page can reach it; else this phone alone.
   async connect() {
     try {
@@ -243,19 +283,159 @@ class Component extends DCLogic {
     all.sort(function (a, b) { return b.score - a.score; });
     this.setState({ board: all });
   }
+  // Account and the server
+  needAccount(after) { if (this.state.account) return false; this.setState({ phase: "account", after: after, acctMsg: "" }); return true; }
+  register() {
+    var self = this, name = (this.state.acctName || "").trim();
+    if (!name) return;
+    this.setState({ acctMsg: "Lagrer …" });
+    api("/register", { method: "POST", body: { name: name } }).then(function (d) {
+      lsSet(ACCOUNT_KEY, d);
+      var after = self.state.after;
+      self.setState({ account: d, acctMsg: "", after: null, phase: "newgame" });
+      if (after === "join") self.joinCode(); else if (after === "invite") self.invite(); else if (after === "random") self.random();
+      else if (after === "find") self.setState({ phase: "find" }); else if (after === "friends") self.openFriends();
+      self.refreshGames();
+    }, function (e) { self.setState({ acctMsg: e.message }); });
+  }
+  refreshGames() {
+    var self = this;
+    if (!this.state.account) return;
+    api("/games").then(function (d) {
+      self.setState({ games: d.games, gamesMsg: "" });
+      d.games.forEach(function (g) { if (g.status === "done" && g.result && g.result.res) self.statOnline(g); });
+    }, function (e) { self.setState({ gamesMsg: e.status === 401 ? "Kontoen finnes ikke på serveren lenger." : e.message }); });
+  }
+  statOnline(g) {
+    var r = g.result, me = g.you, my = r.res ? r.res[me].score : g.scores[me], their = r.res ? r.res[1 - me].score : g.scores[1 - me];
+    var won = r.winner === undefined ? (my === their ? -1 : my > their ? 1 : 0) : r.winner === me ? 1 : r.winner < 0 ? -1 : 0;
+    addStat({ key: "online:" + g.id, mode: "online", won: won, my: my, their: their, best: r.res && r.res[me].best ? r.res[me].best : null });
+  }
+  openFriends() {
+    var self = this;
+    if (this.needAccount("friends")) return;
+    this.setState({ phase: "friends", friendsMsg: "Henter vennene dine …" });
+    api("/me").then(function (d) { self.setState({ friends: d.friends, friendsMsg: d.friends.length ? "" : "Du har ingen venner her ennå. Finn en spiller, eller send en invitasjon." }); },
+      function (e) { self.setState({ friendsMsg: e.message }); });
+  }
+  doSearch(q) {
+    var self = this;
+    this.setState({ search: q });
+    clearTimeout(this.searchT);
+    if (q.trim().length < 2) { this.setState({ found: [] }); return; }
+    this.searchT = setTimeout(function () {
+      api("/users?q=" + encodeURIComponent(q.trim())).then(function (d) { if (self.state.search === q) self.setState({ found: d.users, findMsg: d.users.length ? "" : "Ingen brukernavn begynner med «" + q.trim() + "»." }); },
+        function (e) { self.setState({ findMsg: e.message }); });
+    }, 300);
+  }
+  addFriend(u) { var self = this; api("/friends", { method: "POST", body: { id: u.id } }).then(function () { self.setState({ findMsg: u.name + " er lagt til som venn." }); }, function (e) { self.setState({ findMsg: e.message }); }); }
+  startWith(u) {
+    var self = this;
+    api("/games", { method: "POST", body: { to: u.id, layout: this.state.lay } }).then(function (d) { self.openOnline(d.game.id); }, function (e) { self.setState({ phase: "newgame", ngMsg: e.message }); });
+  }
+  random() {
+    var self = this;
+    if (this.needAccount("random")) return;
+    this.setState({ ngMsg: "Leter etter en motspiller …" });
+    api("/games", { method: "POST", body: { random: true, layout: this.state.lay } }).then(function (d) {
+      if (d.matched) self.openOnline(d.game.id);
+      else { self.setState({ phase: "home", ngMsg: "", homeMsg: "Du står i kø for en tilfeldig motspiller. Spillet starter når noen andre trykker «Tilfeldig motspiller»." }); self.refreshGames(); }
+    }, function (e) { self.setState({ ngMsg: e.message }); });
+  }
+  invite() {
+    var self = this;
+    if (this.needAccount("invite")) return;
+    api("/games", { method: "POST", body: { invite: true, layout: this.state.lay } }).then(function (d) {
+      var c = d.game.code, link = location.origin + location.pathname + "?join=" + c;
+      var text = "Bli med på WordBelow mot " + self.state.account.name + ". Åpne " + link + " – eller trykk Nytt spill → Har du en kode? i appen og skriv " + c + ".";
+      self.setState({ phase: "home", homeMsg: "Invitasjonen har koden " + c + ". Den ligger under «Venter på motspiller» til noen blir med." });
+      self.refreshGames();
+      if (navigator.share) navigator.share({ title: "WordBelow", text: text }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { self.setState({ homeMsg: "Invitasjonen er kopiert. Koden er " + c + "." }); }, function () {});
+    }, function (e) { self.setState({ ngMsg: e.message }); });
+  }
+  shareCode(g) {
+    var link = location.origin + location.pathname + "?join=" + g.code;
+    var text = "Bli med på WordBelow. Åpne " + link + " – eller trykk Nytt spill → Har du en kode? i appen og skriv " + g.code + ".";
+    if (navigator.share) navigator.share({ title: "WordBelow", text: text }).catch(function () {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text);
+  }
+  joinCode() {
+    var self = this, c = (this.state.codeIn || "").trim();
+    if (!c) return;
+    if (this.needAccount("join")) return;
+    api("/join", { method: "POST", body: { code: c } }).then(function (d) { self.setState({ codeIn: "" }); self.openOnline(d.game.id); },
+      function (e) { self.setState({ phase: "newgame", ngMsg: e.message }); });
+  }
+  cancelInvite(g) { var self = this; api("/games/" + g.id + "/cancel", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: e.message }); }); }
+  // An online game: the board comes from its layout and seed, the rest from the state the phones store on the server.
+  openOnline(id) {
+    var self = this;
+    this.timers.forEach(clearTimeout); this.timers = [];
+    this.setState({ phase: "play", mode: "duel", opp: "online", online: { id: id, loading: true }, msg: "Henter spillet …", tone: "info", sel: [] });
+    this.loadOnline(id, false);
+  }
+  loadOnline(id, quiet) {
+    var self = this;
+    api("/games/" + id).then(function (d) {
+      var st = self.state, g = d.game, s = d.state;
+      if (!st.online || st.online.id !== id) return;
+      if (quiet && st.online.ver === g.ver && st.online.status === g.status) return;
+      var base = self.fresh(g.layout, null, g.seed), P = s ? s.P : base.P, turn = g.turn;
+      var o = { id: g.id, you: g.you, ver: g.ver, status: g.status, oppName: g.opp ? g.opp.name : "", oppId: g.opp ? g.opp.id : null, code: g.code, kind: g.kind };
+      var next = Object.assign(base, { online: o, gone: s ? s.gone : {}, jokerAs: s && s.jokerAs ? s.jokerAs : {}, P: P, turn: turn, passes: s ? s.passes : 0,
+        score: P[turn].score, pocket: P[turn].pocket, words: P[turn].words, mode: "duel", opp: "online" });
+      if (g.status === "waiting") next.msg = g.kind === "invite" ? "Venter på at noen blir med. Koden er " + g.code + "." : "Venter på en tilfeldig motspiller.";
+      else next.msg = (turn === g.you ? "Din tur. " : o.oppName + " sin tur. ") + (s && s.last ? s.last : "Nytt spill på " + base.lay.replace(/^./, function (x) { return x.toUpperCase(); }) + ".");
+      if (g.status === "done" && s && s.result) {
+        next.phase = "done";
+        next.played = { duel: true, res: s.result.res || self.resultOf(P, Object.keys(base.letters).length - Object.keys(next.gone).length), left: s.result.left || 0, lay: g.layout, resigned: s.result.resigned };
+        self.statOnline({ id: g.id, you: g.you, result: Object.assign({}, s.result, { res: next.played.res }), scores: P.map(function (p) { return p.score; }) });
+      }
+      self.setState(next);
+    }, function (e) { if (!quiet) self.setState({ msg: e.message, tone: "bad" }); });
+  }
+  resultOf(P) {
+    var penOf = function (pk) { return (pk || []).reduce(function (s, ch) { return s + (PTS[ch] || 0); }, 0); };
+    var bestOf = function (ws) { return (ws || []).reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null); };
+    return P.map(function (p) { var pen = penOf(p.pocket); return { score: p.score - pen, pen: pen, pocketLeft: (p.pocket || []).join(", "), words: (p.words || []).length, best: bestOf(p.words) }; });
+  }
+  pushOnline(state) {
+    var self = this, o = this.state.online;
+    if (!o) return;
+    api("/games/" + o.id + "/move", { method: "POST", body: { ver: o.ver, state: state } }).then(function (d) {
+      self.setState({ online: Object.assign({}, self.state.online, { ver: d.game.ver, status: d.game.status }) });
+    }, function (e) { self.setState({ msg: "Trekket ble ikke lagret: " + e.message + " Henter spillet på nytt.", tone: "bad" }); self.loadOnline(o.id, false); });
+  }
+  resign() {
+    var self = this, o = this.state.online;
+    if (!o) return;
+    if (this.state.confirm !== "resign") { this.setState({ confirm: "resign", tone: "bad", msg: "Trykk «Gi opp» en gang til for å gi opp spillet." }); return; }
+    api("/games/" + o.id + "/resign", { method: "POST" }).then(function () { self.loadOnline(o.id, false); }, function (e) { self.setState({ msg: e.message, tone: "bad" }); });
+  }
   S() { return layoutOf(this.state.lay); }
   live() { var m = {}, g = this.state.gone; this.S().pos.forEach(function (p) { if (!g[p.id]) m[p.id] = true; }); return m; }
   chOf(id) { if (id[0] === "p") return this.state.pocket[+id.slice(1)]; var raw = this.state.letters[id]; return raw === "*" ? (this.state.jokerAs[id] || "?") : raw; }
   word(sel) { var self = this; return sel.map(function (id) { return self.chOf(id); }).join(""); }
   // Players
   duel() { return this.state.mode === "duel"; }
-  names() { var st = this.state; return st.opp === "cpu" ? ["Du", "Maskinen"] : ["Spiller 1", "Spiller 2"]; }
+  online() { return this.state.mode === "duel" && this.state.opp === "online" && !!this.state.online; }
+  names() {
+    var st = this.state;
+    if (st.opp === "online" && st.online) { var n = ["", ""]; n[st.online.you] = "Du"; n[1 - st.online.you] = st.online.oppName || "Motspiller"; return n; }
+    return st.opp === "cpu" ? ["Du", "Maskinen"] : ["Spiller 1", "Spiller 2"];
+  }
   cpuTurn() { var st = this.state; return st.mode === "duel" && st.opp === "cpu" && st.turn === 1; }
-  turnSay(t) { var st = this.state, nm = this.names(); return st.opp === "cpu" ? (t === 0 ? "Din tur." : "Maskinens tur.") : nm[t] + " sin tur."; }
+  waitTurn() { var st = this.state; return this.online() && (st.online.status !== "active" || st.turn !== st.online.you); }
+  turnSay(t) {
+    var st = this.state, nm = this.names();
+    if (st.opp === "online" && st.online) return t === st.online.you ? "Din tur." : nm[t] + " sin tur.";
+    return st.opp === "cpu" ? (t === 0 ? "Din tur." : "Maskinens tur.") : nm[t] + " sin tur.";
+  }
   diffName() { var st = this.state; return DIFFS.filter(function (d) { return d.id === st.diff; })[0].name.toLowerCase(); }
   start(mode, opp, diff) {
     var st = this.state;
-    st.mode = mode; if (opp) st.opp = opp; if (diff) st.diff = diff;
+    st.mode = mode; if (opp) st.opp = opp; if (diff) st.diff = diff; st.online = null;
     lsSet(MODE_KEY, { mode: st.mode, opp: st.opp, diff: st.diff });
     this.timers.forEach(clearTimeout); this.timers = [];
     this.setState(this.fresh(st.lay));
@@ -327,32 +507,40 @@ class Component extends DCLogic {
     var ev = this.evaluate(s2.sel), gone = Object.assign({}, s2.gone), usedP = [];
     s2.sel.forEach(function (id) { if (id[0] === "p") usedP.push(+id.slice(1)); else gone[id] = true; });
     var pocket = s2.pocket.filter(function (_, i) { return usedP.indexOf(i) < 0; });
-    var who = this.duel() ? this.names()[s2.turn] + " la " : "";
+    var who = this.duel() ? (this.online() ? (s2.online.you === s2.turn ? (s2.account ? s2.account.name : "Du") : s2.online.oppName) : this.names()[s2.turn]) + " la " : "";
     this.setState({ gone: gone, sel: [], pocket: pocket, confirm: null, passes: 0, score: s2.score + ev.total, words: s2.words.concat([{ w: w2, pts: ev.total }]), pop: "+" + ev.total, msg: who + "«" + w2 + "» +" + ev.total + ": " + ev.parts.join(" · "), tone: "good" });
     this.timers.push(setTimeout(function () { self.setState({ pop: null }); }, 1200));
-    if (ev.cleared) this.timers.push(setTimeout(function () { self.finishGame(); }, 1300));
-    else this.endTurn(1300);
+    if (ev.cleared) { if (this.online()) this.finishGame(); else this.timers.push(setTimeout(function () { self.finishGame(); }, 1300)); }
+    else this.endTurn(this.online() ? 0 : 1300);
     return true;
   }
   pocketTile(id) {
     var s2 = this.state, ch = s2.letters[id], gone = Object.assign({}, s2.gone); gone[id] = true;
-    var who = this.duel() ? this.names()[s2.turn] + " tok " + ch + " i lommen." : ch + " ligger i lommen. Bruk den i et ord senere, ellers trekkes " + PTS[ch] + " poeng ved slutten.";
+    var me = this.online() ? (s2.account ? s2.account.name : "Du") : this.names()[s2.turn];
+    var who = this.duel() ? me + " tok " + ch + " i lommen." : ch + " ligger i lommen. Bruk den i et ord senere, ellers trekkes " + PTS[ch] + " poeng ved slutten.";
     this.setState({ gone: gone, sel: [], confirm: null, passes: 0, pocket: s2.pocket.concat([ch]), tone: "info", msg: who });
     if (!Object.keys(this.live()).length) { this.finishGame(); return true; }
-    this.endTurn(900);
+    this.endTurn(this.online() ? 0 : 900);
     return true;
   }
   pass() {
     var st = this.state, passes = st.passes + 1, nm = this.names();
-    this.setState({ sel: [], jokerAs: {}, passes: passes, tone: "info", msg: (st.opp === "cpu" && st.turn === 0 ? "Du" : nm[st.turn]) + " sto over." + (passes >= 2 ? " Begge sto over, spillet er slutt." : "") });
-    if (passes >= 2) { var self = this; this.timers.push(setTimeout(function () { self.finishGame(); }, 900)); return; }
-    this.endTurn(900);
+    var me = this.online() ? (st.account ? st.account.name : "Du") : (st.opp === "cpu" && st.turn === 0 ? "Du" : nm[st.turn]);
+    this.setState({ sel: [], jokerAs: {}, passes: passes, tone: "info", msg: me + " sto over." + (passes >= 2 ? " Begge sto over, spillet er slutt." : "") });
+    if (passes >= 2) { if (this.online()) { this.finishGame(); return; } var self = this; this.timers.push(setTimeout(function () { self.finishGame(); }, 900)); return; }
+    this.endTurn(this.online() ? 0 : 900);
   }
-  // Hands the board to the other player; the computer moves after a short pause.
+  // Hands the board to the other player; the computer moves after a short pause, an online game is sent to the server.
   endTurn(delay) {
     if (!this.duel()) return;
     var self = this, st = this.state, P = st.P.slice(), t = st.turn, n = 1 - t;
     P[t] = { score: st.score, pocket: st.pocket, words: st.words };
+    if (this.online()) {
+      var last = st.msg;
+      this.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, sel: [], jokerAs: {}, picking: null, msg: this.turnSay(n) + " " + last, tone: "info" });
+      this.pushOnline({ P: P, gone: this.state.gone, passes: this.state.passes, last: last });
+      return;
+    }
     this.setState({ busy: true });
     this.timers.push(setTimeout(function () {
       var s = self.state;
@@ -388,17 +576,21 @@ class Component extends DCLogic {
   finishGame() {
     var st = this.state;
     this.timers.forEach(clearTimeout); this.timers = [];
-    var penOf = function (pk) { return pk.reduce(function (s, ch) { return s + (PTS[ch] || 0); }, 0); };
-    var bestOf = function (ws) { return ws.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null); };
     var left = Object.keys(this.live()).length;
     if (this.duel()) {
       var P = st.P.slice(); P[st.turn] = { score: st.score, pocket: st.pocket, words: st.words };
-      var res = P.map(function (p) { var pen = penOf(p.pocket); return { score: p.score - pen, pen: pen, pocketLeft: p.pocket.join(", "), words: p.words.length, best: bestOf(p.words) }; });
+      var res = this.resultOf(P), win = res[0].score === res[1].score ? -1 : res[0].score > res[1].score ? 0 : 1;
       this.setState({ phase: "done", P: P, played: { duel: true, res: res, left: left, lay: st.lay }, submitted: true, busy: false, sel: [] });
+      if (this.online()) {
+        this.pushOnline({ P: P, gone: st.gone, passes: st.passes, last: st.msg, result: { res: res, left: left, winner: win } });
+        this.statOnline({ id: st.online.id, you: st.online.you, result: { res: res, winner: win }, scores: res.map(function (r) { return r.score; }) });
+      } else if (st.opp === "cpu") addStat({ mode: "cpu", diff: st.diff, won: win < 0 ? -1 : win === 0 ? 1 : 0, my: res[0].score, their: res[1].score, best: res[0].best });
+      else addStat({ mode: "local", won: -2, my: Math.max(res[0].score, res[1].score), their: Math.min(res[0].score, res[1].score), best: (res[0].best && res[1].best ? (res[0].best.pts >= res[1].best.pts ? res[0].best : res[1].best) : res[0].best || res[1].best) });
       return;
     }
-    var pen = penOf(st.pocket);
-    var rec = { lay: st.lay, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: bestOf(st.words) };
+    var pen = this.resultOf([{ pocket: st.pocket }])[0].pen;
+    var rec = { lay: st.lay, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
+    addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best });
     this.setState({ phase: "done", played: rec, submitted: false });
   }
   async submit() {
@@ -421,56 +613,134 @@ class Component extends DCLogic {
     }
     this.setState({ submitted: true });
   }
+  goHome() { this.timers.forEach(clearTimeout); this.timers = []; this.setState({ phase: "home", confirm: null, busy: false, online: null, ngMsg: "" }); this.refreshGames(); }
+  boardChips(lockedFn, confirm) {
+    var self = this, st = this.state, S = this.S();
+    var go = function (id, name) {
+      if (lockedFn && lockedFn()) return;
+      if (confirm && self.started() && self.state.confirm !== id) { self.setState({ confirm: id, tone: "bad", msg: "Trykk «" + name + "» en gang til for å bytte. Poengene på dette brettet nullstilles." }); return; }
+      if (confirm) self.switchTo(id); else { lsSet("ordspill/klassiker/brett/v1", id); self.setState(Object.assign(self.fresh(id), { phase: self.state.phase, msg: self.state.msg })); }
+    };
+    return {
+      groups: GROUPS.map(function (G) {
+        var on = G.id === S.L.grp, first = LAYOUTS.filter(function (L) { return L.grp === G.id; })[0];
+        return { name: G.name, say: G.say, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { if (!on) go(first.id, G.name); } };
+      }),
+      chips: LAYOUTS.filter(function (L) { return L.grp === S.L.grp; }).map(function (L) {
+        var on = L.id === st.lay;
+        return { name: L.name, asym: L.asym, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { if (!on) go(L.id, L.name); } };
+      })
+    };
+  }
   renderVals() {
     var self = this, st = this.state, S = this.S(), tones = { info: "#CFE0DA", good: "#8FE3B9", bad: "#FFB59A" };
-    var duel = this.duel(), nm = this.names(), locked = st.busy || this.cpuTurn();
+    var duel = this.duel(), online = this.online(), nm = this.names(), locked = st.busy || this.cpuTurn() || this.waitTurn();
     var v = {
-      isMenu: st.phase === "menu", isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel,
-      lname: S.L.name, lsub: duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),
-      kicker: duel ? "Duell · " + S.L.name : "Klassiker · " + S.L.name,
-      score: st.score, msg: st.msg, msgColor: tones[st.tone], pop: st.pop
+      phase: st.phase, isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel, isOnline: online,
+      lname: S.L.name,
+      lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),
+      kicker: online ? "Spill · " + S.L.name : duel ? "Duell · " + S.L.name : "Klassiker · " + S.L.name,
+      score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account
     };
-    if (st.phase === "menu") {
-      v.boardName = S.L.name;
-      v.diffs = DIFFS.map(function (d) { var on = d.id === st.diff; return { name: d.name, say: d.say, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { self.setState({ diff: d.id }); } }; });
-      v.diffSay = DIFFS.filter(function (d) { return d.id === st.diff; })[0].say;
-      v.goSolo = function () { self.start("solo"); };
-      v.goCpu = function () { self.start("duel", "cpu"); };
-      v.goLocal = function () { self.start("duel", "local"); };
-      return v;
-    }
+    v.goHome = function () { self.goHome(); };
     v.toMenu = function () {
-      if (self.state.phase === "play" && self.started() && self.state.confirm !== "menu") {
-        self.setState({ confirm: "menu", tone: "bad", msg: "Trykk pilen en gang til for å avslutte spillet og gå til menyen." });
+      if (self.state.phase === "play" && !self.online() && self.started() && self.state.confirm !== "menu") {
+        self.setState({ confirm: "menu", tone: "bad", msg: "Trykk pilen en gang til for å avslutte spillet og gå til start." });
         return;
       }
-      self.timers.forEach(clearTimeout); self.timers = [];
-      self.setState({ phase: "menu", confirm: null, busy: false });
+      self.goHome();
     };
+    if (st.phase === "home") {
+      var gs = st.games || [];
+      var row = function (g) {
+        var who = g.opp ? g.opp.name : g.kind === "invite" ? "Invitasjon · kode " + g.code : "Tilfeldig motspiller";
+        var sc = g.scores[g.you] + "–" + g.scores[1 - g.you], L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0];
+        var line = g.status === "waiting" ? (g.kind === "invite" ? "Del koden med den du vil spille mot" : "Venter på at noen andre søker") : g.status === "done" ? (g.result && g.result.res ? (function () { var a = g.result.res[g.you].score, b = g.result.res[1 - g.you].score; return (g.result.resigned === g.you ? "Du ga opp · " : g.result.resigned === 1 - g.you ? "Motspilleren ga opp · " : "") + (a > b ? "Du vant " : a < b ? "Du tapte " : "Uavgjort ") + a + "–" + b; })() : "Ferdig") : (L ? L.name : g.layout) + " · " + sc + (g.last ? " · " + g.last : "");
+        return { id: g.id, initial: (who[0] || "?").toUpperCase(), who: who, line: line, when: ago(g.updated), cls: "game" + (g.myTurn ? " mine" : ""),
+          open: function () { if (g.status === "waiting" && g.kind === "invite") self.shareCode(g); else self.openOnline(g.id); },
+          canCancel: g.status === "waiting", cancel: function () { self.cancelInvite(g); } };
+      };
+      v.sections = [
+        { title: "Din tur", rows: gs.filter(function (g) { return g.myTurn; }).map(row) },
+        { title: "Deres tur", rows: gs.filter(function (g) { return g.status === "active" && !g.myTurn; }).map(row) },
+        { title: "Venter på motspiller", rows: gs.filter(function (g) { return g.status === "waiting"; }).map(row) },
+        { title: "Ferdige", rows: gs.filter(function (g) { return g.status === "done"; }).slice(0, 10).map(row) }
+      ].filter(function (s) { return s.rows.length; });
+      v.noGames = st.account && st.games && !gs.length;
+      v.noAccount = !st.account;
+      v.homeMsg = st.homeMsg || st.gamesMsg;
+      v.inviteCard = st.inviteCard;
+      v.closeInviteCard = function () { lsSet(INVITE_CARD_KEY, true); self.setState({ inviteCard: false }); };
+      v.inviteNow = function () { self.invite(); };
+      v.newGame = function () { self.setState({ phase: "newgame", ngMsg: "", homeMsg: "" }); };
+      v.openSettings = function () { self.setState({ phase: "settings" }); };
+      v.openStats = function () { self.setState({ phase: "stats" }); };
+      v.makeAccount = function () { self.setState({ phase: "account", after: null, acctMsg: "" }); };
+      return v;
+    }
+    if (st.phase === "newgame") {
+      var bc = this.boardChips(null, false);
+      v.groups = bc.groups; v.chips = bc.chips;
+      v.ngMsg = st.ngMsg;
+      v.diffs = DIFFS.map(function (d) { var on = d.id === st.diff; return { name: d.name, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { self.setState({ diff: d.id }); } }; });
+      v.diffSay = DIFFS.filter(function (d) { return d.id === st.diff; })[0].say;
+      v.goFriends = function () { self.openFriends(); };
+      v.goInvite = function () { self.invite(); };
+      v.goRandom = function () { self.random(); };
+      v.goFind = function () { if (!self.needAccount("find")) self.setState({ phase: "find", findMsg: "" }); };
+      v.codeIn = st.codeIn;
+      v.onCode = function (e) { self.state.codeIn = e.target.value.toUpperCase(); };
+      v.goJoin = function () { self.joinCode(); };
+      v.goCpu = function () { self.start("duel", "cpu"); };
+      v.goLocal = function () { self.start("duel", "local"); };
+      v.goSolo = function () { self.start("solo"); };
+      return v;
+    }
+    if (st.phase === "account") {
+      v.acctName = st.acctName; v.acctMsg = st.acctMsg;
+      v.onAcct = function (e) { self.state.acctName = e.target.value; };
+      v.register = function () { self.register(); };
+      v.back = function () { self.setState({ phase: "newgame" }); };
+      return v;
+    }
+    if (st.phase === "find") {
+      v.search = st.search; v.findMsg = st.findMsg;
+      v.onSearch = function (e) { self.doSearch(e.target.value); };
+      v.found = st.found.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), play: function () { self.startWith(u); }, add: function () { self.addFriend(u); } }; });
+      v.back = function () { self.setState({ phase: "newgame" }); };
+      return v;
+    }
+    if (st.phase === "friends") {
+      v.friendsMsg = st.friendsMsg;
+      v.friendRows = st.friends.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), play: function () { self.startWith(u); } }; });
+      v.back = function () { self.setState({ phase: "newgame" }); };
+      return v;
+    }
+    if (st.phase === "settings") {
+      v.themes = [{ id: "system", name: "System" }, { id: "dark", name: "Mørkt tema" }, { id: "light", name: "Lyst tema" }].map(function (t) {
+        var on = st.theme === t.id;
+        return { name: t.name, on: on, pick: function () { lsSet(THEME_KEY, t.id); self.setState({ theme: t.id }); if (window.applyTheme) window.applyTheme(t.id); } };
+      });
+      v.back = function () { self.goHome(); };
+      return v;
+    }
+    if (st.phase === "stats") {
+      var all = lsGet(STATS_KEY) || [];
+      var group = function (mode, title) {
+        var r = all.filter(function (x) { return x.mode === mode; });
+        if (!r.length) return null;
+        var w = r.filter(function (x) { return x.won === 1; }).length, l = r.filter(function (x) { return x.won === 0; }).length, d = r.filter(function (x) { return x.won === -1; }).length;
+        var best = r.reduce(function (b, x) { return x.best && (!b || x.best.pts > b.pts) ? x.best : b; }, null);
+        var top = r.reduce(function (b, x) { return Math.max(b, x.my || 0); }, 0);
+        return { title: title, played: r.length, line: (mode === "solo" || mode === "local" ? "" : w + " vunnet · " + l + " tapt" + (d ? " · " + d + " uavgjort" : "") + " · "), top: top, best: best ? "«" + best.w + "» " + best.pts + " p" : "–" };
+      };
+      v.statGroups = [group("online", "Mot andre"), group("cpu", "Mot maskinen"), group("local", "To på én telefon"), group("solo", "Alene")].filter(Boolean);
+      v.back = function () { self.goHome(); };
+      return v;
+    }
     if (st.phase === "play") {
       var live = this.live(), nFree = 0;
-      var ask = function (id, name, go) {
-        if (self.started() && self.state.confirm !== id) {
-          self.setState({ confirm: id, tone: "bad", msg: "Trykk «" + name + "» en gang til for å bytte. Poengene på dette brettet nullstilles." });
-          return;
-        }
-        go();
-      };
-      v.groups = GROUPS.map(function (G) {
-        var on = G.id === S.L.grp;
-        return { name: G.name, say: G.say, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () {
-          if (on || locked) return;
-          var first = LAYOUTS.filter(function (L) { return L.grp === G.id; })[0];
-          ask(first.id, G.name, function () { self.switchTo(first.id); });
-        } };
-      });
-      v.chips = LAYOUTS.filter(function (L) { return L.grp === S.L.grp; }).map(function (L) {
-        var on = L.id === st.lay;
-        return { name: L.name, asym: L.asym, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () {
-          if (on || locked) return;
-          ask(L.id, L.name, function () { self.switchTo(L.id); });
-        } };
-      });
+      if (!online) { var bc2 = this.boardChips(function () { return locked; }, true); v.groups = bc2.groups; v.chips = bc2.chips; }
       v.left = Object.keys(live).length;
       v.boardBox = "position:absolute;left:0;top:0;width:" + (BOX_W / SCALE) + "px;height:" + (BOX_H / SCALE) + "px;transform:scale(" + SCALE + ");transform-origin:0 0";
       v.tiles = S.pos.filter(function (p) { return live[p.id]; }).map(function (p) {
@@ -483,7 +753,7 @@ class Component extends DCLogic {
           blocked: !free, pos: "left:" + x + "px;top:" + y + "px;z-index:" + Math.round(p.l * 1000 + p.r * 20 + p.c * 2 + 1),
           label: (jk ? "Joker" + (st.jokerAs[id] ? " som " + st.jokerAs[id] : "") : ch + ", " + pts + " poeng") + (bonus ? ", bonus " + bonus : "") + (free ? ", åpen" : ", sperret"),
           pick: function () {
-            if (!free || self.state.busy || self.cpuTurn()) return;
+            if (!free || self.state.busy || self.cpuTurn() || self.waitTurn()) return;
             var s0 = self.state, s = s0.sel.slice(), j = s.indexOf(id);
             if (j >= 0) { s.splice(j, 1); var ja = Object.assign({}, s0.jokerAs); delete ja[id]; self.setState({ sel: s, jokerAs: ja }); }
             else if (jk) self.setState({ picking: id });
@@ -494,12 +764,14 @@ class Component extends DCLogic {
       v.nFree = nFree;
       if (duel) {
         var sc = st.P.map(function (p, i) { return i === st.turn ? st.score : p.score; });
-        v.stats = [
-          { k: nm[0] + (st.turn === 0 ? " · tur" : ""), v: sc[0], cls: st.turn === 0 ? "stat mine" : "stat" },
-          { k: nm[1] + (st.turn === 1 ? " · tur" : ""), v: sc[1], cls: st.turn === 1 ? "stat mine" : "stat" },
-          { k: "Åpne · igjen", v: nFree + " · " + v.left, cls: "stat" }];
+        var order = online && st.online.you === 1 ? [1, 0] : [0, 1];
+        v.stats = order.map(function (i) { return { k: nm[i] + (st.turn === i && (!online || st.online.status === "active") ? " · tur" : ""), v: sc[i], cls: st.turn === i ? "stat mine" : "stat" }; })
+          .concat([{ k: "Åpne · igjen", v: nFree + " · " + v.left, cls: "stat" }]);
       } else {
         v.stats = [{ k: "Poeng", v: st.score, cls: "stat mine" }, { k: "Igjen av 100", v: v.left, cls: "stat" }, { k: "Åpne nå", v: nFree, cls: "stat" }];
+      }
+      if (online) {
+        v.onlineBar = { board: "Brett: " + S.L.name + (st.online.status === "waiting" ? " · venter på motspiller" : ""), resign: function () { self.resign(); }, canResign: st.online.status === "active" };
       }
       v.picking = !!st.picking;
       v.pickLetters = Array.from(ALPHABET).map(function (L) {
@@ -518,7 +790,8 @@ class Component extends DCLogic {
         } };
       });
       v.rackEmpty = st.sel.length === 0;
-      v.rackHint = this.cpuTurn() ? "Maskinen tenker …" : st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : "Trykk en brikke i lommen for å bruke den i et ord.") : (duel ? "Legg et ord, ta en brikke i lommen eller stå over." : "Lommen tar to brikker. Det som er igjen der til slutt, trekkes fra.");
+      v.rackHint = this.cpuTurn() ? "Maskinen tenker …" : this.waitTurn() ? (st.online.status === "waiting" ? "Spillet starter når motspilleren er med." : "Venter på " + st.online.oppName + ". Du får se trekket her.") :
+        st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : "Trykk en brikke i lommen for å bruke den i et ord.") : (duel ? "Legg et ord, ta en brikke i lommen eller stå over." : "Lommen tar to brikker. Det som er igjen der til slutt, trekkes fra.");
       v.pocket = st.pocket.map(function (ch, i) {
         var pid = "p" + i, on = st.sel.indexOf(pid) >= 0;
         return { ch: ch, p: PTS[ch], on: on ? "true" : "false", cls: "rk pk" + (on ? " on" : ""), label: ch + " i lommen, " + PTS[ch] + " poeng" + (on ? ", i ordet" : ""), tap: function () {
@@ -534,7 +807,7 @@ class Component extends DCLogic {
       v.pocketIt = function () { if (!locked) self.pocketTile(self.state.sel[0]); };
       var w = this.word(st.sel);
       v.sendOff = locked || st.sel.length < 1;
-      v.sendLabel = this.cpuTurn() ? "Maskinens tur" : st.sel.length < 1 ? "Send ord" : "«" + w + "» · " + this.evaluate(st.sel).total + " p";
+      v.sendLabel = this.cpuTurn() ? "Maskinens tur" : this.waitTurn() ? (st.online.status === "waiting" ? "Venter …" : st.online.oppName + " sin tur") : st.sel.length < 1 ? "Send ord" : "«" + w + "» · " + this.evaluate(st.sel).total + " p";
       v.send = function () { if (!locked) self.playWord(); };
       v.hintOff = locked;
       v.hint = function () {
@@ -550,16 +823,24 @@ class Component extends DCLogic {
       var rec = st.played || { score: st.score, words: st.words.length, left: 0, best: null };
       if (rec.duel) {
         var r = rec.res, win = r[0].score === r[1].score ? -1 : r[0].score > r[1].score ? 0 : 1;
-        v.score = r[0].score + " – " + r[1].score;
-        v.doneSub = (win < 0 ? "Uavgjort" : st.opp === "cpu" ? (win === 0 ? "Du vant mot maskinen (" + this.diffName() + ")" : "Maskinen (" + this.diffName() + ") vant") : nm[win] + " vant") +
+        if (rec.resigned !== undefined) win = 1 - rec.resigned;
+        var you = online ? st.online.you : 0;
+        v.score = r[you].score + " – " + r[1 - you].score;
+        v.doneSub = (rec.resigned !== undefined ? (rec.resigned === you ? "Du ga opp" : nm[rec.resigned] + " ga opp") + " · " : "") +
+          (win < 0 ? "Uavgjort" : online ? (win === you ? "Du vant mot " + st.online.oppName : st.online.oppName + " vant") :
+            st.opp === "cpu" ? (win === 0 ? "Du vant mot maskinen (" + this.diffName() + ")" : "Maskinen (" + this.diffName() + ") vant") : nm[win] + " vant") +
           " · " + (rec.left ? rec.left + " brikker ble liggende" : "brettet ryddet");
-        v.duelRows = r.map(function (x, i) {
+        var ord = online && you === 1 ? [1, 0] : [0, 1];
+        v.duelRows = ord.map(function (i) {
+          var x = r[i];
           return { name: nm[i], score: x.score, cls: i === win ? "lrow me" : "lrow",
             detail: x.words + " ord" + (x.best ? " · beste «" + x.best.w + "» " + x.best.pts + " p" : "") + (x.pen ? " · −" + x.pen + " for " + x.pocketLeft + " i lommen" : "") };
         });
-        v.again = function () { self.start("duel"); };
-        v.againLabel = "Ny duell";
-        v.toPicker = v.toMenu; v.pickerLabel = "Til menyen";
+        if (online) {
+          v.again = function () { if (st.online.oppId) self.startWith({ id: st.online.oppId }); else self.goHome(); };
+          v.againLabel = "Spill igjen";
+        } else { v.again = function () { self.start("duel"); }; v.againLabel = "Ny duell"; }
+        v.toPicker = v.goHome; v.pickerLabel = "Til start";
         return v;
       }
       v.score = rec.score;
@@ -576,8 +857,8 @@ class Component extends DCLogic {
       v.boardSay = st.boardSrc === "db" ? "delt mellom alle som spiller" : st.boardSrc === "local" ? "bare denne telefonen" : "kobler til …";
       v.again = function () { self.setState(self.fresh(self.state.lay, "Samme brett, nytt forsøk. Bare en ny personlig rekord sendes inn.")); };
       v.againLabel = "Spill igjen";
-      v.toPicker = function () { self.setState(self.fresh(self.state.lay, "Velg et brett i raden over.")); };
-      v.pickerLabel = "Bytt brett";
+      v.toPicker = v.goHome;
+      v.pickerLabel = "Til start";
     }
     return v;
   }

@@ -1,6 +1,18 @@
-# Static site on Cloudflare Workers: npx wrangler deploy
+# The game and its server on Cloudflare Workers: npx wrangler deploy
+# The server's data lives in a Durable Object with SQLite; the first deploy creates it.
 name = "wordbelow"
+main = "src/worker.js"
 compatibility_date = "2026-10-01"
 
 [assets]
 directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[[durable_objects.bindings]]
+name = "HUB"
+class_name = "Hub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Hub"]

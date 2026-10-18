@@ -66,3 +66,94 @@ button.mode:active{background:rgba(0,0,0,.34)}
 .duelbox .chips{width:100%}
 .duelbox .act{width:100%;margin-top:4px}
 .menu .foot{margin-top:auto;font-size:12px;text-align:center;color:#A9C2BB}
+/* Home, new game and the other list screens, after Wordfeud's layout */
+.home,.sub{padding:12px 16px 0;gap:10px}
+.scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:20px;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+.hometop{display:flex;align-items:center;justify-content:space-between;height:56px;flex:none}
+.hometop .logo{font-size:34px;font-weight:800;letter-spacing:-.01em}
+.icons{display:flex;gap:2px}
+.ib{width:44px;height:44px;border:0;padding:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.bigbtn{height:56px;flex:none;border:0;border-radius:28px;background:#4FB58A;color:#072A1D;font-family:inherit;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 0 #23704F;cursor:pointer}
+.note{border-radius:12px;background:rgba(242,196,107,.14);box-shadow:inset 0 0 0 1.5px rgba(242,196,107,.5);padding:10px 12px;font-size:14px;line-height:1.4}
+.card{position:relative;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.card.acc{background:rgba(0,0,0,.24)}
+.card.inv{background:#2F6F86;color:#F4F8FA}
+.card .ct{font-size:20px;font-weight:700;line-height:1.25;padding-right:36px}
+.card .cs{font-size:14px;line-height:1.4;color:#CFE0DA}
+.card .cbtns{display:flex;gap:8px}
+.card .x{position:absolute;top:10px;right:10px;width:44px;height:44px;border:0;border-radius:22px;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.pill{height:44px;padding:0 18px;border:2px solid currentColor;border-radius:22px;background:transparent;color:inherit;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;flex:none}
+.pill.solid{background:#F4EFE2;border-color:#F4EFE2;color:#13201D}
+.pill.small{height:36px;padding:0 12px;font-size:14px;border-width:1.5px}
+.empty{font-size:15px;color:#A9C2BB;text-align:center;padding:12px 0}
+.sec{margin:6px 2px 0;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A9C2BB}
+.gamerow{display:flex;align-items:center;gap:8px}
+.game{flex:1;min-width:0;display:flex;align-items:center;gap:12px;box-sizing:border-box;padding:10px 12px;border:0;border-radius:14px;background:rgba(0,0,0,.24);color:inherit;font-family:inherit;text-align:left;cursor:pointer}
+.game.mine{background:rgba(242,196,107,.14);box-shadow:inset 0 0 0 2px rgba(242,196,107,.7)}
+.av{width:42px;height:48px;flex:none;border-radius:7px;background:#FBF6EA;color:#1C2626;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;box-shadow:0 3px 0 #C2702C}
+.gi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.gn{font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gl{font-size:13px;color:#CFE0DA;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.gw{font-size:12px;color:#A9C2BB;flex:none;align-self:flex-start;padding-top:2px}
+.home .foot,.sub .foot{font-size:12px;text-align:center;color:#A9C2BB;margin-top:8px}
+.nav{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;height:56px;flex:none}
+.nav h1{margin:0;text-align:center;font-size:24px;font-weight:700}
+.group{border-radius:16px;background:rgba(0,0,0,.24);overflow:hidden;flex:none}
+.opt{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;min-height:72px;padding:12px 14px;border:0;border-bottom:1px solid rgba(244,239,226,.1);background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer}
+.opt:last-child{border-bottom:0}
+.tileic{width:50px;height:50px;flex:none;border-radius:8px;background:#FBF6EA;color:#1C2626;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #C2702C;font-size:30px;font-weight:800}
+.ot{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ot .t{font-size:19px;font-weight:700}
+.ot .s{font-size:14px;line-height:1.35;color:#A9C2BB}
+.chev{color:#A9C2BB;flex:none;display:flex}
+.opt .act.go{flex:none;height:44px;padding:0 16px;font-size:15px}
+.opt.cpu{cursor:default}
+.cpubox{border-bottom:1px solid rgba(244,239,226,.1);padding-bottom:12px}
+.cpubox .opt{border-bottom:0}
+.levels{padding-left:78px}
+html.light .cpubox{border-bottom-color:rgba(60,45,20,.12)}
+.boardpick{display:flex;flex-direction:column;gap:6px;flex:none}
+.lbl{font-size:13px;font-weight:700;color:#A9C2BB}
+.codebox{display:flex;align-items:center;gap:14px;padding:12px 14px}
+.coderow{display:flex;gap:8px;margin-top:4px}
+.coderow .inp{flex:1;width:100%;text-transform:uppercase;letter-spacing:.12em}
+.coderow .act{flex:none;height:48px;padding:0 14px;font-size:15px}
+.inp{user-select:text;-webkit-user-select:text}
+.inp.big{height:52px;font-size:18px;flex:none}
+.lead{margin:4px 0;font-size:16px;line-height:1.45}
+.hintline{font-size:13px;color:#A9C2BB}
+.act.full{width:100%;flex:none;height:54px}
+p.small{margin:6px 0 0;font-size:13px;line-height:1.4;color:#A9C2BB}
+.radio{display:flex;align-items:center;gap:18px;width:100%;min-height:60px;padding:0 18px;border:0;border-bottom:1px solid rgba(244,239,226,.1);background:transparent;color:inherit;font-family:inherit;font-size:19px;cursor:pointer;text-align:left}
+.radio:last-child{border-bottom:0}
+.radio .dot{width:22px;height:22px;border-radius:50%;border:2.5px solid #A9C2BB;box-sizing:border-box;flex:none}
+.radio .dot.on{border-color:#7FC4DC;background:radial-gradient(circle,#7FC4DC 0 5px,transparent 6px)}
+.statg .srow{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(244,239,226,.1);font-size:16px}
+.statg .srow:last-child{border-bottom:0}
+.statg .srow b{text-align:right}
+.onlinebar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;flex:none;font-size:14px;color:#CFE0DA}
+/* Light theme: a pale felt; the tiles keep their colours */
+html.light,html.light body,html.light #app{background-color:#EFE8D8;color:#1C2626}
+html.light .felt{background-image:radial-gradient(ellipse at 50% 45%,rgba(255,255,255,.5),rgba(120,100,60,.12) 78%),repeating-linear-gradient(45deg,rgba(0,0,0,.025) 0 1px,transparent 1px 5px)}
+html.light .msg,html.light .stat,html.light .group,html.light .game,html.light .card.acc,html.light .rackrow,html.light .lrow,html.light .namebox,html.light .mode,html.light .chip{background-color:rgba(60,45,20,.08);box-shadow:none}
+html.light .rackrow{box-shadow:inset 0 2px 6px rgba(60,45,20,.12)}
+html.light .chip{color:#1C2626}
+html.light .chip.on{background:#D9A441;color:#2B1A03}
+html.light .chip .asym{background:rgba(60,45,20,.1)}
+html.light .stat.mine,html.light .game.mine,html.light .lrow.me{background:rgba(217,164,65,.22);box-shadow:inset 0 0 0 2px #C68E2B}
+html.light .stat.mine .v,html.light .done h1{color:#8E5E14}
+html.light .stat .k,html.light .gl,html.light .ms,html.light .cs,html.light .lrow .det,html.light .onlinebar,html.light .done .sub{color:#4E5C58}
+html.light .title .t2,html.light .sec,html.light .ot .s,html.light .gw,html.light .chev,html.light .empty,html.light .lbl,html.light .hintline,html.light p.small,html.light .rackhint,html.light .foot,html.light .done .kick,html.light .lbhead span,html.light .lrow .rk-n{color:#5D6B67}
+html.light .opt,html.light .radio,html.light .statg .srow{border-bottom-color:rgba(60,45,20,.12)}
+html.light .slot{border-color:rgba(60,45,20,.3)}
+html.light .divider{background:rgba(60,45,20,.18)}
+html.light .inp{background:#FFFDF7;color:#1C2626;border-color:rgba(60,45,20,.3)}
+html.light .pill.solid{background:#1C2626;border-color:#1C2626;color:#F4EFE2}
+html.light .card.inv .pill.solid{background:#F4F8FA;border-color:#F4F8FA;color:#13201D}
+html.light .note{background:rgba(217,164,65,.18)}
+html.light .over{background:rgba(239,232,216,.97);color:#1C2626}
+html.light .radio .dot{border-color:#5D6B67}
+html.light .radio .dot.on{border-color:#2F7FA0;background:radial-gradient(circle,#2F7FA0 0 5px,transparent 6px)}
+.tone-info{color:#CFE0DA}.tone-good{color:#8FE3B9}.tone-bad{color:#FFB59A}
+html.light .tone-info{color:#3E4C48}html.light .tone-good{color:#1F7A4D}html.light .tone-bad{color:#B3261E}

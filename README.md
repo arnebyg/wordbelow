@@ -2,13 +2,26 @@
 
 Ordspill med 100 brikker i lag. Du legger ord av brikkene som er åpne – ingen brikke oppå, og fri på minst én side – og hvert ord åpner nye brikker under. Tolv brett i to grupper: «Stramme» (få åpne hele veien) og «Åpner seg» (8–11 åpne i starten, 14–18 midtveis). Lommen tar to brikker.
 
-Tre måter å spille på (velges på startsiden):
+Startsiden viser spillene dine mot andre (Din tur · Deres tur · Venter på motspiller · Ferdige), med innstillinger (tema: System, Mørkt, Lyst), statistikk og «Nytt spill». Under «Nytt spill»:
 
-- **Alene** – så mange poeng du kan, toppliste per brett.
-- **Duell mot maskinen** – dere bytter på å legge ord på samme brett, hver med sin egen lomme. Et trekk er et ord, en brikke i lommen eller å stå over. Spillet slutter når brettet er tomt eller begge står over etter hverandre. Tre nivåer: Lett (korte ord, tilfeldig blant de 12 beste), Middels (tilfeldig blant de 6 beste), Sterk (det beste den finner).
-- **To spillere på én telefon** – samme duell, telefonen sendes over bordet.
+- **Venn** – start et spill med en du har spilt mot eller lagt til.
+- **Kontakt** – en invitasjon med lenke og sekssifret kode, delt med telefonens del-ark.
+- **Tilfeldig motspiller** – står i kø til en annen trykker det samme.
+- **Finn spiller** – søk på brukernavn, start et spill eller legg til som venn.
+- **Har du en kode?** – bli med på en invitasjon.
+- **Uten nett:** mot maskinen (Lett, Middels, Sterk), to på én telefon, og alene med toppliste per brett.
 
-Duellen er bygd slik at en motspiller over nett senere kan ta maskinens plass (`cpuTurn`, `endTurn` i `logic.js`).
+Et trekk er et ord, en brikke i lommen eller å stå over. Spillet slutter når brettet er tomt eller begge står over etter hverandre. Hver spiller har sin egen lomme.
+
+## Serveren
+
+`src/worker.js` er en Cloudflare Worker: filene i `public/` og `/api/*`. Alt lagres i én Durable Object med SQLite, som opprettes ved første `wrangler deploy` – ingen database å sette opp.
+
+- **Konto:** et brukernavn og en hemmelig nøkkel som ligger på telefonen. Ingen e-post eller passord ennå, så en konto kan ikke hentes tilbake hvis telefonen eller nettleserdataene slettes.
+- **Spill:** brettet (oppsett og et frø per spill) og tilstanden (brikker borte, begge lommer og poeng, hvem sin tur). Serveren sjekker at det er avsenderens tur og at trekket bygger på siste versjon; ordet sjekkes mot ordlista på telefonen, ikke på serveren.
+- **Varsler:** ingen push-varsler ennå. Appen henter spillene når den åpnes og hvert 5.–20. sekund mens den er åpen.
+
+Ikke laget: Facebook-venner, telefonens kontaktliste (en nettside får ikke lese den på iPhone) og turneringer.
 
 Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund (`public/words/nsf-2026.txt`, uendret).
 
@@ -17,12 +30,13 @@ Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund (`public/words/nsf-2026.txt`,
 | Fil | Hva |
 |---|---|
 | `public/index.html` | Siden |
-| `public/logic.js` | Spillet: brett, bokstaver, poeng, lommen. Startet som en kopi av Klassiker-tegnebrettet i Design-lerretet på claude.ai; duellen og startsiden finnes bare her |
+| `public/logic.js` | Spillet og skjermene: brett, bokstaver, poeng, lommen, duellen, kontoen og spill mot andre |
 | `public/runtime.js` | Tegner spillet som vanlig HTML og skalerer 390 × 844 til skjermen |
 | `public/game.css`, `public/layout.css` | Utseendet |
 | `public/manifest.webmanifest`, `public/icons/` | PWA: navn, ikoner, fullskjerm |
 | `public/sw.js` | Service worker: siden og ordlista lagres på telefonen, så spillet virker uten nett |
-| `wrangler.toml` | Cloudflare Workers, statiske filer fra `public/` |
+| `src/worker.js` | Serveren: kontoer, venner, spill, kø og invitasjoner |
+| `wrangler.toml` | Cloudflare Workers: filene, serveren og Durable Object-en |
 
 ## Legge ut
 
@@ -46,11 +60,11 @@ Spillet ligger da på `https://wordbelow.<kontoen>.workers.dev`.
 ## Prøve lokalt
 
 ```sh
-cd public && python3 -m http.server 8000
+npx wrangler dev
 ```
 
-og åpne <http://localhost:8000>.
+og åpne <http://localhost:8787>. Serveren og databasen kjører lokalt (i `.wrangler/`).
 
-## Det som ikke følger med fra claude.ai
+## Toppliste
 
-Topplista lagres bare på telefonen. Den delte topplista i Design-lerretet bruker claude.ai sin database.
+Topplista for «Alene» lagres bare på telefonen.
