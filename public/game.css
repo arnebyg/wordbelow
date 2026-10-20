@@ -1,4 +1,4 @@
-body{margin:0;background:#0E3B35}
+body{margin:0;background:#1E6550}
 a{color:#F2C46B}a:hover{color:#FFE2A6}
 .felt{background-image:radial-gradient(ellipse at 50% 45%,rgba(255,255,255,.07),rgba(0,0,0,.28) 78%),repeating-linear-gradient(45deg,rgba(255,255,255,.035) 0 1px,transparent 1px 5px),repeating-linear-gradient(-45deg,rgba(0,0,0,.06) 0 1px,transparent 1px 5px)}
 .tile{position:absolute;width:46px;height:56px;padding:0;border:0;border-radius:7px;background:#FBF6EA;color:#1C2626;font-family:inherit;cursor:pointer;box-shadow:0 3px 0 #E3D3B2,0 6px 0 #C2702C,2px 7px 0 #8E4C17,0 10px 10px rgba(0,0,0,.35);transition:transform .12s ease}
@@ -30,14 +30,14 @@ a{color:#F2C46B}a:hover{color:#FFE2A6}
 .chip .asym{font-size:11px;font-weight:700;padding:2px 6px;border-radius:8px;background:rgba(255,255,255,.14)}
 .chip.on .asym{background:rgba(59,36,5,.14)}
 .stat{border-radius:12px;padding:7px 10px;background:rgba(0,0,0,.22);display:flex;flex-direction:column;gap:2px}
-.stat .k{font-size:12px;color:#CFE0DA}
+.stat .k{font-size:12px;color:#DDEBE6}
 .stat .v{font-size:23px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
 .over{position:absolute;inset:0;z-index:3000;border-radius:14px;background:rgba(7,30,27,.95);box-shadow:0 0 0 2px rgba(242,196,107,.5);padding:12px;display:flex;flex-direction:column;gap:10px}
 .lk{height:40px;border:0;border-radius:6px;background:#FBF6EA;color:#1C2626;font-family:inherit;font-size:19px;font-weight:800;box-shadow:0 3px 0 #C2702C;cursor:pointer}
 .small{height:44px;padding:0 14px;border:0;border-radius:10px;background:#6E7A76;color:#13201D;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
 .lrow{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px;border-radius:12px;background:rgba(0,0,0,.2);font-size:16px}
 .lrow.me{background:rgba(242,196,107,.16);box-shadow:inset 0 0 0 2px #F2C46B}
-.lrow .rk-n{font-weight:800;color:#A9C2BB;font-variant-numeric:tabular-nums}
+.lrow .rk-n{font-weight:800;color:#C6DCD5;font-variant-numeric:tabular-nums}
 .lrow .sc{font-weight:800;font-variant-numeric:tabular-nums}
 .inp{height:48px;box-sizing:border-box;padding:0 14px;border:2px solid rgba(244,239,226,.35);border-radius:12px;background:rgba(0,0,0,.25);color:#F4EFE2;font-family:inherit;font-size:16px;font-weight:600;min-width:0}
 .pop{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);z-index:2000;pointer-events:none;padding:8px 16px;border-radius:999px;background:#F2C46B;color:#3B2405;font-size:26px;font-weight:800;box-shadow:0 6px 16px rgba(0,0,0,.4);animation:popup 1.1s ease-out forwards}

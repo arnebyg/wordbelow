@@ -652,7 +652,7 @@ class Component extends DCLogic {
     };
   }
   renderVals() {
-    var self = this, st = this.state, S = this.S(), tones = { info: "#CFE0DA", good: "#8FE3B9", bad: "#FFB59A" };
+    var self = this, st = this.state, S = this.S(), tones = { info: "#DDEBE6", good: "#8FE3B9", bad: "#FFB59A" };
     var duel = this.duel(), online = this.online(), nm = this.names(), locked = st.busy || this.cpuTurn() || this.waitTurn();
     var v = {
       phase: st.phase, isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel, isOnline: online,

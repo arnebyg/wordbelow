@@ -329,7 +329,7 @@ var App = (function () {
 window.applyTheme = function (t) {
   var light = t === "light" || (t === "system" && window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches);
   document.documentElement.classList.toggle("light", !!light);
-  var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", light ? "#EFE8D8" : "#0E3B35");
+  var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", light ? "#EFE8D8" : "#1E6550");
   window.themeChoice = t;
 };
 if (window.matchMedia) matchMedia("(prefers-color-scheme: light)").addEventListener("change", function () { if (window.themeChoice === "system") window.applyTheme("system"); });
