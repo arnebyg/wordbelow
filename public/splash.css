@@ -1,0 +1,21 @@
+/* Start-up: the tiles fall into place, spell the name, and turn into the logo. About 2.8 s; a tap skips it. */
+#splash{position:fixed;inset:0;z-index:9999;overflow:hidden;background:radial-gradient(circle at 50% 42%,#2A7A62 0,#1E6550 55%,#164C3D 100%);color:#F4EFE2;font-family:'Bricolage Grotesque',sans-serif;transition:opacity .35s ease}
+#splash.out{opacity:0;pointer-events:none}
+#splash .sp{position:absolute;left:50%;top:50%;width:390px;height:520px;margin:-260px 0 0 -195px}
+#splash .tile{position:absolute;width:60px;height:72px;border-radius:10px;background:#FBF6EA;color:#1C2626;display:flex;align-items:center;justify-content:center;font-size:40px;line-height:1;box-shadow:0 4px 0 #E3D3B2,0 8px 0 #C2702C,0 14px 14px rgba(0,0,0,.35);animation:2.8s cubic-bezier(.3,1.4,.5,1) both}
+#splash .tile small{position:absolute;right:7px;bottom:5px;font-size:13px;font-weight:800;color:#7A4513}
+#splash .w{top:150px;font-weight:800;animation-name:sp-drop}
+#splash .b{top:234px;font-weight:200;background:#F6EEDC;animation-name:sp-rise}
+@keyframes sp-drop{0%{transform:translateY(-640px) rotate(-14deg)}22%{transform:none}27%{transform:scale(1.06,.92)}32%,50%{transform:none;opacity:1}62%{transform:translateY(-30px) scale(.4);opacity:0}100%{opacity:0}}
+@keyframes sp-rise{0%,14%{transform:translateY(600px) rotate(10deg)}36%{transform:none}41%{transform:scale(1.06,.92)}46%,50%{transform:none;opacity:1}62%{transform:translateY(30px) scale(.4);opacity:0}100%{opacity:0}}
+#splash .mark{position:absolute;left:0;right:0;top:146px;display:flex;flex-direction:column;align-items:center;line-height:.9;font-size:84px;animation:sp-mark 2.8s ease-out both}
+#splash .mark .lw{font-weight:800;letter-spacing:-.02em;margin-right:.9em}
+#splash .mark .lb{font-weight:200;margin-left:.2em}
+@keyframes sp-mark{0%,55%{opacity:0;transform:scale(.6)}68%{opacity:1;transform:scale(1.08)}76%,100%{opacity:1;transform:none}}
+#splash .spop{position:absolute;padding:4px 12px;border-radius:999px;background:#F2C46B;color:#3B2405;font-weight:800;font-size:22px;box-shadow:0 4px 10px rgba(0,0,0,.3);animation:sp-pop 2.8s ease-out both}
+@keyframes sp-pop{0%,60%{opacity:0;transform:translateY(20px) scale(.5)}70%{opacity:1;transform:scale(1.1)}88%{opacity:1;transform:translateY(-24px)}100%{opacity:0;transform:translateY(-44px)}}
+#splash .spark{position:absolute;left:190px;top:240px;width:10px;height:10px;border-radius:2px;animation:sp-spark 2.8s ease-out both}
+@keyframes sp-spark{0%,60%{opacity:0;transform:none}64%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(540deg)}}
+#splash .tag{position:absolute;left:0;right:0;top:350px;text-align:center;font-size:19px;font-weight:500;color:#CFE3DB;animation:sp-tag 2.8s ease-out both}
+@keyframes sp-tag{0%,70%{opacity:0;transform:translateY(8px)}82%,100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){#splash .tile,#splash .spop,#splash .spark{display:none}#splash .mark,#splash .tag{animation:none}}

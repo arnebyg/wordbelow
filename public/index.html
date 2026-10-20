@@ -16,9 +16,29 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200;12..96,500;12..96,700;12..96,800&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="game.css">
 <link rel="stylesheet" href="layout.css">
+<link rel="stylesheet" href="splash.css">
 </head>
 <body class="felt">
 <div id="app" class="felt"></div>
+<div id="splash" aria-hidden="true"><div class="sp">
+<span class="tile w" style="left:63px">W<small>8</small></span><span class="tile w" style="left:129px;animation-delay:.06s">O<small>2</small></span><span class="tile w" style="left:195px;animation-delay:.12s">R<small>1</small></span><span class="tile w" style="left:261px;animation-delay:.18s">D<small>1</small></span>
+<span class="tile b" style="left:30px">B<small>4</small></span><span class="tile b" style="left:96px;animation-delay:.05s">E<small>1</small></span><span class="tile b" style="left:162px;animation-delay:.1s">L<small>1</small></span><span class="tile b" style="left:228px;animation-delay:.15s">O<small>2</small></span><span class="tile b" style="left:294px;animation-delay:.2s">W<small>8</small></span>
+<div class="mark"><span class="lw">word</span><span class="lb">below</span></div>
+<span class="spop" style="left:44px;top:96px">+12</span><span class="spop" style="right:40px;top:120px;animation-delay:.1s">+20</span>
+<span class="spark" style="background:#F2C46B;--dx:-150px;--dy:-190px"></span><span class="spark" style="background:#FBF6EA;--dx:140px;--dy:-210px"></span><span class="spark" style="background:#E8875A;--dx:-170px;--dy:60px"></span><span class="spark" style="background:#7FD1B8;--dx:165px;--dy:80px"></span><span class="spark" style="background:#F2C46B;--dx:40px;--dy:-240px"></span><span class="spark" style="background:#FBF6EA;--dx:-60px;--dy:220px"></span><span class="spark" style="background:#E8875A;--dx:110px;--dy:-120px"></span><span class="spark" style="background:#7FD1B8;--dx:-120px;--dy:-80px"></span>
+<div class="tag">Finn ordene som ligger under.</div>
+</div></div>
+<script>
+// Once per session; a tap ends it at once.
+(function () {
+  var el = document.getElementById("splash"), seen = false;
+  try { seen = sessionStorage.getItem("wb-splash") === "1"; sessionStorage.setItem("wb-splash", "1"); } catch (e) {}
+  if (seen || /[?&]nosplash/.test(location.search)) { el.remove(); return; }
+  var done = function () { if (!el.parentNode) return; el.classList.add("out"); setTimeout(function () { el.remove(); }, 400); };
+  var t = setTimeout(done, matchMedia("(prefers-reduced-motion: reduce)").matches ? 900 : 3000);
+  el.addEventListener("pointerdown", function () { clearTimeout(t); done(); });
+})();
+</script>
 <script src="runtime.js"></script>
 <script src="logic.js"></script>
 </body>
