@@ -74,7 +74,8 @@ button.mode:active{background:rgba(0,0,0,.34)}
 .hometop .logo{font-size:34px;font-weight:800;letter-spacing:-.01em}
 .icons{display:flex;gap:2px}
 .ib{width:44px;height:44px;border:0;padding:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.bigbtn{height:56px;flex:none;border:0;border-radius:28px;background:#4FB58A;color:#072A1D;font-family:inherit;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 0 #23704F;cursor:pointer}
+.bigbtn{height:56px;flex:none;border:0;border-radius:28px;background:#F2C46B;color:#3B2405;font-family:inherit;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 0 #A9741E;cursor:pointer}
+.bigbtn:active{transform:translateY(2px);box-shadow:0 2px 0 #A9741E}
 .note{border-radius:12px;background:rgba(242,196,107,.14);box-shadow:inset 0 0 0 1.5px rgba(242,196,107,.5);padding:10px 12px;font-size:14px;line-height:1.4}
 .card{position:relative;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .card.acc{background:rgba(0,0,0,.24)}
