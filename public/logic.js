@@ -196,6 +196,9 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
 var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1";
 var API = "/api";
+var BG_KEY = "ordspill/bakgrunn/v1";
+var BGS = [{ id: "filt", name: "Filtgrønn (standard)", hex: "#1E6550" }, { id: "natt", name: "Nattblå", hex: "#142A52" }, { id: "fjord", name: "Fjordblå", hex: "#1D5470" },
+  { id: "skifer", name: "Skifer", hex: "#2E3746" }, { id: "biljard", name: "Biljardgrønn", hex: "#0E3B35" }, { id: "sand", name: "Sand (lys)", hex: "#EFE4CF" }];
 
 function api(path, opts) {
   opts = opts || {};
@@ -223,7 +226,7 @@ class Component extends DCLogic {
     var id = lsGet("ordspill/klassiker/brett/v1") || LAYOUTS[0].id, m = lsGet(MODE_KEY) || {};
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
-      account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", games: null, gamesMsg: "", friends: [],
+      account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
       search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "" };
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
@@ -238,7 +241,7 @@ class Component extends DCLogic {
     var self = this;
     if (!DICT) loadDict(function (ok) { if (!ok) self.setState({ homeMsg: "Fant ikke ordlista. Bruker en liten testliste." }); });
     this.connect();
-    if (window.applyTheme) window.applyTheme(this.state.theme);
+    if (window.applyTheme) window.applyTheme(this.state.theme, this.state.bg);
     var join = (location.search.match(/[?&]join=([A-Za-z0-9]{4,10})/) || [])[1];
     if (join) { try { history.replaceState(null, "", location.pathname); } catch (e) {} this.state.codeIn = join.toUpperCase(); if (this.state.account) this.joinCode(); else this.setState({ phase: "account", after: "join" }); }
     this.refreshGames();
@@ -747,8 +750,16 @@ class Component extends DCLogic {
     if (st.phase === "settings") {
       v.themes = [{ id: "system", name: "System" }, { id: "dark", name: "Mørkt tema" }, { id: "light", name: "Lyst tema" }].map(function (t) {
         var on = st.theme === t.id;
-        return { name: t.name, on: on, pick: function () { lsSet(THEME_KEY, t.id); self.setState({ theme: t.id }); if (window.applyTheme) window.applyTheme(t.id); } };
+        return { name: t.name, on: on, pick: function () { lsSet(THEME_KEY, t.id); self.setState({ theme: t.id }); if (window.applyTheme) window.applyTheme(t.id, self.state.bg); } };
       });
+      v.bgs = BGS.map(function (b) {
+        var on = st.bg === b.id;
+        return { name: b.name, hex: b.hex, on: on, pick: function () { lsSet(BG_KEY, b.id); self.setState({ bg: b.id }); if (window.applyTheme) window.applyTheme(self.state.theme, b.id); } };
+      });
+      var lightNow = document.documentElement.classList.contains("light");
+      v.bgNote = st.bg === "sand" ? "Sand er en lys bakgrunn og gir lyst tema uansett valget over." :
+        lightNow ? "De mørke bakgrunnene vises i mørkt tema. Nå er lyst tema på, så du ser dem ikke før du velger Mørkt tema (eller telefonen går over til mørkt)." :
+        "De mørke bakgrunnene vises i mørkt tema; Sand er lys.";
       v.back = function () { self.goHome(); };
       return v;
     }

@@ -1,7 +1,7 @@
 /* The artboard's inline layout as classes. The game is drawn at 390 × 844 and scaled to the screen (runtime.js). */
 html,body{height:100%;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:manipulation}
-body{background-color:#1E6550;color:#F4EFE2;font-family:'Bricolage Grotesque','Avenir Next',sans-serif}
-#app{position:absolute;top:0;left:0;width:390px;height:844px;transform-origin:0 0;background-color:#1E6550;overflow:hidden}
+body{background-color:var(--bg,#1E6550);color:#F4EFE2;font-family:'Bricolage Grotesque','Avenir Next',sans-serif}
+#app{position:absolute;top:0;left:0;width:390px;height:844px;transform-origin:0 0;background-color:var(--bg,#1E6550);overflow:hidden}
 .screen{height:844px;box-sizing:border-box;display:flex;flex-direction:column}
 .play{padding:10px 15px 14px;gap:7px}
 .top{display:flex;align-items:center;justify-content:space-between;height:44px;flex:none}
@@ -124,7 +124,7 @@ html.light .cpubox{border-bottom-color:rgba(60,45,20,.12)}
 .lead{margin:4px 0;font-size:16px;line-height:1.45}
 .hintline{font-size:13px;color:#C6DCD5}
 .act.full{width:100%;flex:none;height:54px}
-p.small{margin:6px 0 0;font-size:13px;line-height:1.4;color:#C6DCD5}
+p.fine{margin:6px 0 0;font-size:13px;line-height:1.4;color:#C6DCD5}
 .radio{display:flex;align-items:center;gap:18px;width:100%;min-height:60px;padding:0 18px;border:0;border-bottom:1px solid rgba(244,239,226,.1);background:transparent;color:inherit;font-family:inherit;font-size:19px;cursor:pointer;text-align:left}
 .radio:last-child{border-bottom:0}
 .radio .dot{width:22px;height:22px;border-radius:50%;border:2.5px solid #C6DCD5;box-sizing:border-box;flex:none}
@@ -134,7 +134,7 @@ p.small{margin:6px 0 0;font-size:13px;line-height:1.4;color:#C6DCD5}
 .statg .srow b{text-align:right}
 .onlinebar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;flex:none;font-size:14px;color:#DDEBE6}
 /* Light theme: a pale felt; the tiles keep their colours */
-html.light,html.light body,html.light #app{background-color:#EFE8D8;color:#1C2626}
+html.light,html.light body,html.light #app{background-color:var(--lightbg,#EFE8D8);color:#1C2626}
 html.light .felt{background-image:radial-gradient(ellipse at 50% 45%,rgba(255,255,255,.5),rgba(120,100,60,.12) 78%),repeating-linear-gradient(45deg,rgba(0,0,0,.025) 0 1px,transparent 1px 5px)}
 html.light .msg,html.light .stat,html.light .group,html.light .game,html.light .card.acc,html.light .rackrow,html.light .lrow,html.light .namebox,html.light .mode,html.light .chip{background-color:rgba(60,45,20,.08);box-shadow:none}
 html.light .rackrow{box-shadow:inset 0 2px 6px rgba(60,45,20,.12)}
@@ -144,7 +144,7 @@ html.light .chip .asym{background:rgba(60,45,20,.1)}
 html.light .stat.mine,html.light .game.mine,html.light .lrow.me{background:rgba(217,164,65,.22);box-shadow:inset 0 0 0 2px #C68E2B}
 html.light .stat.mine .v,html.light .done h1{color:#8E5E14}
 html.light .stat .k,html.light .gl,html.light .ms,html.light .cs,html.light .lrow .det,html.light .onlinebar,html.light .done .sub{color:#4E5C58}
-html.light .title .t2,html.light .sec,html.light .ot .s,html.light .gw,html.light .chev,html.light .empty,html.light .lbl,html.light .hintline,html.light p.small,html.light .rackhint,html.light .foot,html.light .done .kick,html.light .lbhead span,html.light .lrow .rk-n{color:#5D6B67}
+html.light .title .t2,html.light .sec,html.light .ot .s,html.light .gw,html.light .chev,html.light .empty,html.light .lbl,html.light .hintline,html.light p.fine,html.light .rackhint,html.light .foot,html.light .done .kick,html.light .lbhead span,html.light .lrow .rk-n{color:#5D6B67}
 html.light .opt,html.light .radio,html.light .statg .srow{border-bottom-color:rgba(60,45,20,.12)}
 html.light .slot{border-color:rgba(60,45,20,.3)}
 html.light .divider{background:rgba(60,45,20,.18)}
@@ -193,3 +193,5 @@ html.light .bdots .dot{background:rgba(60,45,20,.25)}html.light .bdots .dot.grow
 .bbname b{font-size:17px}
 .bbname span{font-size:12px;color:#C6DCD5}
 html.light .boardbar{background:rgba(60,45,20,.08)}html.light .bbname span{color:#5D6B67}
+.radio .swatch{width:26px;height:26px;border-radius:8px;flex:none;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
+html.light .radio .swatch{box-shadow:inset 0 0 0 1.5px rgba(60,45,20,.3)}

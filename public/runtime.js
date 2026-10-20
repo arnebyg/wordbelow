@@ -182,7 +182,7 @@ var App = (function () {
       '<span class="hintline">3–16 tegn: bokstaver, tall, _ . -</span>' +
       (v.acctMsg ? '<div class="note">' + esc(v.acctMsg) + '</div>' : '') +
       '<button type="button" class="act green full"' + on(v.register) + '>Lagre</button>' +
-      '<p class="small">Kontoen ligger på denne telefonen. Sletter du appen eller nettleserdataene, kommer du ikke inn på den igjen.</p>' +
+      '<p class="fine">Kontoen ligger på denne telefonen. Sletter du appen eller nettleserdataene, kommer du ikke inn på den igjen.</p>' +
       '</div></div>';
   }
   function findView(v) {
@@ -205,6 +205,10 @@ var App = (function () {
       '<h2 class="sec">Tema</h2><div class="group" role="radiogroup" aria-label="Tema">' + each(v.themes, function (t) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + t.on + '"' + on(t.pick) + '><span class="dot' + (t.on ? ' on' : '') + '"></span><span>' + esc(t.name) + '</span></button>';
       }) + '</div>' +
+      '<h2 class="sec">Bakgrunn</h2><div class="group" role="radiogroup" aria-label="Bakgrunn">' + each(v.bgs, function (b) {
+        return '<button type="button" class="radio" role="radio" aria-checked="' + b.on + '"' + on(b.pick) + '><span class="dot' + (b.on ? ' on' : '') + '"></span><span class="swatch" style="background:' + b.hex + '"></span><span>' + esc(b.name) + '</span></button>';
+      }) + '</div>' +
+      '<p class="fine">' + esc(v.bgNote) + '</p>' +
       '<h2 class="sec">Konto</h2><div class="group"><div class="opt"><span class="ot"><span class="t">' + esc(v.account ? v.account.name : "Ingen konto ennå") + '</span><span class="s">' + (v.account ? "Kontoen ligger på denne telefonen." : "Du får en når du spiller mot andre første gang.") + '</span></span></div></div>' +
       '</div></div>';
   }
@@ -326,15 +330,27 @@ var App = (function () {
 })();
 
 // Theme: "system" follows the phone; the light theme is a class on <html>.
-window.applyTheme = function (t) {
-  var light = t === "light" || (t === "system" && window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches);
-  document.documentElement.classList.toggle("light", !!light);
-  var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", light ? "#EFE8D8" : "#1E6550");
-  window.themeChoice = t;
+// The background is a CSS variable: a dark one shows in the dark theme; sand is light and always gives the light look.
+var BACKGROUNDS = { filt: "#1E6550", natt: "#142A52", fjord: "#1D5470", skifer: "#2E3746", biljard: "#0E3B35", sand: "#EFE4CF" };
+window.applyTheme = function (t, bg) {
+  if (t === undefined) t = window.themeChoice || "system";
+  if (bg === undefined) bg = window.bgChoice || "filt";
+  var light = bg === "sand" || t === "light" || (t === "system" && window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches);
+  var de = document.documentElement, dark = BACKGROUNDS[bg] && bg !== "sand" ? BACKGROUNDS[bg] : BACKGROUNDS.filt;
+  de.classList.toggle("light", !!light);
+  de.style.setProperty("--bg", dark);
+  de.style.setProperty("--lightbg", bg === "sand" ? BACKGROUNDS.sand : "#EFE8D8");
+  var m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute("content", light ? (bg === "sand" ? BACKGROUNDS.sand : "#EFE8D8") : dark);
+  window.themeChoice = t; window.bgChoice = bg;
 };
-if (window.matchMedia) matchMedia("(prefers-color-scheme: light)").addEventListener("change", function () { if (window.themeChoice === "system") window.applyTheme("system"); });
+if (window.matchMedia) matchMedia("(prefers-color-scheme: light)").addEventListener("change", function () { if (window.themeChoice === "system") window.applyTheme(); });
 
-window.addEventListener("DOMContentLoaded", function () { App.boot(); });
+window.addEventListener("DOMContentLoaded", function () {
+  // The chosen theme and background before the first paint, so the screen does not flash the default green.
+  var read = function (k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
+  window.applyTheme(read("ordspill/tema/v1", "system"), read("ordspill/bakgrunn/v1", "filt"));
+  App.boot();
+});
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
