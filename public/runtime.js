@@ -159,12 +159,37 @@ var App = (function () {
             '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
           '</div>' +
           '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +
+          '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.editBoard) + '>Endre dette brettet</button>' : '') + '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button></div>' +
         '</div>' : '') +
       '</div>' +
       '<span class="foot">Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
       '</div>' +
       '<div class="homebottom"><button type="button" class="bigbtn"' + on(v.go) + '>' + IC.play + '<span>' + esc(v.goLabel) + '</span></button></div>' +
       '</div>';
+  }
+  function editorView(v) {
+    var e = v.ed;
+    var tap = function (ev) {
+      var el = ev.target.closest(".edsurf"), r = el.getBoundingClientRect();
+      e.tap((ev.clientX - r.left) / r.width, (ev.clientY - r.top) / r.height);
+    };
+    return '<div class="screen sub">' + head("Lag eget brett", v.back) + '<div class="scroll">' +
+      '<div class="namebox"><label class="lbl" for="edname">Navn</label><input id="edname" class="inp" type="text" maxlength="24" autocomplete="off" value="' + esc(e.name) + '" data-input="edName"></div>' +
+      '<div class="chips" role="group" aria-label="Lag">' + each(e.layers, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + '</button>'; }) + '</div>' +
+      '<div class="edsurf" role="application" aria-label="Brettet. Trykk for å legge eller ta bort en brikke."' + on(tap) + '><div style="' + esc(e.box) + '">' +
+        '<span class="edgrid" style="' + esc(e.grid) + '"></span>' +
+        each(e.tiles, function (t) { return '<span class="' + t.cls + '" style="' + esc(t.pos) + '"></span>'; }) +
+      '</div></div>' +
+      '<div class="edcount"><b>' + esc(e.count) + '</b><span>' + esc(e.mix) + '</span></div>' +
+      (e.msg ? '<div class="note">' + esc(e.msg) + '</div>' : '') +
+      '<div class="chips edtools">' +
+        '<button type="button" class="chip"' + (e.undo ? '' : ' disabled') + on(e.undo) + '>Angre</button>' +
+        '<button type="button" class="chip"' + (e.clear ? '' : ' disabled') + on(e.clear) + '>Tøm</button>' +
+        (e.remove ? '<button type="button" class="chip"' + on(e.remove) + '>Slett brettet</button>' : '') +
+      '</div>' +
+      '<div class="edbtns"><button type="button" class="act full"' + on(e.save) + '>Lagre</button><button type="button" class="act green full"' + on(e.play) + '>Lagre og spill</button></div>' +
+      '<p class="fine">Egne brett ligger på denne telefonen og kan spilles mot maskinen, på én telefon eller alene. Bokstavene trekkes med samme fordeling som ellers: 40 % vokaler, 2 % jokere.</p>' +
+      '</div></div>';
   }
   function accountView(v) {
     return '<div class="screen sub">' + head("Velg brukernavn", v.back) + '<div class="scroll">' +
@@ -235,7 +260,7 @@ var App = (function () {
     root.querySelectorAll("[data-keep]").forEach(function (el) { keep[el.getAttribute("data-keep")] = el.scrollLeft; });
     H = [];
     var v = comp.renderVals();
-    var V = { home: homeView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
+    var V = { home: homeView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
     var html = (V[v.phase] || homeView)(v);
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; return; }

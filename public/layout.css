@@ -222,3 +222,22 @@ html.light .badge{background:rgba(60,45,20,.1)}
 html.light .badge.on{background:#D9A441;color:#2B1A03}
 html.light .gx{border-top-color:rgba(60,45,20,.12)}
 .ngpanel .chips{flex-wrap:wrap;overflow:visible}
+/* Board editor */
+.edsurf{position:relative;width:358px;height:410px;flex:none;border-radius:16px;background:rgba(0,0,0,.22);overflow:hidden;cursor:crosshair;touch-action:manipulation}
+.edgrid{position:absolute;background-image:radial-gradient(circle,rgba(244,239,226,.35) 2.5px,transparent 3px);background-size:24.5px 30px;background-position:-12.25px -15px;pointer-events:none}
+.mt.ed-up{opacity:.28}
+.mt.ed-cur{background:#FBF6EA}
+.edcount{display:flex;flex-direction:column;gap:2px;font-size:14px;flex:none}
+.edcount span{color:#C6DCD5;font-size:13px}
+.edtools .chip[disabled]{opacity:.4}
+.edbtns{display:flex;gap:10px;flex:none}
+.edbtns .act{flex:1;background:rgba(244,239,226,.14);color:inherit}
+.edbtns .act.green{background:#4FB58A;color:#072A1D}
+.ownrow{margin-top:4px}
+.ownrow .chip svg{width:16px;height:16px}
+.bdots .dot.own{background:rgba(242,196,107,.45)}
+html.light .edsurf{background:rgba(60,45,20,.08)}
+html.light .edgrid{background-image:radial-gradient(circle,rgba(60,45,20,.35) 2.5px,transparent 3px)}
+html.light .edcount span{color:#5D6B67}
+html.light .edbtns .act{background:rgba(60,45,20,.1)}
+html.light .edbtns .act.green{background:#4FB58A}

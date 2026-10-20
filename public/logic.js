@@ -4,8 +4,21 @@ var RARE = "ÆYWC", VOW = "AEIOUYÆØÅ", ALPHABET = "ABCDEFGHIJKLMNOPRSTUVWYÆ�
 // One fewer N, R, S, T, D, K; one more A, I, O, U and two more E. That is 40 vowels of 98 letters, near the
 // 39 % vowels in the 3–5-letter words of NSF-ordlista; Scrabble's own 34 left far more tiles stuck in simulation.
 var BAG = "AAAAAAAABBBCDDDDEEEEEEEEEEEFFFFGGGGHHHIIIIIIJJKKKLLLLLMMMNNNNNOOOOOPPRRRRRSSSSSTTTTTUUUUVVVWYÆØØÅÅ**";
+// A board with fewer tiles draws from the same bag in the same shares: 40 % vowels, 2 % jokers, the rest
+// consonants, each picked at random from the bag's own, so their mix follows the bag too.
+function bagFor(n, R) {
+  if (n === BAG.length) return Array.from(BAG);
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+  var all = Array.from(BAG), nv = Math.round(n * 0.4), nj = Math.round(n * 0.02);
+  var vow = shuffle(all.filter(function (c) { return VOW.indexOf(c) >= 0; })).slice(0, nv);
+  var con = shuffle(all.filter(function (c) { return c !== "*" && VOW.indexOf(c) < 0; })).slice(0, n - nv - nj);
+  return vow.concat(con, all.filter(function (c) { return c === "*"; }).slice(0, nj));
+}
+function bagSplit(n) { var v = Math.round(n * 0.4), j = Math.round(n * 0.02); return { v: v, j: j, c: n - v - j }; }
 var NAME_KEY = "ordspill/navn/v1";
 var BOX_W = 360, BOX_H = 412, SCALE = 0.9;
+// The editor's surface, in the same units as the board: 400 × 458, columns 0–7 and rows 0–6 in half steps.
+var ED_W = BOX_W / SCALE, ED_H = BOX_H / SCALE, ED_X = 5, ED_Y = 32, ED_C = 7, ED_R = 6;
 
 var WORDS = ("AL AN AT DA DE DU EN ER ET HA HO JA MA NA NE NU OG OM PÅ SE SI SÅ TA TE TO UT VI ÅS ALT ARM ART AKE AKT ANE BAD BAK BAR BEN BIL BOK BOR BRA BRO DAG DAL DAM DEG DEL DEN DET DRA DUE DYR EGG EIK ELG ELV ENG ERT FAR FAT FEM FIN FOT FRA FRI " +
   "GAL GIR GOD GRO GUL HAN HAR HAT HEI HEL HER HUN HUS ILD INN KAN KAR KNE KOM KOR KUL LAG LAK LAM LAV LEK LIK LIM LIN LOV LUE LØK MAT MED MEG MEL MEN MOR MOT " +
@@ -63,7 +76,12 @@ var LAYOUTS = [
   { id: "trappa", grp: "grow", name: "Trappa", asym: true, sub: "trapp ned mot høyre", start: 10, peak: 15,
     cells: "0.0.0 2.0.0 4.0.0 0.2.0 2.2.0 4.2.0 6.2.0 0.4.0 2.4.0 4.4.0 6.4.0 8.4.0 10.4.0 0.6.0 2.6.0 4.6.0 6.6.0 8.6.0 10.6.0 12.6.0 0.8.0 2.8.0 4.8.0 6.8.0 8.8.0 10.8.0 12.8.0 14.8.0 0.10.0 2.10.0 4.10.0 6.10.0 8.10.0 10.10.0 12.10.0 14.10.0 10.12.0 12.12.0 14.12.0 1.1.1 3.1.1 5.1.1 1.3.1 3.3.1 5.3.1 7.3.1 9.3.1 1.5.1 3.5.1 5.5.1 7.5.1 9.5.1 11.5.1 1.7.1 3.7.1 5.7.1 7.7.1 9.7.1 11.7.1 13.7.1 1.9.1 3.9.1 5.9.1 7.9.1 9.9.1 11.9.1 13.9.1 1.11.1 3.11.1 5.11.1 7.11.1 9.11.1 11.11.1 13.11.1 2.2.2 2.4.2 2.6.2 2.8.2 2.10.2 4.3.2 4.5.2 4.7.2 4.9.2 6.2.2 6.4.2 6.6.2 6.8.2 6.10.2 8.3.2 8.5.2 8.7.2 8.9.2 10.2.2 10.4.2 10.6.2 10.8.2 10.10.2 12.5.2 12.7.2 12.9.2" }
 ];
-var GROUPS = [{ id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }];
+var GROUPS = [{ id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }, { id: "own", name: "Egne brett", say: "brett du har laget" }];
+// Boards the player has made in the editor: kept on this phone, played without the server.
+var OWN_KEY = "ordspill/egnebrett/v1", OWN_MAX = 100, OWN_MIN = 20;
+function ownLoad() { (lsGet(OWN_KEY) || []).forEach(function (L) { if (L && L.id && L.cells) LAYOUTS.push(ownLayout(L)); }); }
+function ownLayout(o) { return { id: o.id, grp: "own", name: o.name, asym: true, sub: o.cells.split(" ").length + " brikker · eget brett", start: o.start, cells: o.cells }; }
+function ownSave() { lsSet(OWN_KEY, LAYOUTS.filter(function (L) { return L.grp === "own"; }).map(function (L) { return { id: L.id, name: L.name, cells: L.cells, start: L.start }; })); }
 function buildLayout(L) {
   var pos = [];
   if (L.cells) L.cells.split(" ").forEach(function (t) { var a = t.split("."); pos.push({ c: +a[0] / 2, r: +a[1] / 2, l: +a[2] }); });
@@ -108,7 +126,7 @@ function strSeed(key) { var h = 11; for (var i = 0; i < key.length; i++) h = (h 
 // are vowels, the jokers lie under other tiles, and the rest of the vowels spread over the layers.
 function deal(S, R) {
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
-  var bag = shuffle(Array.from(BAG));
+  var bag = shuffle(bagFor(S.pos.length, R));
   var vow = bag.filter(function (ch) { return VOW.indexOf(ch) >= 0; });
   var jok = bag.filter(function (ch) { return ch === "*"; });
   var con = bag.filter(function (ch) { return ch !== "*" && VOW.indexOf(ch) < 0; });
@@ -152,7 +170,7 @@ function dealRamp(S, R) {
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
   var ex = exposure(S, R), jit = {}; S.pos.forEach(function (p) { jit[p.id] = R() - 0.5; });
   var order = S.pos.slice().sort(function (a, b) { return ex[a.id] - ex[b.id] + (jit[a.id] - jit[b.id]) * 0.5; });
-  var bag = shuffle(Array.from(BAG));
+  var bag = shuffle(bagFor(S.pos.length, R));
   var vow = bag.filter(function (c) { return VOW.indexOf(c) >= 0; }), jok = bag.filter(function (c) { return c === "*"; });
   var con = bag.filter(function (c) { return c !== "*" && VOW.indexOf(c) < 0; });
   var m = {}, n = order.length;
@@ -174,16 +192,23 @@ function dealRamp(S, R) {
 // The same layout always deals the same letters; an online game adds its own seed so each game is new.
 function genBoard(S, seed) {
   var R = rng(strSeed("klassiker/" + S.L.id + (seed ? "/" + seed : "")));
-  var letters = S.L.grp === "grow" ? dealRamp(S, R) : deal(S, R), b = {};
+  var letters = S.L.grp === "tight" ? deal(S, R) : dealRamp(S, R), b = {};
   var on = function (l) { return S.pos.filter(function (p) { return p.l === l && letters[p.id] !== "*"; }); };
   var top = Math.max.apply(null, S.pos.map(function (p) { return p.l; }));
   function put(list, s) { list = list.filter(function (p) { return !b[p.id]; }); var p = list[Math.floor(R() * list.length)]; if (p) b[p.id] = { m: +s[0], t: s.slice(-1) }; }
   put(on(top), "3×O"); put(on(1), "2×O"); put(on(0), "3×B"); put(on(0).concat(on(1)), "2×B"); put(on(0).concat(on(1)), "2×B"); put(on(2), "2×B");
   return { letters: letters, bonus: b };
 }
-function openSay(L) { return L.grp === "grow" ? "starter med " + L.start + " åpne, rundt " + L.peak + " midtveis" : "typisk " + L.open + " åpne hele veien"; }
+function openSay(L) { if (L.grp === "own") return "starter med " + L.start + " åpne"; return L.grp === "grow" ? "starter med " + L.start + " åpne, rundt " + L.peak + " midtveis" : "typisk " + L.open + " åpne hele veien"; }
+function cellsOf(list) { return list.map(function (p) { return (p.c * 2) + "." + (p.r * 2) + "." + p.l; }).join(" "); }
+function openAtStart(list) {
+  var S = buildLayout({ id: "_", cells: cellsOf(list) }), all = {};
+  S.pos.forEach(function (p) { all[p.id] = true; });
+  return S.pos.filter(function (p) { return freeIn(S, p.id, all); }).length;
+}
 function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+ownLoad();
 
 // Screens: "home" (your games and a new game, one page), "account" (pick a username), "find" (search players), "friends",
 // "settings", "stats", "play" and "done".
@@ -287,6 +312,12 @@ class Component extends DCLogic {
     this.setState({ board: all });
   }
   // Account and the server
+  // Own boards live on this phone only, so the other player could not see them.
+  ownOffline() {
+    if (this.S().L.grp !== "own") return false;
+    this.setState({ phase: "home", ngMsg: "Egne brett kan foreløpig bare spilles uten nett: mot maskinen, på én telefon eller alene. Velg et av appens brett for å spille mot andre." });
+    return true;
+  }
   needAccount(after) { if (this.state.account) return false; this.setState({ phase: "account", after: after, acctMsg: "" }); return true; }
   register() {
     var self = this, name = (this.state.acctName || "").trim();
@@ -316,6 +347,7 @@ class Component extends DCLogic {
   }
   openFriends() {
     var self = this;
+    if (this.ownOffline()) return;
     if (this.needAccount("friends")) return;
     this.setState({ phase: "friends", friendsMsg: "Henter vennene dine …" });
     api("/me").then(function (d) { self.setState({ friends: d.friends, friendsMsg: d.friends.length ? "" : "Du har ingen venner her ennå. Finn en spiller, eller send en invitasjon." }); },
@@ -334,10 +366,12 @@ class Component extends DCLogic {
   addFriend(u) { var self = this; api("/friends", { method: "POST", body: { id: u.id } }).then(function () { self.setState({ findMsg: u.name + " er lagt til som venn." }); }, function (e) { self.setState({ findMsg: e.message }); }); }
   startWith(u) {
     var self = this;
+    if (this.ownOffline()) return;
     api("/games", { method: "POST", body: { to: u.id, layout: this.state.lay } }).then(function (d) { self.openOnline(d.game.id); }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
   }
   random() {
     var self = this;
+    if (this.ownOffline()) return;
     if (this.needAccount("random")) return;
     this.setState({ ngMsg: "Leter etter en motspiller …" });
     api("/games", { method: "POST", body: { random: true, layout: this.state.lay } }).then(function (d) {
@@ -347,6 +381,7 @@ class Component extends DCLogic {
   }
   invite() {
     var self = this;
+    if (this.ownOffline()) return;
     if (this.needAccount("invite")) return;
     api("/games", { method: "POST", body: { invite: true, layout: this.state.lay } }).then(function (d) {
       var c = d.game.code, link = location.origin + location.pathname + "?join=" + c;
@@ -616,6 +651,51 @@ class Component extends DCLogic {
     }
     this.setState({ submitted: true });
   }
+  // The board editor. Tiles sit on half steps of a 7 × 6 grid, five layers deep; a tile above the
+  // bottom layer must rest on one below, and one with a tile on it cannot be taken away.
+  openEditor(id) {
+    var L = id && LAYOUTS.filter(function (x) { return x.id === id; })[0], cells = [];
+    if (L) layoutOf(L.id).pos.forEach(function (p) { cells.push({ c: p.c, r: p.r, l: p.l }); });
+    var n = LAYOUTS.filter(function (x) { return x.grp === "own"; }).length + 1;
+    this.setState({ phase: "editor", ed: { id: L ? L.id : null, name: L ? L.name : "Mitt brett " + n, cells: cells, layer: 0, hist: [], msg: "", del: false } });
+  }
+  edSet(ed, msg) { this.setState({ ed: Object.assign({}, this.state.ed, ed, { msg: msg || "" }) }); }
+  edTap(fx, fy) {
+    var ed = this.state.ed, l = ed.layer, x = fx * ED_W, y = fy * ED_H;
+    var lx = x - ED_X + l * 4, ly = y - ED_Y + l * 7;
+    var hit = ed.cells.filter(function (p) { return p.l === l && lx >= p.c * 49 && lx <= p.c * 49 + 46 && ly >= p.r * 60 && ly <= p.r * 60 + 56; })[0];
+    if (hit) {
+      if (ed.cells.some(function (q) { return q.l === l + 1 && Math.abs(q.c - hit.c) < 1 && Math.abs(q.r - hit.r) < 1; })) { this.edSet({}, "Det ligger en brikke oppå denne. Ta bort den først."); return; }
+      this.edSet({ cells: ed.cells.filter(function (p) { return p !== hit; }), hist: ed.hist.concat([ed.cells]) });
+      return;
+    }
+    var c = Math.round((lx - 23) / 49 * 2) / 2, r = Math.round((ly - 28) / 60 * 2) / 2;
+    if (c < 0 || c > ED_C || r < 0 || r > ED_R) return;
+    if (ed.cells.length >= OWN_MAX) { this.edSet({}, "Brettet har " + OWN_MAX + " brikker, det er taket. Ta bort en for å legge en annen."); return; }
+    if (ed.cells.some(function (q) { return q.l === l && Math.abs(q.c - c) < 1 && Math.abs(q.r - r) < 1; })) { this.edSet({}, "Det er ikke plass her. Brikker i samme lag kan ikke ligge over hverandre."); return; }
+    if (l > 0 && !ed.cells.some(function (q) { return q.l === l - 1 && Math.abs(q.c - c) < 1 && Math.abs(q.r - r) < 1; })) { this.edSet({}, "En brikke i lag " + (l + 1) + " må ligge oppå en brikke i lag " + l + "."); return; }
+    this.edSet({ cells: ed.cells.concat([{ c: c, r: r, l: l }]), hist: ed.hist.concat([ed.cells]) });
+  }
+  edSave(play) {
+    var ed = this.state.ed, name = (ed.name || "").trim() || "Mitt brett";
+    if (ed.cells.length < OWN_MIN) { this.edSet({}, "Brettet trenger minst " + OWN_MIN + " brikker. Det har " + ed.cells.length + "."); return; }
+    var o = { id: ed.id || "egen" + Date.now().toString(36), name: name, cells: cellsOf(ed.cells), start: openAtStart(ed.cells) };
+    var i = LAYOUTS.findIndex(function (L) { return L.id === o.id; });
+    if (i >= 0) LAYOUTS[i] = ownLayout(o); else LAYOUTS.push(ownLayout(o));
+    delete BUILT[o.id]; ownSave();
+    lsSet("ordspill/klassiker/brett/v1", o.id);
+    this.setState(Object.assign(this.fresh(o.id), { phase: "home", ed: null, homeMsg: "«" + name + "» er lagret under Egne brett." }));
+    if (play) { if (this.state.pick === "cpu") this.start("duel", "cpu"); else if (this.state.pick === "local") this.start("duel", "local"); else this.start("solo"); }
+  }
+  edDelete() {
+    var ed = this.state.ed;
+    if (!ed.del) { this.edSet({ del: true }, "Trykk «Slett brettet» en gang til for å slette det."); return; }
+    var i = LAYOUTS.findIndex(function (L) { return L.id === ed.id; });
+    if (i >= 0) LAYOUTS.splice(i, 1);
+    delete BUILT[ed.id]; ownSave();
+    var id = LAYOUTS[0].id; lsSet("ordspill/klassiker/brett/v1", id);
+    this.setState(Object.assign(this.fresh(id), { phase: "home", ed: null, homeMsg: "«" + ed.name + "» er slettet." }));
+  }
   goHome() { this.timers.forEach(clearTimeout); this.timers = []; this.setState({ phase: "home", confirm: null, busy: false, online: null, ngMsg: "" }); this.refreshGames(); }
   // A sideways swipe moves to the next or previous of all twelve boards: in a game only before the first move,
   // on the new-game screen any time.
@@ -635,7 +715,7 @@ class Component extends DCLogic {
     clearTimeout(this.slideT);
     this.slideT = setTimeout(function () { self.setState({ slide: null }); }, 400);
   }
-  dots() { var st = this.state; return LAYOUTS.map(function (L) { return { cls: "dot" + (L.id === st.lay ? " on" : "") + (L.grp === "grow" ? " grow" : "") }; }); }
+  dots() { var st = this.state; return LAYOUTS.map(function (L) { return { cls: "dot" + (L.id === st.lay ? " on" : "") + (L.grp === "grow" ? " grow" : L.grp === "own" ? " own" : "") }; }); }
   boardChips(lockedFn, confirm) {
     var self = this, st = this.state, S = this.S();
     var go = function (id, name) {
@@ -644,7 +724,7 @@ class Component extends DCLogic {
       if (confirm) self.switchTo(id); else { lsSet("ordspill/klassiker/brett/v1", id); self.setState(Object.assign(self.fresh(id), { phase: self.state.phase, msg: self.state.msg })); }
     };
     return {
-      groups: GROUPS.map(function (G) {
+      groups: GROUPS.filter(function (G) { return LAYOUTS.some(function (L) { return L.grp === G.id; }); }).map(function (G) {
         var on = G.id === S.L.grp, first = LAYOUTS.filter(function (L) { return L.grp === G.id; })[0];
         return { name: G.name, say: G.say, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { if (!on) go(first.id, G.name); } };
       }),
@@ -720,6 +800,9 @@ class Component extends DCLogic {
         prev: function () { self.cycleLay(-1, false); }, next: function () { self.cycleLay(1, false); }
       };
       v.swipe = function (dir) { self.cycleLay(dir, false); };
+      v.isOwn = SP.L.grp === "own";
+      v.makeBoard = function () { self.openEditor(null); };
+      v.editBoard = function () { self.openEditor(SP.L.id); };
       v.goFriends = function () { self.openFriends(); };
       v.goInvite = function () { self.invite(); };
       v.goRandom = function () { self.random(); };
@@ -730,6 +813,28 @@ class Component extends DCLogic {
       v.goCpu = function () { self.start("duel", "cpu"); };
       v.goLocal = function () { self.start("duel", "local"); };
       v.goSolo = function () { self.start("solo"); };
+      return v;
+    }
+    if (st.phase === "editor") {
+      var ed = st.ed, n = ed.cells.length, sp = bagSplit(n), top = ed.cells.reduce(function (m, p) { return Math.max(m, p.l); }, -1);
+      v.ed = {
+        name: ed.name, n: n, max: OWN_MAX, msg: ed.msg, isNew: !ed.id, del: ed.del,
+        count: n + " av " + OWN_MAX + " brikker" + (n ? " · " + (top + 1) + " lag · " + openAtStart(ed.cells) + " åpne i starten" : ""),
+        mix: n ? sp.v + " vokaler, " + sp.c + " konsonanter" + (sp.j ? " og " + sp.j + (sp.j === 1 ? " joker" : " jokere") : "") + " – 40 % vokaler, som i spillet ellers." : "Trykk på flaten for å legge brikker. Trykk på en brikke for å ta den bort.",
+        layers: [0, 1, 2, 3, 4].map(function (l) { var on = l === ed.layer; return { name: "Lag " + (l + 1), on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { self.edSet({ layer: l }); } }; }),
+        box: "position:absolute;left:0;top:0;width:" + ED_W + "px;height:" + ED_H + "px;transform:scale(" + SCALE + ");transform-origin:0 0",
+        tiles: ed.cells.slice().sort(function (a, b) { return (a.l * 1000 + a.r * 20 + a.c) - (b.l * 1000 + b.r * 20 + b.c); }).map(function (p) {
+          return { cls: "mt l" + Math.min(p.l, 2) + (p.l > ed.layer ? " ed-up" : p.l === ed.layer ? " ed-cur" : ""), pos: "left:" + (ED_X + p.c * 49 - p.l * 4) + "px;top:" + (ED_Y + p.r * 60 - p.l * 7) + "px" };
+        }),
+        grid: "left:" + (ED_X + 23 - ed.layer * 4) + "px;top:" + (ED_Y + 28 - ed.layer * 7) + "px;width:" + (ED_C * 49 + 1) + "px;height:" + (ED_R * 60 + 1) + "px",
+        tap: function (fx, fy) { self.edTap(fx, fy); },
+        undo: ed.hist.length ? function () { self.edSet({ cells: ed.hist[ed.hist.length - 1], hist: ed.hist.slice(0, -1) }); } : null,
+        clear: n ? function () { self.edSet({ cells: [], hist: ed.hist.concat([ed.cells]) }); } : null,
+        save: function () { self.edSave(false); }, play: function () { self.edSave(true); },
+        remove: ed.id ? function () { self.edDelete(); } : null
+      };
+      v.edName = function (e) { self.state.ed.name = e.target.value; };
+      v.back = function () { self.setState({ phase: "home", ed: null }); };
       return v;
     }
     if (st.phase === "account") {
@@ -818,7 +923,7 @@ class Component extends DCLogic {
         v.stats = order.map(function (i) { return { k: nm[i] + (st.turn === i && (!online || st.online.status === "active") ? " · tur" : ""), v: sc[i], cls: st.turn === i ? "stat mine" : "stat" }; })
           .concat([{ k: "Åpne · igjen", v: nFree + " · " + v.left, cls: "stat" }]);
       } else {
-        v.stats = [{ k: "Poeng", v: st.score, cls: "stat mine" }, { k: "Igjen av 100", v: v.left, cls: "stat" }, { k: "Åpne nå", v: nFree, cls: "stat" }];
+        v.stats = [{ k: "Poeng", v: st.score, cls: "stat mine" }, { k: "Igjen av " + this.S().pos.length, v: v.left, cls: "stat" }, { k: "Åpne nå", v: nFree, cls: "stat" }];
       }
       if (online) {
         v.onlineBar = { board: "Brett: " + S.L.name + (st.online.status === "waiting" ? " · venter på motspiller" : ""), resign: function () { self.resign(); }, canResign: st.online.status === "active" };
