@@ -22,7 +22,11 @@ var App = (function () {
     '<div class="title"><span class="t1">' + esc(v.kicker) + '</span><span class="t2">' + esc(v.lsub) + '</span></div>' +
     '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>Hint −5</button>' +
   '</div>' +
-  (v.groups ? chipRows(v) : '') +
+  (v.boardBar ? '<div class="boardbar">' +
+    (v.boardBar.can ? '<button type="button" class="bbar" aria-label="Forrige brett"' + on(v.boardBar.prev) + '>' + IC.back + '</button>' : '<span class="bbar-gap"></span>') +
+    '<span class="bbname"><b>' + esc(v.boardBar.name) + '</b><span>' + esc(v.boardBar.group) + ' · ' + esc(v.boardBar.n) + (v.boardBar.can ? ' · sveip brettet' : '') + '</span></span>' +
+    (v.boardBar.can ? '<button type="button" class="bbar next" aria-label="Neste brett"' + on(v.boardBar.next) + '>' + IC.back + '</button>' : '<span class="bbar-gap"></span>') +
+  '</div>' : '') +
   (v.onlineBar ? '<div class="onlinebar"><span>' + esc(v.onlineBar.board) + '</span>' + (v.onlineBar.canResign ? '<button type="button" class="pill small"' + on(v.onlineBar.resign) + '>Gi opp</button>' : '') + '</div>' : '') +
   '<div class="stats">' +
     each(v.stats, function (x) { return '<div class="' + x.cls + '"><span class="k">' + esc(x.k) + '</span><span class="v">' + esc(x.v) + '</span></div>'; }) +
@@ -152,7 +156,7 @@ var App = (function () {
           '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
         '</div>' +
         '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +
-        chipRows(v) + '</div>' +
+        '</div>' +
       '<div class="group">' +
         opt(IC.person, "Venn", "Velg blant vennene dine", v.goFriends) +
         opt(IC.share, "Kontakt", "Send en invitasjon med lenke og kode", v.goInvite) +
@@ -214,7 +218,7 @@ var App = (function () {
       }) + '</div></div>';
   }
 
-  var lastPhase = null, lastLay = null, swipe = null, noClickUntil = 0;
+  var lastPhase = null, lastLay = null, swipe = null, noClickUntil = 0, pending = false;
   function patch(html) {
     var t = document.createElement("template"); t.innerHTML = html;
     t.content.querySelectorAll("[data-region]").forEach(function (r) {
@@ -228,6 +232,9 @@ var App = (function () {
   }
   function render() {
     queued = false;
+    // Never replace the screen while a finger is down: the touch would lose its element and the swipe its end.
+    if (swipe && swipe.touch) { pending = true; return; }
+    pending = false;
     var keep = {}, act = document.activeElement, focusId = act && act.id && act.tagName === "INPUT" ? act.id : null, focusSel = focusId ? [act.selectionStart, act.selectionEnd] : null;
     root.querySelectorAll("[data-keep]").forEach(function (el) { keep[el.getAttribute("data-keep")] = el.scrollLeft; });
     H = [];
@@ -266,18 +273,34 @@ var App = (function () {
     root = document.getElementById("app");
     // A sideways swipe on an element marked data-swipe calls that handler with +1 (finger to the left) or -1.
     root.addEventListener("pointerdown", function (e) {
+      if (e.pointerType === "touch" && swipe && swipe.touch) return;
       var el = e.target.closest("[data-swipe]");
       swipe = el ? { x: e.clientX, y: e.clientY, k: el.getAttribute("data-swipe") } : null;
     });
     window.addEventListener("pointerup", function (e) {
-      if (!swipe) return;
+      if (!swipe || swipe.touch) return;
       var dx = e.clientX - swipe.x, dy = e.clientY - swipe.y, k = swipe.k; swipe = null;
       if (Math.abs(dx) < 45 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
       noClickUntil = Date.now() + 300;
       var fn = App.lastVals && App.lastVals[k];
       if (typeof fn === "function") fn(dx < 0 ? 1 : -1);
     });
-    window.addEventListener("pointercancel", function () { swipe = null; });
+    window.addEventListener("pointercancel", function () { if (swipe && swipe.touch) return; swipe = null; });
+    // iPhone: read the same gesture from touch events, which arrive even when the browser takes the pointer.
+    root.addEventListener("touchcancel", function () { swipe = null; if (pending) App.schedule(); }, { passive: true });
+    root.addEventListener("touchstart", function (e) {
+      var el = e.target.closest("[data-swipe]"), t = e.touches[0];
+      if (el && t && e.touches.length === 1) swipe = { x: t.clientX, y: t.clientY, k: el.getAttribute("data-swipe"), touch: true };
+    }, { passive: true });
+    root.addEventListener("touchend", function (e) {
+      if (!swipe || !swipe.touch) return;
+      var t = e.changedTouches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y, k = swipe.k; swipe = null;
+      if (pending) App.schedule();
+      if (Math.abs(dx) < 45 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+      noClickUntil = Date.now() + 300;
+      var fn = App.lastVals && App.lastVals[k];
+      if (typeof fn === "function") fn(dx < 0 ? 1 : -1);
+    }, { passive: true });
     root.addEventListener("click", function (e) {
       if (Date.now() < noClickUntil) { e.preventDefault(); return; }
       var el = e.target.closest("[data-h]");

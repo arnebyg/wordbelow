@@ -768,7 +768,9 @@ class Component extends DCLogic {
     }
     if (st.phase === "play") {
       var live = this.live(), nFree = 0;
-      if (!online) { var bc2 = this.boardChips(function () { return locked; }, true); v.groups = bc2.groups; v.chips = bc2.chips; }
+      var nL = LAYOUTS.length, iL = 0; LAYOUTS.forEach(function (L, k) { if (L.id === st.lay) iL = k; });
+      v.boardBar = { name: S.L.name, group: GROUPS.filter(function (G) { return G.id === S.L.grp; })[0].name, n: (iL + 1) + " av " + nL,
+        can: !online && !this.started() && !locked, prev: function () { self.cycleLay(-1, true); }, next: function () { self.cycleLay(1, true); } };
       v.canSwipe = !online && !this.started();
       v.swipe = function (dir) { self.cycleLay(dir, true); };
       v.dots = v.canSwipe ? this.dots() : null;

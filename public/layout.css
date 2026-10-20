@@ -185,3 +185,11 @@ html.light .preview{background:rgba(60,45,20,.08)}
 html.light .pvar{background:rgba(60,45,20,.08)}
 html.light .pvs{color:#4E5C58}html.light .pvg{color:#5D6B67}
 html.light .bdots .dot{background:rgba(60,45,20,.25)}html.light .bdots .dot.grow{background:rgba(47,127,160,.35)}html.light .bdots .dot.on{background:#C68E2B}
+.boardbar{display:flex;align-items:center;justify-content:space-between;height:48px;flex:none;border-radius:14px;background:rgba(0,0,0,.2)}
+.bbar,.bbar-gap{width:44px;height:44px;flex:none}
+.bbar{border:0;padding:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.bbar.next svg{transform:scaleX(-1)}
+.bbname{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0}
+.bbname b{font-size:17px}
+.bbname span{font-size:12px;color:#A9C2BB}
+html.light .boardbar{background:rgba(60,45,20,.08)}html.light .bbname span{color:#5D6B67}
