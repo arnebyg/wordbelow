@@ -185,7 +185,7 @@ function openSay(L) { return L.grp === "grow" ? "starter med " + L.start + " åp
 function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
-// Screens: "home" (your games), "newgame", "account" (pick a username), "find" (search players), "friends",
+// Screens: "home" (your games and a new game, one page), "account" (pick a username), "find" (search players), "friends",
 // "settings", "stats", "play" and "done".
 // Modes: "solo" (one player, leaderboard per board) and "duel" (two players take turns on the same board).
 // In a duel the opponent is the computer ("cpu", three levels), a second player on the same phone ("local"),
@@ -194,7 +194,7 @@ function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch
 // The active player's score, pocket and words live in st.score, st.pocket and st.words, as in solo;
 // st.P holds both players and is brought up to date at the end of every turn.
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
-var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1";
+var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1";
 var API = "/api";
 var BG_KEY = "ordspill/bakgrunn/v1";
 var BGS = [{ id: "filt", name: "Filtgrønn (standard)", hex: "#1E6550" }, { id: "natt", name: "Nattblå", hex: "#142A52" }, { id: "fjord", name: "Fjordblå", hex: "#1D5470" },
@@ -227,7 +227,7 @@ class Component extends DCLogic {
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
       account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
-      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "" };
+      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu" };
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
   fresh(id, msg, seed) {
@@ -295,7 +295,7 @@ class Component extends DCLogic {
     api("/register", { method: "POST", body: { name: name } }).then(function (d) {
       lsSet(ACCOUNT_KEY, d);
       var after = self.state.after;
-      self.setState({ account: d, acctMsg: "", after: null, phase: "newgame" });
+      self.setState({ account: d, acctMsg: "", after: null, phase: "home" });
       if (after === "join") self.joinCode(); else if (after === "invite") self.invite(); else if (after === "random") self.random();
       else if (after === "find") self.setState({ phase: "find" }); else if (after === "friends") self.openFriends();
       self.refreshGames();
@@ -334,7 +334,7 @@ class Component extends DCLogic {
   addFriend(u) { var self = this; api("/friends", { method: "POST", body: { id: u.id } }).then(function () { self.setState({ findMsg: u.name + " er lagt til som venn." }); }, function (e) { self.setState({ findMsg: e.message }); }); }
   startWith(u) {
     var self = this;
-    api("/games", { method: "POST", body: { to: u.id, layout: this.state.lay } }).then(function (d) { self.openOnline(d.game.id); }, function (e) { self.setState({ phase: "newgame", ngMsg: e.message }); });
+    api("/games", { method: "POST", body: { to: u.id, layout: this.state.lay } }).then(function (d) { self.openOnline(d.game.id); }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
   }
   random() {
     var self = this;
@@ -342,7 +342,7 @@ class Component extends DCLogic {
     this.setState({ ngMsg: "Leter etter en motspiller …" });
     api("/games", { method: "POST", body: { random: true, layout: this.state.lay } }).then(function (d) {
       if (d.matched) self.openOnline(d.game.id);
-      else { self.setState({ phase: "home", ngMsg: "", homeMsg: "Du står i kø for en tilfeldig motspiller. Spillet starter når noen andre trykker «Tilfeldig motspiller»." }); self.refreshGames(); }
+      else { self.setState({ phase: "home", ngMsg: "", homeMsg: "Du står i kø for en tilfeldig motspiller. Spillet starter når noen andre også velger Tilfeldig." }); self.refreshGames(); }
     }, function (e) { self.setState({ ngMsg: e.message }); });
   }
   invite() {
@@ -350,7 +350,7 @@ class Component extends DCLogic {
     if (this.needAccount("invite")) return;
     api("/games", { method: "POST", body: { invite: true, layout: this.state.lay } }).then(function (d) {
       var c = d.game.code, link = location.origin + location.pathname + "?join=" + c;
-      var text = "Bli med på WordBelow mot " + self.state.account.name + ". Åpne " + link + " – eller trykk Nytt spill → Har du en kode? i appen og skriv " + c + ".";
+      var text = "Bli med på WordBelow mot " + self.state.account.name + ". Åpne " + link + " – eller velg Kode på startsiden i appen og skriv " + c + ".";
       self.setState({ phase: "home", homeMsg: "Invitasjonen har koden " + c + ". Den ligger under «Venter på motspiller» til noen blir med." });
       self.refreshGames();
       if (navigator.share) navigator.share({ title: "WordBelow", text: text }).catch(function () {});
@@ -359,7 +359,7 @@ class Component extends DCLogic {
   }
   shareCode(g) {
     var link = location.origin + location.pathname + "?join=" + g.code;
-    var text = "Bli med på WordBelow. Åpne " + link + " – eller trykk Nytt spill → Har du en kode? i appen og skriv " + g.code + ".";
+    var text = "Bli med på WordBelow. Åpne " + link + " – eller velg Kode på startsiden i appen og skriv " + g.code + ".";
     if (navigator.share) navigator.share({ title: "WordBelow", text: text }).catch(function () {});
     else if (navigator.clipboard) navigator.clipboard.writeText(text);
   }
@@ -368,7 +368,7 @@ class Component extends DCLogic {
     if (!c) return;
     if (this.needAccount("join")) return;
     api("/join", { method: "POST", body: { code: c } }).then(function (d) { self.setState({ codeIn: "" }); self.openOnline(d.game.id); },
-      function (e) { self.setState({ phase: "newgame", ngMsg: e.message }); });
+      function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
   }
   cancelInvite(g) { var self = this; api("/games/" + g.id + "/cancel", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: e.message }); }); }
   // An online game: the board comes from its layout and seed, the rest from the state the phones store on the server.
@@ -678,29 +678,34 @@ class Component extends DCLogic {
         var who = g.opp ? g.opp.name : g.kind === "invite" ? "Invitasjon · kode " + g.code : "Tilfeldig motspiller";
         var sc = g.scores[g.you] + "–" + g.scores[1 - g.you], L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0];
         var line = g.status === "waiting" ? (g.kind === "invite" ? "Del koden med den du vil spille mot" : "Venter på at noen andre søker") : g.status === "done" ? (g.result && g.result.res ? (function () { var a = g.result.res[g.you].score, b = g.result.res[1 - g.you].score; return (g.result.resigned === g.you ? "Du ga opp · " : g.result.resigned === 1 - g.you ? "Motspilleren ga opp · " : "") + (a > b ? "Du vant " : a < b ? "Du tapte " : "Uavgjort ") + a + "–" + b; })() : "Ferdig") : (L ? L.name : g.layout) + " · " + sc + (g.last ? " · " + g.last : "");
-        return { id: g.id, initial: (who[0] || "?").toUpperCase(), who: who, line: line, when: ago(g.updated), cls: "game" + (g.myTurn ? " mine" : ""),
+        return { id: g.id, initial: (who[0] || "?").toUpperCase(), who: who, line: line, when: ago(g.updated), cls: "game" + (g.myTurn ? " mine" : ""), mine: !!g.myTurn,
           open: function () { if (g.status === "waiting" && g.kind === "invite") self.shareCode(g); else self.openOnline(g.id); },
           canCancel: g.status === "waiting", cancel: function () { self.cancelInvite(g); } };
       };
       v.sections = [
-        { title: "Din tur", rows: gs.filter(function (g) { return g.myTurn; }).map(row) },
-        { title: "Deres tur", rows: gs.filter(function (g) { return g.status === "active" && !g.myTurn; }).map(row) },
-        { title: "Venter på motspiller", rows: gs.filter(function (g) { return g.status === "waiting"; }).map(row) },
-        { title: "Ferdige", rows: gs.filter(function (g) { return g.status === "done"; }).slice(0, 10).map(row) }
+        { title: "Din tur", badge: "Din tur", rows: gs.filter(function (g) { return g.myTurn; }).map(row) },
+        { title: "Deres tur", badge: "Deres tur", rows: gs.filter(function (g) { return g.status === "active" && !g.myTurn; }).map(row) },
+        { title: "Venter på motspiller", badge: "Venter", rows: gs.filter(function (g) { return g.status === "waiting"; }).map(row) },
+        { title: "Ferdige", badge: "Ferdig", rows: gs.filter(function (g) { return g.status === "done"; }).slice(0, 10).map(row) }
       ].filter(function (s) { return s.rows.length; });
-      v.noGames = st.account && st.games && !gs.length;
+      var mt = gs.filter(function (g) { return g.myTurn; }).length;
+      v.myTurns = mt ? (mt === 1 ? "1 venter på deg" : mt + " venter på deg") : "";
       v.noAccount = !st.account;
       v.homeMsg = st.homeMsg || st.gamesMsg;
       v.inviteCard = st.inviteCard;
       v.closeInviteCard = function () { lsSet(INVITE_CARD_KEY, true); self.setState({ inviteCard: false }); };
       v.inviteNow = function () { self.invite(); };
-      v.newGame = function () { self.setState({ phase: "newgame", ngMsg: "", homeMsg: "" }); };
-      v.openSettings = function () { self.setState({ phase: "settings" }); };
-      v.openStats = function () { self.setState({ phase: "stats" }); };
-      v.makeAccount = function () { self.setState({ phase: "account", after: null, acctMsg: "" }); };
-      return v;
-    }
-    if (st.phase === "newgame") {
+      var PICKS = [
+        { id: "cpu", name: "Maskinen", go: "Spill mot maskinen", run: function () { self.start("duel", "cpu"); } },
+        { id: "friend", name: "Venn", go: "Velg venn", say: "Velg blant vennene dine, eller send en invitasjon med kode. Dere spiller på brettet du velger her.", run: function () { self.openFriends(); } },
+        { id: "random", name: "Tilfeldig", go: "Finn en motspiller", say: "Står noen alt og venter, spiller dere på brettet den personen valgte. Ellers blir det ditt.", run: function () { self.random(); } },
+        { id: "code", name: "Kode", go: "Bli med", say: "Skriv koden du har fått. Spillet bruker brettet den som inviterte valgte.", run: function () { self.joinCode(); } },
+        { id: "local", name: "Én telefon", go: "Start på én telefon", say: "Send telefonen over bordet etter hvert trekk.", run: function () { self.start("duel", "local"); } },
+        { id: "solo", name: "Alene", go: "Spill alene", say: "Så mange poeng du kan, toppliste per brett.", run: function () { self.start("solo"); } }
+      ];
+      var P = PICKS.filter(function (p) { return p.id === st.pick; })[0] || PICKS[0];
+      v.pick = P.id; v.pickSay = P.id === "cpu" ? null : P.say; v.goLabel = P.go; v.go = P.run;
+      v.picks = PICKS.map(function (p) { var on = p.id === P.id; return { name: p.name, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { lsSet(PICK_KEY, p.id); self.setState({ pick: p.id, ngMsg: "" }); } }; });
       var bc = this.boardChips(null, false);
       v.groups = bc.groups; v.chips = bc.chips;
       v.ngMsg = st.ngMsg;
@@ -731,20 +736,20 @@ class Component extends DCLogic {
       v.acctName = st.acctName; v.acctMsg = st.acctMsg;
       v.onAcct = function (e) { self.state.acctName = e.target.value; };
       v.register = function () { self.register(); };
-      v.back = function () { self.setState({ phase: "newgame" }); };
+      v.back = function () { self.setState({ phase: "home" }); };
       return v;
     }
     if (st.phase === "find") {
       v.search = st.search; v.findMsg = st.findMsg;
       v.onSearch = function (e) { self.doSearch(e.target.value); };
       v.found = st.found.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), play: function () { self.startWith(u); }, add: function () { self.addFriend(u); } }; });
-      v.back = function () { self.setState({ phase: "newgame" }); };
+      v.back = function () { self.setState({ phase: "home" }); };
       return v;
     }
     if (st.phase === "friends") {
       v.friendsMsg = st.friendsMsg;
       v.friendRows = st.friends.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), play: function () { self.startWith(u); } }; });
-      v.back = function () { self.setState({ phase: "newgame" }); };
+      v.back = function () { self.setState({ phase: "home" }); };
       return v;
     }
     if (st.phase === "settings") {

@@ -99,6 +99,7 @@ var App = (function () {
   }
 
   var IC = {
+    play: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.5v13l10.5-6.5z" fill="currentColor"></path></svg>',
     gear: '<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>',
     stats: '<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M12 20V5M19 20v-8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path></svg>',
     plus: '<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path></svg>',
@@ -125,55 +126,45 @@ var App = (function () {
       each(v.chips, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + (c.asym ? '<span class="asym">skjev</span>' : '') + '</button>'; }) + '</div>';
   }
   function homeView(v) {
+    var games = each(v.sections, function (sec) {
+      return each(sec.rows, function (r) {
+        return '<div class="gcard' + (r.mine ? ' mine' : '') + '"><button type="button" class="gopen"' + on(r.open) + '><span class="gtop"><span class="av">' + esc(r.initial) + '</span><span class="badge' + (r.mine ? ' on' : '') + '">' + esc(sec.badge) + '</span></span>' +
+          '<span class="gn">' + esc(r.who) + '</span><span class="gl">' + esc(r.line) + '</span><span class="gw">' + esc(r.when) + '</span></button>' +
+          (r.canCancel ? '<button type="button" class="gx"' + on(r.cancel) + '>Trekk</button>' : '') + '</div>';
+      });
+    });
+    var extra = '';
+    if (v.pick === "cpu") extra = '<div class="chips" role="group" aria-label="Nivå"><span class="lbl inl">Nivå</span>' + each(v.diffs, function (d) { return '<button type="button" class="' + d.cls + '" aria-pressed="' + d.on + '"' + on(d.pick) + '>' + esc(d.name) + '</button>'; }) + '</div><p class="fine">' + esc(v.diffSay) + '</p>';
+    else if (v.pick === "code") extra = '<div class="coderow"><input id="code" class="inp" type="text" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="ABC123" aria-label="Kode" value="' + esc(v.codeIn) + '" data-input="onCode"></div><p class="fine">' + esc(v.pickSay) + '</p>';
+    else if (v.pick === "friend") extra = '<p class="fine">' + esc(v.pickSay) + '</p><div class="chips"><button type="button" class="chip"' + on(v.goInvite) + '>' + IC.share + 'Inviter med kode</button><button type="button" class="chip"' + on(v.goFind) + '>' + IC.search + 'Finn spiller</button></div>';
+    else extra = '<p class="fine">' + esc(v.pickSay) + '</p>';
     return '<div class="screen home">' +
       '<div class="hometop"><span class="logo" role="img" aria-label="WordBelow"><span class="lw">word</span><span class="lb">below</span></span><span class="icons">' +
-        '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button>' +
         '<button type="button" class="ib" aria-label="Statistikk"' + on(v.openStats) + '>' + IC.stats + '</button>' +
-        '<button type="button" class="ib" aria-label="Nytt spill"' + on(v.newGame) + '>' + IC.plus + '</button></span></div>' +
+        '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button></span></div>' +
       '<div class="scroll">' +
       (v.homeMsg ? '<div class="note">' + esc(v.homeMsg) + '</div>' : '') +
       (v.noAccount ? '<div class="card acc"><span class="ct">Spill mot andre</span><span class="cs">Velg et brukernavn, så kan venner finne deg og dere kan spille mot hverandre.</span><button type="button" class="pill solid"' + on(v.makeAccount) + '>Velg brukernavn</button></div>' : '') +
       (!v.noAccount && v.inviteCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closeInviteCard) + '>' + IC.close + '</button><span class="ct">WordBelow er morsommere med venner!</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.inviteNow) + '>Inviter</button><button type="button" class="pill"' + on(v.closeInviteCard) + '>Lukk</button></div></div>' : '') +
-      (v.noGames ? '<div class="empty">Ingen spill mot andre ennå. Trykk «Nytt spill».</div>' : '') +
-      each(v.sections, function (sec) {
-        return '<h2 class="sec">' + esc(sec.title) + '</h2>' + each(sec.rows, function (r) {
-          return '<div class="gamerow"><button type="button" class="' + r.cls + '"' + on(r.open) + '><span class="av">' + esc(r.initial) + '</span><span class="gi"><span class="gn">' + esc(r.who) + '</span><span class="gl">' + esc(r.line) + '</span></span><span class="gw">' + esc(r.when) + '</span></button>' +
-            (r.canCancel ? '<button type="button" class="pill small"' + on(r.cancel) + '>Trekk</button>' : '') + '</div>';
-        });
-      }) +
+      (games ? '<h2 class="sec">Dine spill' + (v.myTurns ? '<span class="secr">' + esc(v.myTurns) + '</span>' : '') + '</h2><div class="grow">' + games + '</div>' : '') +
+      '<div class="ngpanel"><h2 class="sec">Nytt spill</h2>' +
+        (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
+        '<div class="chips" role="group" aria-label="Motspiller">' + each(v.picks, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + '</button>'; }) + '</div>' +
+        extra +
+        (v.pick !== "code" ? '<div class="boardpick">' +
+          '<div class="preview' + (v.preview.slide ? ' slide-' + v.preview.slide : '') + '" data-swipe="swipe">' +
+            '<button type="button" class="pvar" aria-label="Forrige brett"' + on(v.preview.prev) + '>' + IC.back + '</button>' +
+            '<div class="pvboard" aria-hidden="true"><div style="' + esc(v.preview.box) + '">' + each(v.preview.tiles, function (t) { return '<span class="' + t.cls + '" style="' + esc(t.pos) + '"></span>'; }) + '</div></div>' +
+            '<div class="pvinfo"><span class="pvg">' + esc(v.preview.group) + '</span><span class="pvn">' + esc(v.preview.name) + '</span><span class="pvs">' + esc(v.preview.sub) + '</span><span class="pvs">' + esc(v.preview.open) + '</span></div>' +
+            '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
+          '</div>' +
+          '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +
+        '</div>' : '') +
+      '</div>' +
       '<span class="foot">Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
       '</div>' +
-      '<div class="homebottom"><button type="button" class="bigbtn"' + on(v.newGame) + '>' + IC.plus + '<span>Nytt spill</span></button></div>' +
+      '<div class="homebottom"><button type="button" class="bigbtn"' + on(v.go) + '>' + IC.play + '<span>' + esc(v.goLabel) + '</span></button></div>' +
       '</div>';
-  }
-  function newGameView(v) {
-    return '<div class="screen sub">' + head("Nytt spill", v.goHome) + '<div class="scroll">' +
-      (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
-      '<div class="boardpick"><span class="lbl">Brett for nye spill · sveip for å bla</span>' +
-        '<div class="preview' + (v.preview.slide ? ' slide-' + v.preview.slide : '') + '" data-swipe="swipe">' +
-          '<button type="button" class="pvar" aria-label="Forrige brett"' + on(v.preview.prev) + '>' + IC.back + '</button>' +
-          '<div class="pvboard" aria-hidden="true"><div style="' + esc(v.preview.box) + '">' + each(v.preview.tiles, function (t) { return '<span class="' + t.cls + '" style="' + esc(t.pos) + '"></span>'; }) + '</div></div>' +
-          '<div class="pvinfo"><span class="pvg">' + esc(v.preview.group) + '</span><span class="pvn">' + esc(v.preview.name) + '</span><span class="pvs">' + esc(v.preview.sub) + '</span><span class="pvs">' + esc(v.preview.open) + '</span></div>' +
-          '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
-        '</div>' +
-        '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +
-        '</div>' +
-      '<div class="group">' +
-        opt(IC.person, "Venn", "Velg blant vennene dine", v.goFriends) +
-        opt(IC.share, "Kontakt", "Send en invitasjon med lenke og kode", v.goInvite) +
-        opt('<b>?</b>', "Tilfeldig motspiller", "Finn en motspiller automatisk", v.goRandom) +
-      '</div>' +
-      '<div class="group">' + opt(IC.search, "Finn spiller", "Søk etter brukernavn", v.goFind) + '</div>' +
-      '<div class="group codebox"><span class="tileic">' + IC.trophy + '</span><div class="ot"><span class="t">Har du en kode?</span><div class="coderow"><input id="code" class="inp" type="text" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="ABC123" value="' + esc(v.codeIn) + '" data-input="onCode"><button type="button" class="act green"' + on(v.goJoin) + '>Bli med</button></div></div></div>' +
-      '<h2 class="sec">Uten nett</h2>' +
-      '<div class="group">' +
-        '<div class="cpubox"><div class="opt cpu"><span class="tileic">' + IC.chip + '</span><span class="ot"><span class="t">Mot maskinen</span><span class="s">' + esc(v.diffSay) + '</span></span>' +
-          '<button type="button" class="act green go"' + on(v.goCpu) + '>Start</button></div>' +
-          '<div class="chips levels" role="group" aria-label="Nivå">' + each(v.diffs, function (d) { return '<button type="button" class="' + d.cls + '" aria-pressed="' + d.on + '"' + on(d.pick) + '>' + esc(d.name) + '</button>'; }) + '</div></div>' +
-        opt(IC.phone, "To spillere på én telefon", "Send telefonen over bordet etter hvert trekk", v.goLocal) +
-        opt('<b>1</b>', "Alene", "Så mange poeng du kan, toppliste per brett", v.goSolo) +
-      '</div>' +
-      '</div></div>';
   }
   function accountView(v) {
     return '<div class="screen sub">' + head("Velg brukernavn", v.back) + '<div class="scroll">' +
@@ -244,7 +235,7 @@ var App = (function () {
     root.querySelectorAll("[data-keep]").forEach(function (el) { keep[el.getAttribute("data-keep")] = el.scrollLeft; });
     H = [];
     var v = comp.renderVals();
-    var V = { home: homeView, newgame: newGameView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
+    var V = { home: homeView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
     var html = (V[v.phase] || homeView)(v);
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; return; }

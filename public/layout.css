@@ -199,3 +199,26 @@ html.light .bdots .dot{background:rgba(60,45,20,.25)}html.light .bdots .dot.grow
 html.light .boardbar{background:rgba(60,45,20,.08)}html.light .bbname span{color:#5D6B67}
 .radio .swatch{width:26px;height:26px;border-radius:8px;flex:none;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
 html.light .radio .swatch{box-shadow:inset 0 0 0 1.5px rgba(60,45,20,.3)}
+/* Home: your games as a row of cards, then a new game on the same page */
+.sec .secr{float:right;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none}
+.grow{display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;flex:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.grow::-webkit-scrollbar{display:none}
+.gcard{flex:none;width:150px;display:flex;flex-direction:column;border-radius:16px;background:rgba(0,0,0,.24);scroll-snap-align:start;overflow:hidden}
+.gcard.mine{background:rgba(242,196,107,.14);box-shadow:inset 0 0 0 2px rgba(242,196,107,.7)}
+.gopen{flex:1;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:12px;border:0;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer;min-width:0}
+.gopen .gtop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.gopen .gn{font-size:16px}
+.gopen .gw{align-self:auto;padding:0}
+.badge{padding:2px 8px;border-radius:9px;background:rgba(244,239,226,.14);font-size:12px;font-weight:800;white-space:nowrap}
+.badge.on{background:#F2C46B;color:#3B2405}
+.gx{height:34px;border:0;border-top:1px solid rgba(244,239,226,.12);background:transparent;color:inherit;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.ngpanel{display:flex;flex-direction:column;gap:10px;flex:none;border-radius:20px;background:rgba(0,0,0,.18);padding:14px 12px}
+.ngpanel p.fine{margin:0}
+.ngpanel .chip svg{width:16px;height:16px}
+.lbl.inl{align-self:center;margin-right:4px}
+html.light .gcard,html.light .ngpanel{background:rgba(60,45,20,.08)}
+html.light .gcard.mine{background:rgba(217,164,65,.22);box-shadow:inset 0 0 0 2px #C68E2B}
+html.light .badge{background:rgba(60,45,20,.1)}
+html.light .badge.on{background:#D9A441;color:#2B1A03}
+html.light .gx{border-top-color:rgba(60,45,20,.12)}
+.ngpanel .chips{flex-wrap:wrap;overflow:visible}
