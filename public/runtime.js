@@ -132,7 +132,6 @@ var App = (function () {
         '<button type="button" class="ib" aria-label="Nytt spill"' + on(v.newGame) + '>' + IC.plus + '</button></span></div>' +
       '<div class="scroll">' +
       (v.homeMsg ? '<div class="note">' + esc(v.homeMsg) + '</div>' : '') +
-      '<button type="button" class="bigbtn"' + on(v.newGame) + '>' + IC.plus + '<span>Nytt spill</span></button>' +
       (v.noAccount ? '<div class="card acc"><span class="ct">Spill mot andre</span><span class="cs">Velg et brukernavn, så kan venner finne deg og dere kan spille mot hverandre.</span><button type="button" class="pill solid"' + on(v.makeAccount) + '>Velg brukernavn</button></div>' : '') +
       (!v.noAccount && v.inviteCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closeInviteCard) + '>' + IC.close + '</button><span class="ct">WordBelow er morsommere med venner!</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.inviteNow) + '>Inviter</button><button type="button" class="pill"' + on(v.closeInviteCard) + '>Lukk</button></div></div>' : '') +
       (v.noGames ? '<div class="empty">Ingen spill mot andre ennå. Trykk «Nytt spill».</div>' : '') +
@@ -143,7 +142,9 @@ var App = (function () {
         });
       }) +
       '<span class="foot">Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
-      '</div></div>';
+      '</div>' +
+      '<div class="homebottom"><button type="button" class="bigbtn"' + on(v.newGame) + '>' + IC.plus + '<span>Nytt spill</span></button></div>' +
+      '</div>';
   }
   function newGameView(v) {
     return '<div class="screen sub">' + head("Nytt spill", v.goHome) + '<div class="scroll">' +
