@@ -126,7 +126,7 @@ var App = (function () {
   }
   function homeView(v) {
     return '<div class="screen home">' +
-      '<div class="hometop"><span class="logo">WordBelow</span><span class="icons">' +
+      '<div class="hometop"><span class="logo" role="img" aria-label="WordBelow"><span class="lw">word</span><span class="lb">below</span></span><span class="icons">' +
         '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button>' +
         '<button type="button" class="ib" aria-label="Statistikk"' + on(v.openStats) + '>' + IC.stats + '</button>' +
         '<button type="button" class="ib" aria-label="Nytt spill"' + on(v.newGame) + '>' + IC.plus + '</button></span></div>' +
