@@ -241,3 +241,9 @@ html.light .edgrid{background-image:radial-gradient(circle,rgba(60,45,20,.35) 2.
 html.light .edcount span{color:#5D6B67}
 html.light .edbtns .act{background:rgba(60,45,20,.1)}
 html.light .edbtns .act.green{background:#4FB58A}
+.segs{display:flex;padding:4px;border-radius:14px;background:rgba(0,0,0,.26);flex:none}
+.seg{flex:1;height:40px;border:0;border-radius:10px;background:transparent;color:#C6DCD5;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer}
+.seg.on{background:#F4EFE2;color:#1E6550;font-weight:800}
+html.light .segs{background:rgba(60,45,20,.1)}
+html.light .seg{color:#3F4A47}
+html.light .seg.on{background:#1E6550;color:#F4EFE2}

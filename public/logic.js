@@ -219,7 +219,7 @@ ownLoad();
 // The active player's score, pocket and words live in st.score, st.pocket and st.words, as in solo;
 // st.P holds both players and is brought up to date at the end of every turn.
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
-var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1";
+var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1";
 var API = "/api";
 var BG_KEY = "ordspill/bakgrunn/v1";
 var BGS = [{ id: "filt", name: "Filtgrønn (standard)", hex: "#1E6550" }, { id: "natt", name: "Nattblå", hex: "#142A52" }, { id: "fjord", name: "Fjordblå", hex: "#1D5470" },
@@ -252,7 +252,7 @@ class Component extends DCLogic {
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
       account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
-      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu" };
+      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" } };
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
   fresh(id, msg, seed) {
@@ -776,16 +776,19 @@ class Component extends DCLogic {
       v.closeInviteCard = function () { lsSet(INVITE_CARD_KEY, true); self.setState({ inviteCard: false }); };
       v.inviteNow = function () { self.invite(); };
       var PICKS = [
-        { id: "cpu", name: "Maskinen", go: "Spill mot maskinen", run: function () { self.start("duel", "cpu"); } },
-        { id: "friend", name: "Venn", go: "Velg venn", say: "Velg blant vennene dine, eller send en invitasjon med kode. Dere spiller på brettet du velger her.", run: function () { self.openFriends(); } },
-        { id: "random", name: "Tilfeldig", go: "Finn en motspiller", say: "Står noen alt og venter, spiller dere på brettet den personen valgte. Ellers blir det ditt.", run: function () { self.random(); } },
-        { id: "code", name: "Kode", go: "Bli med", say: "Skriv koden du har fått. Spillet bruker brettet den som inviterte valgte.", run: function () { self.joinCode(); } },
-        { id: "local", name: "Én telefon", go: "Start på én telefon", say: "Send telefonen over bordet etter hvert trekk.", run: function () { self.start("duel", "local"); } },
-        { id: "solo", name: "Alene", go: "Spill alene", say: "Så mange poeng du kan, toppliste per brett.", run: function () { self.start("solo"); } }
+        { id: "cpu", grp: "off", name: "Maskinen", go: "Spill mot maskinen", run: function () { self.start("duel", "cpu"); } },
+        { id: "friend", grp: "on", name: "Venn", go: "Velg venn", say: "Velg blant vennene dine, eller send en invitasjon med kode. Dere spiller på brettet du velger her.", run: function () { self.openFriends(); } },
+        { id: "random", grp: "on", name: "Tilfeldig", go: "Finn en motspiller", say: "Står noen alt og venter, spiller dere på brettet den personen valgte. Ellers blir det ditt.", run: function () { self.random(); } },
+        { id: "code", grp: "on", name: "Kode", go: "Bli med", say: "Skriv koden du har fått. Spillet bruker brettet den som inviterte valgte.", run: function () { self.joinCode(); } },
+        { id: "local", grp: "off", name: "Én telefon", go: "Start på én telefon", say: "Send telefonen over bordet etter hvert trekk.", run: function () { self.start("duel", "local"); } },
+        { id: "solo", grp: "off", name: "Alene", go: "Spill alene", say: "Så mange poeng du kan, toppliste per brett.", run: function () { self.start("solo"); } }
       ];
       var P = PICKS.filter(function (p) { return p.id === st.pick; })[0] || PICKS[0];
       v.pick = P.id; v.pickSay = P.id === "cpu" ? null : P.say; v.goLabel = P.go; v.go = P.run;
-      v.picks = PICKS.map(function (p) { var on = p.id === P.id; return { name: p.name, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { lsSet(PICK_KEY, p.id); self.setState({ pick: p.id, ngMsg: "" }); } }; });
+      // Two tabs as in proposal C, each remembering its last pick.
+      var choose = function (id) { var by = Object.assign({}, st.pickBy); PICKS.forEach(function (p) { if (p.id === id) by[p.grp] = id; }); lsSet(PICK_KEY, id); lsSet(PICK_BY_KEY, by); self.setState({ pick: id, pickBy: by, ngMsg: "" }); };
+      v.tabs = [{ id: "on", name: "Mot andre" }, { id: "off", name: "Uten nett" }].map(function (T) { var on = T.id === P.grp; return { name: T.name, on: on ? "true" : "false", cls: "seg" + (on ? " on" : ""), pick: function () { if (!on) choose(st.pickBy[T.id] || (T.id === "on" ? "friend" : "cpu")); } }; });
+      v.picks = PICKS.filter(function (p) { return p.grp === P.grp; }).map(function (p) { var on = p.id === P.id; return { name: p.name, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { choose(p.id); } }; });
       var bc = this.boardChips(null, false);
       v.groups = bc.groups; v.chips = bc.chips;
       v.ngMsg = st.ngMsg;

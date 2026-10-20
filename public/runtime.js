@@ -149,6 +149,7 @@ var App = (function () {
       (games ? '<h2 class="sec">Dine spill' + (v.myTurns ? '<span class="secr">' + esc(v.myTurns) + '</span>' : '') + '</h2><div class="grow">' + games + '</div>' : '') +
       '<div class="ngpanel"><h2 class="sec">Nytt spill</h2>' +
         (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
+        '<div class="segs" role="group" aria-label="Hvor">' + each(v.tabs, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + '</button>'; }) + '</div>' +
         '<div class="chips" role="group" aria-label="Motspiller">' + each(v.picks, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + '</button>'; }) + '</div>' +
         extra +
         (v.pick !== "code" ? '<div class="boardpick">' +
