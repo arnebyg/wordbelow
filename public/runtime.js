@@ -346,7 +346,10 @@ var App = (function () {
     // takes whatever height is left. Only a short, wide window (a tablet, a phone on its side) caps it at 640.
     // The background runs under the status bar and the home bar; the content keeps clear of both, and of the
     // band below the status bar where iOS blurs whatever lies under it (EDGE).
-    var w = window.innerWidth, h = window.innerHeight, s = Math.min(w / 390, (h - top - bot) / 640), H = Math.floor(h / s);
+    // Installed on an iPhone, innerHeight can stop short of the home bar and leave a band of plain background
+    // below the game; there the screen's own height is the true one.
+    var standalone = navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+    var w = window.innerWidth, h = standalone && screen.width === w ? Math.max(window.innerHeight, screen.height) : window.innerHeight, s = Math.min(w / 390, (h - top - bot) / 640), H = Math.floor(h / s);
     // iOS 26 draws a Liquid Glass blur over the top of an installed web app, about 38–40 pt below the status bar;
     // nothing in the page turns it off, so the content starts below it (24 pt was too little).
     var EDGE = top ? 40 : 0;
