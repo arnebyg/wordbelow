@@ -302,3 +302,25 @@ body{position:fixed;inset:0}
 .board,.preview{touch-action:pan-y pinch-zoom}
 .play .board{touch-action:none}
 .chip.danger{background:#B3261E;color:#fff}
+/* Ads (free version) and Premium. The slots sit outside #app in real pixels. */
+#app{padding-bottom:calc(var(--sb,0px) + var(--ad,0px))}
+#adbar{position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom,0);z-index:50;height:56px;display:flex;align-items:center;justify-content:center;background:#F7F4EC;color:#5D6B67;font-family:'Bricolage Grotesque',sans-serif}
+#adbar[hidden],#adfull[hidden]{display:none}
+.adslot{width:320px;height:50px;display:flex;align-items:center;justify-content:center;font-size:13px;border:1.5px dashed rgba(60,45,20,.25);box-sizing:border-box}
+.adtag{position:absolute;left:6px;top:3px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7A8682}
+#adfull{position:fixed;inset:0;z-index:9000;background:#101614;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(env(safe-area-inset-top,0px) + 56px) 16px calc(env(safe-area-inset-bottom,0px) + 8px);font-family:'Bricolage Grotesque',sans-serif}
+#adfull .adtag{left:16px;top:calc(env(safe-area-inset-top,0px) + 18px);color:#A9B5B1}
+.adslot.big{width:100%;flex:1;max-height:75%;border-color:rgba(255,255,255,.25);color:#A9B5B1;font-size:16px;border-radius:12px}
+.adclose{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 6px);width:44px;height:44px;border-radius:22px;border:0;background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;animation:adclose 0s 5s forwards;cursor:pointer}
+@keyframes adclose{to{opacity:1;pointer-events:auto}}
+.adprem{border:0;background:transparent;color:#F2C46B;font-family:inherit;font-size:15px;font-weight:700;padding:10px;cursor:pointer}
+.card.prem{background:#F2C46B;color:#3B2405}
+.card.prem .cs{color:#5A3A0C}
+.card.prem .pill.solid{background:#3B2405;border-color:#3B2405;color:#F2C46B;display:inline-flex;align-items:center;gap:8px}
+.hiddenchart{height:150px;display:flex;align-items:center;justify-content:center;font-size:56px;font-weight:800;letter-spacing:.04em;color:rgba(244,239,226,.18)}
+.premhero{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 0;flex:none;color:#F2C46B}
+.premhero svg{width:48px;height:48px}
+.premhero b{font-size:26px;color:#F4EFE2}
+.premhero span{color:#C6DCD5}
+.sub .bigbtn{flex:none}
+html.light .premhero b{color:#1C2626}html.light .premhero span{color:#5D6B67}html.light .hiddenchart{color:rgba(60,45,20,.18)}

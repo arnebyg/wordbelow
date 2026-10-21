@@ -19,7 +19,7 @@ Et trekk er et ord, en brikke i lommen eller å stå over. Spillet slutter når 
 
 - **Konto:** et brukernavn og en hemmelig nøkkel som ligger på telefonen. Ingen e-post eller passord ennå, så en konto kan ikke hentes tilbake hvis telefonen eller nettleserdataene slettes.
 - **Spill:** brettet (oppsett og et frø per spill) og tilstanden (brikker borte, begge lommer og poeng, hvem sin tur). Serveren sjekker at det er avsenderens tur og at trekket bygger på siste versjon; ordet sjekkes mot ordlista på telefonen, ikke på serveren.
-- **Varsler:** ingen push-varsler ennå. Appen henter spillene når den åpnes og hvert 5.–20. sekund mens den er åpen.
+- **Varsler:** push-varsler når det er din tur (se «Varsler og tidsgrense»).
 
 Ikke laget: Facebook-venner, telefonens kontaktliste (en nettside får ikke lese den på iPhone) og turneringer.
 
@@ -77,3 +77,20 @@ Topplista for «Alene» lagres bare på telefonen.
   og lagrer det i databasen, så ingen hemmeligheter må settes opp. På iPhone og iPad virker varsler bare når
   appen er lagt til på Hjem-skjermen (iOS 16.4 eller nyere).
 - For å prøve tidsgrensen lokalt: `npx wrangler dev --var MOVE_LIMIT_MS:20000` (20 sekunder i stedet for 72 timer).
+
+## Reklame og Premium
+
+Gratisversjonen viser et banner nederst (startsiden, spillet, resultatet) og en reklame over hele skjermen
+etter hvert av dine egne trekk; den kan lukkes etter 5 sekunder. Premium fjerner begge og åpner statistikken,
+som ellers vises med tallene skjult.
+
+- **Plassene står klare, men ingen annonser er koblet til.** De ligger i `index.html` (`#adbar`, `#adfull`),
+  utenfor spillets skjerm, så de lastes ikke på nytt når spillet tegnes. Et annonsenettverk kobles på ved å
+  definere `window.WB_ADS = { banner: function (el) { … }, interstitial: function (el) { … } }` før `runtime.js`;
+  funksjonene får plass-elementet og fyller det. Banneret er 320 × 50.
+- **For en nettapp** er Google AdSense det vanlige (H5 Games Ads har egne mellomreklamer for spill). AdMob, som
+  Wordfeud bruker, krever en innpakket app (for eksempel Capacitor) i App Store / Google Play.
+- **Betaling er ikke koblet til.** «Kjøp Premium» sier det. I App Store må kjøpet gå gjennom Apples kjøp i appen;
+  som nettapp kan det for eksempel være Stripe. Premium lagres foreløpig bare på telefonen
+  (`ordspill/premium/v1`); med ekte betaling bør serveren bekrefte kjøpet og lagre det på kontoen.
+- **For testing** har Premium-siden en bryter som slår Premium av og på på denne telefonen.

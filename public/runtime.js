@@ -95,6 +95,7 @@ var App = (function () {
   }
 
   var IC = {
+    gem: '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z M2 9h20 M9 3l-2 6 5 12 5-12-2-6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"></path></svg>',
     play: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.5v13l10.5-6.5z" fill="currentColor"></path></svg>',
     gear: '<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>',
     stats: '<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M12 20V5M19 20v-8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path></svg>',
@@ -136,6 +137,7 @@ var App = (function () {
     else extra = '<p class="fine">' + esc(v.pickSay) + '</p>';
     return '<div class="screen home">' +
       '<div class="hometop"><span class="logo" role="img" aria-label="WordBelow"><span class="lw">word</span><span class="lb">below</span></span><span class="icons">' +
+        (v.premium ? '' : '<button type="button" class="ib" aria-label="Premium"' + on(v.openPremium) + '>' + IC.gem + '</button>') +
         '<button type="button" class="ib qi" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
         '<button type="button" class="ib" aria-label="Statistikk"' + on(v.openStats) + '>' + IC.stats + '</button>' +
         '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button></span></div>' +
@@ -187,6 +189,17 @@ var App = (function () {
       sec("Brettene", '<p><b>Stramme</b> brett har få åpne brikker hele spillet. <b>Åpner seg</b> starter med rundt 8–11 åpne og får flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: 40 % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
       sec("Mot andre", '<p>Hver spiller har <b>72 timer</b> på et trekk. Går tiden ut, er spillet over og den andre vinner. Slå på varsler i innstillingene for å få beskjed når det er din tur. Ratingen starter på 1200 og går opp eller ned etter hvert spill mot en annen spiller.</p>') +
       '</div></div></div>';
+  }
+  function premiumView(v) {
+    var li = function (t, s) { return '<div class="opt"><span class="tileic">' + IC.gem + '</span><span class="ot"><span class="t">' + t + '</span><span class="s">' + s + '</span></span></div>'; };
+    return '<div class="screen sub">' + head("Premium", v.back) + '<div class="scroll">' +
+      '<div class="premhero">' + IC.gem + '<b>WordBelow Premium</b><span>Ett kjøp, for alltid.</span></div>' +
+      '<div class="group">' + li("Ingen reklame", "Verken banneret nederst eller reklamen etter hvert trekk.") + li("Full statistikk", "Resultater, rating over tid, beste ord og resultater mot hver motspiller.") + '</div>' +
+      (v.premium ? '<div class="note">Du har Premium på denne telefonen.</div>' : '<button type="button" class="bigbtn"' + on(v.buy) + '>' + IC.gem + '<span>Kjøp Premium</span></button>') +
+      '<button type="button" class="pill"' + on(v.restore) + '>Gjenopprett kjøp</button>' +
+      (v.premMsg ? '<div class="note">' + esc(v.premMsg) + '</div>' : '') +
+      '<h2 class="sec">For testing</h2><div class="group"><div class="opt"><span class="ot"><span class="t">Premium på denne telefonen</span><span class="s">Til betalingen er koblet til: slå Premium av og på for å se begge versjonene.</span></span><button type="button" class="pill small"' + on(v.testOn) + '>' + (v.premium ? 'Slå av' : 'Slå på') + '</button></div></div>' +
+      '</div></div>';
   }
   function editorView(v) {
     var e = v.ed;
@@ -259,6 +272,7 @@ var App = (function () {
     var c = v.chart;
     return '<div class="screen sub">' + head("Spillerstatistikk", v.back) + '<div class="scroll">' +
       '<div class="sthead"><span class="av big">' + esc((v.statName[0] || "?").toUpperCase()) + '</span><b>' + esc(v.statName) + '</b><span>' + esc(v.statSince) + '</span></div>' +
+      (v.locked ? '<div class="card prem"><span class="ct">Lås opp statistikken</span><span class="cs">Med Premium ser du alle tallene, ratingen over tid og resultatene mot hver motspiller, og all reklame er borte.</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.unlock) + '>' + IC.gem + 'Se Premium</button></div></div>' : '') +
       '<h2 class="sec">Viser statistikk for</h2>' +
       '<div class="chips">' + each(v.statModes, function (m) { return '<button type="button" class="' + m.cls + '" aria-pressed="' + m.on + '"' + on(m.pick) + '>' + esc(m.name) + '</button>'; }) + '</div>' +
       '<select class="inp stsel" aria-label="Brett" data-input="statLayIn">' + each(v.statLays, function (o) { return '<option value="' + esc(o.id) + '"' + (o.on ? ' selected' : '') + '>' + esc(o.name) + '</option>'; }) + '</select>' +
@@ -271,7 +285,7 @@ var App = (function () {
           '<text x="' + (c.w + 6) + '" y="4">' + c.hi + '</text><text x="' + (c.w + 6) + '" y="' + (c.h / 2 + 4) + '">' + c.mid + '</text><text x="' + (c.w + 6) + '" y="' + (c.h + 4) + '">' + c.lo + '</text>' +
           '<text x="0" y="' + (c.h + 20) + '">' + esc(c.d0) + '</text><text x="' + (c.w / 2) + '" y="' + (c.h + 20) + '" text-anchor="middle">' + esc(c.d1) + '</text><text x="' + c.w + '" y="' + (c.h + 20) + '" text-anchor="end">' + esc(c.d2) + '</text>' +
           '<path d="' + c.path + '" class="ln"></path><circle cx="' + c.last.x + '" cy="' + c.last.y + '" r="4" class="pt"></circle></svg>'
-          : '<p class="fine pad">Grafen kommer når du har spilt ferdig to spill mot andre.</p>') + '</div>' : '') +
+          : v.locked ? '<div class="hiddenchart">SKJULT</div>' : '<p class="fine pad">Grafen kommer når du har spilt ferdig to spill mot andre.</p>') + '</div>' : '') +
       rows(v.scores) +
       rows(v.longs) + '<p class="fine">Et langt ord har sju bokstaver eller flere.</p>' +
       (v.vs.length ? '<h2 class="sec">Statistikk mot motspillere</h2><div class="group">' + each(v.vs, function (o) { return '<div class="opt"><span class="av">' + esc(o.initial) + '</span><span class="ot"><span class="t">' + esc(o.name) + '</span><span class="s">' + esc(o.line) + '</span></span></div>'; }) + '</div>' : '') +
@@ -307,7 +321,7 @@ var App = (function () {
     root.querySelectorAll("[data-keep]").forEach(function (el) { keep[el.getAttribute("data-keep")] = el.scrollLeft; });
     H = [];
     var v = comp.renderVals();
-    var V = { home: homeView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
+    var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
     var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "");
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
@@ -320,10 +334,36 @@ var App = (function () {
     }
     if (focusId) { var fe = root.querySelector("#" + focusId); if (fe) { fe.focus(); try { fe.setSelectionRange(focusSel[0], focusSel[1]); } catch (e) {} } }
     App.lastVals = v;
+    showAds(v);
     var af = root.querySelector("[data-autofocus]");
     if (af && document.activeElement !== af) { af.focus(); try { af.select(); } catch (e) {} }
     fitBoard();
   }
+  // Ads live outside the game's screen (index.html), so a re-render never reloads them. The banner sits at
+  // the bottom and the game leaves room for it (--ad); the full-screen ad covers everything until closed.
+  // window.WB_ADS.banner(el) / .interstitial(el) fill the slots once an ad network is connected (README).
+  var adShown = { banner: false, full: false }, adBanner = null, adFull = null;
+  function adFill(el, kind) { if (!el.getAttribute("data-filled") && window.WB_ADS && window.WB_ADS[kind]) { el.setAttribute("data-filled", "1"); try { window.WB_ADS[kind](el); } catch (e) {} } }
+  function showAds(v) {
+    adBanner = adBanner || document.getElementById("adbar"); adFull = adFull || document.getElementById("adfull");
+    if (!adBanner || !adFull) return;
+    var banner = !!v.ads && (v.phase === "home" || v.phase === "play" || v.phase === "done"), full = !!v.adFull && v.phase !== "premium";
+    if (banner !== adShown.banner) {
+      adShown.banner = banner; adBanner.hidden = !banner;
+      if (banner) adFill(adBanner.querySelector("[data-ad]"), "banner");
+      root.style.setProperty("--ad", banner ? Math.ceil(adBanner.offsetHeight / scaleNow) + "px" : "0px");
+      fitBoard();
+    }
+    if (full !== adShown.full) {
+      adShown.full = full; adFull.hidden = !full;
+      if (full) { var slot = adFull.querySelector("[data-ad]"); slot.removeAttribute("data-filled"); adFill(slot, "interstitial"); var c = adFull.querySelector(".adclose"); c.style.animation = "none"; void c.offsetWidth; c.style.animation = ""; }
+    }
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("#adfull .adclose, #adfull .adprem");
+    if (!t || !App.lastVals) return;
+    if (t.classList.contains("adclose")) App.lastVals.closeAd(); else { App.lastVals.closeAd(); App.lastVals.openPremium(); }
+  });
   // The board takes all the room the screen has left, scaled to where its tiles actually lie.
   function fitBoard() {
     var inner = root.querySelector(".board > .bfit");
@@ -337,6 +377,7 @@ var App = (function () {
 
   // Scale the 390 × 844 game to the screen, inside the notch and home-bar insets.
   var probe = null;
+  var scaleNow = 1;
   var useZoom = !!(window.CSS && CSS.supports && CSS.supports("zoom", "2"));
   function fit() {
     if (!probe) {
@@ -362,6 +403,8 @@ var App = (function () {
     root.style.setProperty("--sbar", Math.round(top / s) + "px");
     root.classList.toggle("edge", EDGE > 0);
     var x = Math.round(Math.max(0, (w - 390 * s) / 2)), y = 0;
+    scaleNow = s;
+    if (adShown.banner && adBanner) root.style.setProperty("--ad", Math.ceil(adBanner.offsetHeight / s) + "px");
     // zoom lays the page out again at the new size, so text is drawn sharp; a transform shrinks a picture of it,
     // and Safari showed the part above the scrolling list blurred. A zoomed element's own left and top are zoomed too.
     if (useZoom) { root.style.zoom = s; root.style.transform = ""; root.style.left = x / s + "px"; root.style.top = y / s + "px"; }

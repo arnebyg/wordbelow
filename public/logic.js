@@ -221,7 +221,7 @@ ownLoad();
 // The active player's score, pocket and words live in st.score, st.pocket and st.words, as in solo;
 // st.P holds both players and is brought up to date at the end of every turn.
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
-var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1";
+var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1";
 var API = "/api";
 var BG_KEY = "ordspill/bakgrunn/v1";
 var BGS = [{ id: "filt", name: "Filtgrønn (standard)", hex: "#1E6550" }, { id: "natt", name: "Nattblå", hex: "#142A52" }, { id: "fjord", name: "Fjordblå", hex: "#1D5470" },
@@ -274,7 +274,7 @@ class Component extends DCLogic {
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
       account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
-      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" }, push: "unknown", pushMsg: "", pushCard: !lsGet(PUSH_CARD_KEY) };
+      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" }, push: "unknown", pushMsg: "", pushCard: !lsGet(PUSH_CARD_KEY), premium: !!lsGet(PREMIUM_KEY) };
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
   fresh(id, msg, seed) {
@@ -343,6 +343,11 @@ class Component extends DCLogic {
     this.setState({ phase: "stats", srvStats: null });
     if (this.state.account) api("/stats").then(function (d) { self.setState({ srvStats: d }); }, function () {});
   }
+  // Ads and Premium. The free version shows a banner at the bottom and a full-screen ad after each of your
+  // own moves; Premium has neither, and opens the statistics. Payment is not connected yet (see README).
+  humanMove() { var st = this.state; return st.phase === "play" && !this.cpuTurn() && !this.waitTurn(); }
+  adAfterMove() { if (!this.state.premium) this.setState({ adFull: Date.now() }); }
+  setPremium(on) { lsSet(PREMIUM_KEY, on); this.setState({ premium: on, adFull: null, premMsg: on ? "Premium er på for denne telefonen." : "Premium er av." }); }
   // Push messages when it is your turn
   pushCheck() {
     var self = this, can = pushCan();
@@ -622,7 +627,7 @@ class Component extends DCLogic {
   bestWord() { return this.candidates()[0] || null; }
   // Moves. Each returns true when the move was made.
   playWord() {
-    var self = this, s2 = this.state, w2 = this.word(s2.sel);
+    var self = this, s2 = this.state, w2 = this.word(s2.sel), human = this.humanMove();
     if (!isWord(w2)) { this.setState({ msg: "«" + w2 + "» står ikke i ordlista.", tone: "bad" }); return false; }
     if (!s2.sel.some(function (id) { return id[0] !== "p"; })) { this.setState({ msg: "Et ord må ha minst én brikke fra brettet.", tone: "bad" }); return false; }
     var ev = this.evaluate(s2.sel), gone = Object.assign({}, s2.gone), usedP = [];
@@ -633,19 +638,22 @@ class Component extends DCLogic {
     this.timers.push(setTimeout(function () { self.setState({ pop: null }); }, 1200));
     if (ev.cleared) { if (this.online()) this.finishGame(); else this.timers.push(setTimeout(function () { self.finishGame(); }, 1300)); }
     else this.endTurn(this.online() ? 0 : 1300);
+    if (human) this.adAfterMove();
     return true;
   }
   pocketTile(id) {
-    var s2 = this.state, ch = s2.letters[id], gone = Object.assign({}, s2.gone); gone[id] = true;
+    var human = this.humanMove(), s2 = this.state, ch = s2.letters[id], gone = Object.assign({}, s2.gone); gone[id] = true;
     var me = this.online() ? (s2.account ? s2.account.name : "Du") : this.names()[s2.turn];
     var who = this.duel() ? me + " tok " + ch + " i lommen." : ch + " ligger i lommen. Bruk den i et ord senere.";
     this.setState({ gone: gone, sel: [], confirm: null, passes: 0, pocket: s2.pocket.concat([ch]), tone: "info", msg: who });
     if (!Object.keys(this.live()).length) { this.finishGame(); return true; }
     this.endTurn(this.online() ? 0 : 900);
+    if (human) this.adAfterMove();
     return true;
   }
   pass() {
     var st = this.state, passes = st.passes + 1, nm = this.names();
+    if (this.humanMove()) this.adAfterMove();
     var me = this.online() ? (st.account ? st.account.name : "Du") : (st.opp === "cpu" && st.turn === 0 ? "Du" : nm[st.turn]);
     this.setState({ sel: [], jokerAs: {}, passes: passes, tone: "info", msg: me + " sto over." + (passes >= 2 ? " Begge sto over, spillet er slutt." : "") });
     if (passes >= 2) { if (this.online()) { this.finishGame(); return; } var self = this; this.timers.push(setTimeout(function () { self.finishGame(); }, 900)); return; }
@@ -835,6 +843,8 @@ class Component extends DCLogic {
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),
       kicker: online ? "Spill · " + S.L.name : duel ? "Duell · " + S.L.name : "Klassiker · " + S.L.name,
       score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
+      ads: !st.premium, premium: !!st.premium, adFull: !st.premium && !!st.adFull, closeAd: function () { self.setState({ adFull: null }); },
+      openPremium: function () { self.setState({ phase: "premium", premMsg: "", help: false }); },
       help: !!st.help, openHelp: function () { self.setState({ help: true }); }, closeHelp: function () { self.setState({ help: false }); }
     };
     v.goHome = function () { self.goHome(); };
@@ -926,6 +936,14 @@ class Component extends DCLogic {
       v.goCpu = function () { self.start("duel", "cpu"); };
       v.goLocal = function () { self.start("duel", "local"); };
       v.goSolo = function () { self.start("solo"); };
+      return v;
+    }
+    if (st.phase === "premium") {
+      v.premMsg = st.premMsg;
+      v.buy = function () { self.setState({ premMsg: "Betaling er ikke koblet til ennå. Når den er det, kjøper du Premium her én gang og har det for alltid." }); };
+      v.restore = function () { self.setState({ premMsg: "Det finnes ingen kjøp å gjenopprette ennå." }); };
+      v.testOn = function () { self.setPremium(!st.premium); };
+      v.back = function () { self.setState({ phase: st.after === "stats" ? "stats" : "home", after: null }); };
       return v;
     }
     if (st.phase === "editor") {
@@ -1044,6 +1062,15 @@ class Component extends DCLogic {
         if (x.won === 1) o.w++; else if (x.won === 0) o.l++; else o.d++;
       });
       v.vs = Object.keys(vsMap).map(function (k) { var o = vsMap[k]; return { name: o.name, line: o.w + " vunnet · " + o.l + " tapt" + (o.d ? " · " + o.d + " uavgjort" : ""), initial: (o.name[0] || "?").toUpperCase() }; });
+      // The free version shows what the statistics hold, with the numbers hidden, and offers Premium.
+      v.locked = !st.premium;
+      if (v.locked) {
+        var hide = function (r) { return { k: r.k, v: "SKJULT" }; };
+        v.results = v.results.map(hide); v.scores = v.scores.map(hide); v.longs = v.longs.map(hide);
+        v.rating = "SKJULT"; v.chart = null; v.ratingInfo = false;
+        v.vs = v.vs.map(function (o) { return { name: o.name, line: "SKJULT", initial: o.initial }; });
+        v.unlock = function () { self.setState({ phase: "premium", after: "stats", premMsg: "" }); };
+      }
       v.back = function () { self.goHome(); };
       return v;
     }
