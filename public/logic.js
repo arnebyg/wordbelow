@@ -1,5 +1,5 @@
 var PTS = { A:1,B:4,C:10,D:1,E:1,F:2,G:2,H:3,I:1,J:4,K:2,L:1,M:2,N:1,O:2,P:4,R:1,S:1,T:1,U:4,V:4,W:8,Y:6,Æ:6,Ø:5,Å:4,"*":0 };
-var RARE = "ÆYWC", VOW = "AEIOUYÆØÅ", ALPHABET = "ABCDEFGHIJKLMNOPRSTUVWYÆØÅ";
+var LEN_BONUS = 5, RARE = "ÆYWC", VOW = "AEIOUYÆØÅ", ALPHABET = "ABCDEFGHIJKLMNOPRSTUVWYÆØÅ";
 // The Norwegian Scrabble set with six consonants swapped for vowels: 100 tiles, two of them blank (jokers).
 // One fewer N, R, S, T, D, K; one more A, I, O, U and two more E. That is 40 vowels of 98 letters, near the
 // 39 % vowels in the 3–5-letter words of NSF-ordlista; Scrabble's own 34 left far more tiles stuck in simulation.
@@ -504,9 +504,9 @@ class Component extends DCLogic {
     }, function (e) { if (!quiet) self.setState({ msg: e.message, tone: "bad" }); });
   }
   resultOf(P) {
-    var penOf = function (pk) { return (pk || []).reduce(function (s, ch) { return s + (PTS[ch] || 0); }, 0); };
     var bestOf = function (ws) { return (ws || []).reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null); };
-    return P.map(function (p) { var pen = penOf(p.pocket); return { score: p.score - pen, pen: pen, pocketLeft: (p.pocket || []).join(", "), words: (p.words || []).length, best: bestOf(p.words) }; });
+    // The board is shared, so what is left in the pocket costs nothing.
+    return P.map(function (p) { var pen = 0; return { score: p.score, pen: pen, pocketLeft: (p.pocket || []).join(", "), words: (p.words || []).length, best: bestOf(p.words) }; });
   }
   pushOnline(state) {
     var self = this, o = this.state.online;
@@ -571,7 +571,9 @@ class Component extends DCLogic {
     var s = (base + layer) * wm;
     if (wm > 1) parts.push("×" + wm + " ord");
     if (rare) { s = Math.round(s * 1.5); parts.push("×1,5 sjelden"); }
-    var lm = Math.max(1, sel.length - 2); if (lm > 1) { s *= lm; parts.push(sel.length + " bokstaver ×" + lm); }
+    // Length is an addition, not a factor: +5 for each letter past three. As a factor (× letters − 2) it made one
+    // long word worth 13 short ones and could decide a game alone (simulation, 21 October 2026).
+    var lb = LEN_BONUS * Math.max(0, sel.length - 3); if (lb) { s += lb; parts.push(sel.length + " bokstaver +" + lb); }
     var before = this.live(), after = {};
     Object.keys(before).forEach(function (k) { if (sel.indexOf(k) < 0) after[k] = true; });
     var opened = 0;
@@ -593,7 +595,7 @@ class Component extends DCLogic {
       var w = list[k], need = {}, ok = true, q = 0;
       if (maxLen && w.length > maxLen) continue;
       for (var ch of w) { need[ch] = (need[ch] || 0) + 1; if (need[ch] > (avail[ch] || 0)) { ok = false; break; } q += PTS[ch] || 0; }
-      if (ok) quick.push({ w: w, q: q * Math.max(1, w.length - 2) });
+      if (ok) quick.push({ w: w, q: q + LEN_BONUS * Math.max(0, w.length - 3) });
     }
     quick.sort(function (a, b) { return b.q - a.q; });
     var out = [], self = this;
@@ -696,8 +698,8 @@ class Component extends DCLogic {
       else addStat({ mode: "local", won: -2, my: Math.max(res[0].score, res[1].score), their: Math.min(res[0].score, res[1].score), best: (res[0].best && res[1].best ? (res[0].best.pts >= res[1].best.pts ? res[0].best : res[1].best) : res[0].best || res[1].best) });
       return;
     }
-    var pen = this.resultOf([{ pocket: st.pocket }])[0].pen;
-    var rec = { lay: st.lay, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
+    var pen = 0;
+    var rec = { lay: st.lay, score: st.score, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
     addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 });
     this.setState({ phase: "done", played: rec, submitted: false });
   }
@@ -1077,7 +1079,7 @@ class Component extends DCLogic {
       });
       v.rackEmpty = st.sel.length === 0;
       v.rackHint = v.canSwipe && !st.sel.length && !st.pocket.length && !this.cpuTurn() ? "Sveip brettet sidelengs for å bytte brett, så lenge ingen har lagt et ord." : this.cpuTurn() ? "Maskinen tenker …" : this.waitTurn() ? (st.online.status === "waiting" ? "Spillet starter når motspilleren er med." : "Venter på " + st.online.oppName + ". Du får se trekket her.") :
-        st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : "Trykk en brikke i lommen for å bruke den i et ord.") : (duel ? "Legg et ord, ta en brikke i lommen eller stå over." : "Lommen tar to brikker. Det som er igjen der til slutt, trekkes fra.");
+        st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : "Trykk en brikke i lommen for å bruke den i et ord.") : (duel ? "Legg et ord, ta en brikke i lommen eller stå over." : "Lommen tar to brikker du kan bruke i et senere ord.");
       v.pocket = st.pocket.map(function (ch, i) {
         var pid = "p" + i, on = st.sel.indexOf(pid) >= 0;
         return { ch: ch, p: PTS[ch], on: on ? "true" : "false", cls: "rk pk" + (on ? " on" : ""), label: ch + " i lommen, " + PTS[ch] + " poeng" + (on ? ", i ordet" : ""), tap: function () {
