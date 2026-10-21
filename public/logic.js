@@ -98,7 +98,9 @@ function buildLayout(L) {
   var xs = pos.map(function (p) { return p.c * 49 - p.l * 4; }), ys = pos.map(function (p) { return p.r * 60 - p.l * 7; });
   var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs) + 46, y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys) + 66;
   var iw = BOX_W / SCALE, ih = BOX_H / SCALE;
-  return { L: L, pos: pos, map: map, offX: (iw - (x1 - x0)) / 2 - x0, offY: Math.max(6, (ih - (y1 - y0)) / 2) - y0 };
+  var offX = (iw - (x1 - x0)) / 2 - x0, offY = Math.max(6, (ih - (y1 - y0)) / 2) - y0;
+  // box: where the tiles lie inside the board's 400 × 458, with room for the bonus labels; the screen scales to it.
+  return { L: L, pos: pos, map: map, offX: offX, offY: offY, box: [offX + x0 - 4, offY + y0 - 8, x1 - x0 + 8, y1 - y0 + 12].map(Math.round).join(",") };
 }
 var BUILT = {};
 function layoutOf(id) { if (!BUILT[id]) BUILT[id] = buildLayout(LAYOUTS.filter(function (L) { return L.id === id; })[0] || LAYOUTS[0]); return BUILT[id]; }
@@ -1034,12 +1036,13 @@ class Component extends DCLogic {
       var live = this.live(), nFree = 0;
       var nL = LAYOUTS.length, iL = 0; LAYOUTS.forEach(function (L, k) { if (L.id === st.lay) iL = k; });
       v.boardBar = { name: S.L.name, group: GROUPS.filter(function (G) { return G.id === S.L.grp; })[0].name, n: (iL + 1) + " av " + nL,
-        can: !online && !this.started() && !locked, prev: function () { self.cycleLay(-1, true); }, next: function () { self.cycleLay(1, true); } };
+        show: !online && !this.started(), can: !online && !this.started() && !locked, prev: function () { self.cycleLay(-1, true); }, next: function () { self.cycleLay(1, true); } };
       v.canSwipe = !online && !this.started();
       v.swipe = function (dir) { self.cycleLay(dir, true); };
       v.dots = v.canSwipe ? this.dots() : null;
       v.slide = st.slide;
       v.left = Object.keys(live).length;
+      v.boardFit = S.box;
       v.boardBox = "position:absolute;left:0;top:0;width:" + (BOX_W / SCALE) + "px;height:" + (BOX_H / SCALE) + "px;transform:scale(" + SCALE + ");transform-origin:0 0";
       v.tiles = S.pos.filter(function (p) { return live[p.id]; }).map(function (p) {
         var id = p.id, raw = st.letters[id], jk = raw === "*", ch = self.chOf(id), pts = PTS[raw] || 0, free = freeIn(S, id, live), b = st.bonus[id], bonus = b ? b.m + "×" + b.t : "";

@@ -22,7 +22,7 @@ var App = (function () {
     '<div class="title"><span class="t1">' + esc(v.kicker) + '</span><span class="t2">' + esc(v.lsub) + '</span></div>' +
     '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>Hint −5</button>' +
   '</div>' +
-  (v.boardBar ? '<div class="boardbar">' +
+  (v.boardBar && v.boardBar.show ? '<div class="boardbar">' +
     (v.boardBar.can ? '<button type="button" class="bbar" aria-label="Forrige brett"' + on(v.boardBar.prev) + '>' + IC.back + '</button>' : '<span class="bbar-gap"></span>') +
     '<span class="bbname"><b>' + esc(v.boardBar.name) + '</b><span>' + esc(v.boardBar.group) + ' · ' + esc(v.boardBar.n) + (v.boardBar.can ? ' · sveip brettet' : '') + '</span></span>' +
     (v.boardBar.can ? '<button type="button" class="bbar next" aria-label="Neste brett"' + on(v.boardBar.next) + '>' + IC.back + '</button>' : '<span class="bbar-gap"></span>') +
@@ -33,7 +33,7 @@ var App = (function () {
   '</div>' +
   '<div class="msg tone-' + esc(v.tone || "info") + '" aria-live="polite">' + esc(v.msg) + '</div>' +
   '<div class="board' + (v.slide ? ' slide-' + v.slide : '') + '"' + (v.canSwipe ? ' data-swipe="swipe"' : '') + '>' +
-    '<div style="' + esc(v.boardBox) + '">' +
+    '<div class="bfit" data-fit="' + esc(v.boardFit) + '" style="' + esc(v.boardBox) + '">' +
       each(v.tiles, function (t) {
         return '<button type="button" class="' + t.cls + (t.blocked ? ' blocked' : '') + '" style="' + esc(t.pos) + '"' + (t.blocked ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t.label) + '"' + on(t.pick) + '>' +
           (t.bonus ? '<span class="' + t.bnCls + '">' + esc(t.bonus) + '</span>' : '') +
@@ -284,7 +284,7 @@ var App = (function () {
     var V = { home: homeView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
     var html = (V[v.phase] || homeView)(v);
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
-    if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; return; }
+    if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
     lastPhase = v.phase;
     root.innerHTML = html;
     root.querySelectorAll("[data-keep]").forEach(function (el) { var k = el.getAttribute("data-keep"); if (keep[k]) el.scrollLeft = keep[k]; });
@@ -294,6 +294,17 @@ var App = (function () {
     }
     if (focusId) { var fe = root.querySelector("#" + focusId); if (fe) { fe.focus(); try { fe.setSelectionRange(focusSel[0], focusSel[1]); } catch (e) {} } }
     App.lastVals = v;
+    fitBoard();
+  }
+  // The board takes all the room the screen has left, scaled to where its tiles actually lie.
+  function fitBoard() {
+    var inner = root.querySelector(".board > .bfit");
+    if (!inner) return;
+    var bd = inner.parentNode, f = inner.getAttribute("data-fit").split(",").map(Number);
+    var bw = bd.clientWidth, bh = bd.clientHeight - (bd.querySelector(".bdots") ? 14 : 0);
+    if (!bw || !bh) return;
+    var k = Math.min(bw / f[2], bh / f[3], 1.6);
+    inner.style.transform = "translate(" + ((bw - f[2] * k) / 2 - f[0] * k).toFixed(1) + "px," + ((bh - f[3] * k) / 2 - f[1] * k).toFixed(1) + "px) scale(" + k.toFixed(4) + ")";
   }
 
   // Scale the 390 × 844 game to the screen, inside the notch and home-bar insets.
@@ -306,12 +317,16 @@ var App = (function () {
       document.body.appendChild(probe);
     }
     var cs = getComputedStyle(probe), top = parseFloat(cs.paddingTop) || 0, bot = parseFloat(cs.paddingBottom) || 0;
-    var w = window.innerWidth, h = window.innerHeight - top - bot, s = Math.min(w / 390, h / 844);
-    var x = Math.round(Math.max(0, (w - 390 * s) / 2)), y = Math.round(top + Math.max(0, (h - 844 * s) / 2));
+    // The game is 390 wide and as tall as the screen allows: it fills the width of a phone, and the board
+    // takes whatever height is left. Only a short, wide window (a tablet, a phone on its side) caps it at 640.
+    var w = window.innerWidth, h = window.innerHeight - top - bot, s = Math.min(w / 390, h / 640), H = Math.floor(h / s);
+    root.style.height = H + "px";
+    var x = Math.round(Math.max(0, (w - 390 * s) / 2)), y = Math.round(top);
     // zoom lays the page out again at the new size, so text is drawn sharp; a transform shrinks a picture of it,
     // and Safari showed the part above the scrolling list blurred. A zoomed element's own left and top are zoomed too.
     if (useZoom) { root.style.zoom = s; root.style.transform = ""; root.style.left = x / s + "px"; root.style.top = y / s + "px"; }
     else { root.style.transform = "scale(" + s + ")"; root.style.left = x + "px"; root.style.top = y + "px"; }
+    fitBoard();
   }
 
   function boot() {
