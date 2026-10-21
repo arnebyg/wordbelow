@@ -17,6 +17,7 @@ var App = (function () {
   function playView(v) {
     return '' +
 '<div class="screen play">' +
+  '<div class="edgebar ' + esc(v.edge.cls) + '" role="progressbar" aria-label="Ryddet av brettet" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + v.edge.pct + '"><i style="width:' + v.edge.pct + '%"></i></div>' +
   '<div class="top">' +
     '<button type="button" class="back" aria-label="Til menyen"' + on(v.toMenu) + '><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13 4l-7 7 7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>' +
     '<div class="title"><span class="t1">' + esc(v.kicker) + '</span><span class="t2">' + esc(v.lsub) + '</span></div>' +
@@ -356,6 +357,8 @@ var App = (function () {
     root.style.height = H + "px";
     root.style.setProperty("--st", Math.round((top + EDGE) / s) + "px");
     root.style.setProperty("--sb", Math.round(bot / s) + "px");
+    root.style.setProperty("--sbar", Math.round(top / s) + "px");
+    root.classList.toggle("edge", EDGE > 0);
     var x = Math.round(Math.max(0, (w - 390 * s) / 2)), y = 0;
     // zoom lays the page out again at the new size, so text is drawn sharp; a transform shrinks a picture of it,
     // and Safari showed the part above the scrolling list blurred. A zoomed element's own left and top are zoomed too.

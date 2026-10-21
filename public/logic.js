@@ -1046,6 +1046,9 @@ class Component extends DCLogic {
       // about the board is left out; whose turn it is shows in the score boxes.
       v.toast = st.msg && (st.tone === "good" || st.tone === "bad" || this.started() || this.duel() && st.turn !== 0) ? st.msg : null;
       v.left = Object.keys(live).length;
+      // The strip in the band iOS blurs at the top: how much of the board is cleared, in the colour of whose turn it is.
+      var total = S.pos.length, mine = !duel || (online ? st.turn === st.online.you : st.turn === 0);
+      v.edge = { pct: Math.round(100 * (total - v.left) / total), cls: mine ? "me" : "them" };
       v.boardFit = S.box;
       v.boardBox = "position:absolute;left:0;top:0;width:" + (BOX_W / SCALE) + "px;height:" + (BOX_H / SCALE) + "px;transform:scale(" + SCALE + ");transform-origin:0 0";
       v.tiles = S.pos.filter(function (p) { return live[p.id]; }).map(function (p) {
