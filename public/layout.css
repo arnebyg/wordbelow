@@ -82,7 +82,10 @@ button.mode:active{background:rgba(0,0,0,.34)}
 .note{border-radius:12px;background:rgba(242,196,107,.14);box-shadow:inset 0 0 0 1.5px rgba(242,196,107,.5);padding:10px 12px;font-size:14px;line-height:1.4}
 .card{position:relative;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
 .card.acc{background:rgba(0,0,0,.24)}
-.card.inv{background:#2F6F86;color:#F4F8FA}
+.card.inv{background:#F4EFE2;color:#1C2626;box-shadow:0 4px 0 #C2702C}
+.card.inv .cs{color:#4E5C58}
+.card.inv .pill{border-color:#1C2626;color:#1C2626}
+.card.inv .pill.solid{background:#1E6550;border-color:#1E6550;color:#F4EFE2}
 .card .ct{font-size:20px;font-weight:700;line-height:1.25;padding-right:36px}
 .card .cs{font-size:14px;line-height:1.4;color:#DDEBE6}
 .card .cbtns{display:flex;gap:8px}
@@ -154,7 +157,8 @@ html.light .slot{border-color:rgba(60,45,20,.3)}
 html.light .divider{background:rgba(60,45,20,.18)}
 html.light .inp{background:#FFFDF7;color:#1C2626;border-color:rgba(60,45,20,.3)}
 html.light .pill.solid{background:#1C2626;border-color:#1C2626;color:#F4EFE2}
-html.light .card.inv .pill.solid{background:#F4F8FA;border-color:#F4F8FA;color:#13201D}
+html.light .card.inv{background:#FFFDF7;box-shadow:0 0 0 1.5px rgba(60,45,20,.15),0 4px 0 #C2702C}
+html.light .card.inv .pill.solid{background:#1E6550;border-color:#1E6550;color:#F4EFE2}
 html.light .note{background:rgba(217,164,65,.18)}
 html.light .over{background:rgba(239,232,216,.97);color:#1C2626}
 html.light .radio .dot{border-color:#5D6B67}
@@ -201,8 +205,8 @@ html.light .boardbar{background:rgba(60,45,20,.08)}html.light .bbname span{color
 html.light .radio .swatch{box-shadow:inset 0 0 0 1.5px rgba(60,45,20,.3)}
 /* Home: your games as a row of cards, then a new game on the same page */
 .sec .secr{float:right;font-size:12px;font-weight:600;letter-spacing:0;text-transform:none}
-.grow{display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;flex:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
-.grow::-webkit-scrollbar{display:none}
+.gamesrow{display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:2px 16px 4px;flex:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.gamesrow::-webkit-scrollbar{display:none}
 .gcard{flex:none;width:150px;display:flex;flex-direction:column;border-radius:16px;background:rgba(0,0,0,.24);scroll-snap-align:start;overflow:hidden}
 .gcard.mine{background:rgba(242,196,107,.14);box-shadow:inset 0 0 0 2px rgba(242,196,107,.7)}
 .gopen{flex:1;display:flex;flex-direction:column;align-items:stretch;gap:4px;padding:12px;border:0;background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer;min-width:0}
