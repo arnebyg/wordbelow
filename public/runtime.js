@@ -22,16 +22,9 @@ var App = (function () {
     '<div class="title"><span class="t1">' + esc(v.kicker) + '</span><span class="t2">' + esc(v.lsub) + '</span></div>' +
     '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>Hint −5</button>' +
   '</div>' +
-  (v.boardBar && v.boardBar.show ? '<div class="boardbar">' +
-    (v.boardBar.can ? '<button type="button" class="bbar" aria-label="Forrige brett"' + on(v.boardBar.prev) + '>' + IC.back + '</button>' : '<span class="bbar-gap"></span>') +
-    '<span class="bbname"><b>' + esc(v.boardBar.name) + '</b><span>' + esc(v.boardBar.group) + ' · ' + esc(v.boardBar.n) + (v.boardBar.can ? ' · sveip brettet' : '') + '</span></span>' +
-    (v.boardBar.can ? '<button type="button" class="bbar next" aria-label="Neste brett"' + on(v.boardBar.next) + '>' + IC.back + '</button>' : '<span class="bbar-gap"></span>') +
-  '</div>' : '') +
-  (v.onlineBar ? '<div class="onlinebar"><span>' + esc(v.onlineBar.board) + '</span>' + (v.onlineBar.canResign ? '<button type="button" class="pill small"' + on(v.onlineBar.resign) + '>Gi opp</button>' : '') + '</div>' : '') +
   '<div class="stats">' +
     each(v.stats, function (x) { return '<div class="' + x.cls + '"><span class="k">' + esc(x.k) + '</span><span class="v">' + esc(x.v) + '</span></div>'; }) +
   '</div>' +
-  '<div class="msg tone-' + esc(v.tone || "info") + '" aria-live="polite">' + esc(v.msg) + '</div>' +
   '<div class="board' + (v.slide ? ' slide-' + v.slide : '') + '"' + (v.canSwipe ? ' data-swipe="swipe"' : '') + '>' +
     '<div class="bfit" data-fit="' + esc(v.boardFit) + '" style="' + esc(v.boardBox) + '">' +
       each(v.tiles, function (t) {
@@ -41,6 +34,7 @@ var App = (function () {
       }) +
     '</div>' +
     (v.pop ? '<div class="pop" aria-hidden="true">' + esc(v.pop) + '</div>' : '') +
+    (v.toast ? toastHtml(v) : '') +
     (v.dots ? '<div class="bdots" aria-hidden="true">' + each(v.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' : '') +
     (v.picking ? '<div class="over" role="dialog" aria-label="Velg bokstav for jokeren">' +
       '<div class="overtop"><span>Hvilken bokstav er jokeren?</span><button type="button" class="small"' + on(v.cancelPick) + '>Avbryt</button></div>' +
@@ -260,6 +254,13 @@ var App = (function () {
   }
 
 
+  // A message keeps its own clock across renders: a new text starts it, a repeat carries on where it was.
+  var toastText = null, toastAt = 0;
+  function toastHtml(v) {
+    if (v.toast !== toastText) { toastText = v.toast; toastAt = Date.now(); }
+    var age = Date.now() - toastAt;
+    return '<div class="toast tone-' + esc(v.tone || "info") + (age > 4000 ? ' seen' : '') + '" role="status" style="animation-delay:-' + age + 'ms">' + esc(v.toast) + '</div>';
+  }
   var lastPhase = null, lastLay = null, swipe = null, noClickUntil = 0, pending = false;
   function patch(html) {
     var t = document.createElement("template"); t.innerHTML = html;
@@ -319,9 +320,14 @@ var App = (function () {
     var cs = getComputedStyle(probe), top = parseFloat(cs.paddingTop) || 0, bot = parseFloat(cs.paddingBottom) || 0;
     // The game is 390 wide and as tall as the screen allows: it fills the width of a phone, and the board
     // takes whatever height is left. Only a short, wide window (a tablet, a phone on its side) caps it at 640.
-    var w = window.innerWidth, h = window.innerHeight - top - bot, s = Math.min(w / 390, h / 640), H = Math.floor(h / s);
+    // The background runs under the status bar and the home bar; the content keeps clear of both, and of the
+    // band below the status bar where iOS blurs whatever lies under it (EDGE).
+    var w = window.innerWidth, h = window.innerHeight, s = Math.min(w / 390, (h - top - bot) / 640), H = Math.floor(h / s);
+    var EDGE = top ? 24 : 0;
     root.style.height = H + "px";
-    var x = Math.round(Math.max(0, (w - 390 * s) / 2)), y = Math.round(top);
+    root.style.setProperty("--st", Math.round((top + EDGE) / s) + "px");
+    root.style.setProperty("--sb", Math.round(bot / s) + "px");
+    var x = Math.round(Math.max(0, (w - 390 * s) / 2)), y = 0;
     // zoom lays the page out again at the new size, so text is drawn sharp; a transform shrinks a picture of it,
     // and Safari showed the part above the scrolling list blurred. A zoomed element's own left and top are zoomed too.
     if (useZoom) { root.style.zoom = s; root.style.transform = ""; root.style.left = x / s + "px"; root.style.top = y / s + "px"; }

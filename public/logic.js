@@ -1041,6 +1041,9 @@ class Component extends DCLogic {
       v.swipe = function (dir) { self.cycleLay(dir, true); };
       v.dots = v.canSwipe ? this.dots() : null;
       v.slide = st.slide;
+      // Messages show for a moment over the board: words laid, errors, the machine's moves. The opening line
+      // about the board is left out; whose turn it is shows in the score boxes.
+      v.toast = st.msg && (st.tone === "good" || st.tone === "bad" || this.started() || this.duel() && st.turn !== 0) ? st.msg : null;
       v.left = Object.keys(live).length;
       v.boardFit = S.box;
       v.boardBox = "position:absolute;left:0;top:0;width:" + (BOX_W / SCALE) + "px;height:" + (BOX_H / SCALE) + "px;transform:scale(" + SCALE + ");transform-origin:0 0";
@@ -1091,7 +1094,7 @@ class Component extends DCLogic {
         } };
       });
       v.rackEmpty = st.sel.length === 0;
-      v.rackHint = v.canSwipe && !st.sel.length && !st.pocket.length && !this.cpuTurn() ? "Sveip brettet sidelengs for å bytte brett, så lenge ingen har lagt et ord." : this.cpuTurn() ? "Maskinen tenker …" : this.waitTurn() ? (st.online.status === "waiting" ? "Spillet starter når motspilleren er med." : "Venter på " + st.online.oppName + ". Du får se trekket her.") :
+      v.rackHint = this.cpuTurn() ? "Maskinen tenker …" : this.waitTurn() ? (st.online.status === "waiting" ? "Spillet starter når motspilleren er med." : "Venter på " + st.online.oppName + ". Du får se trekket her.") :
         st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : "Trykk en brikke i lommen for å bruke den i et ord.") : (duel ? "Legg et ord, ta en brikke i lommen eller stå over." : "Lommen tar to brikker du kan bruke i et senere ord.");
       v.pocket = st.pocket.map(function (ch, i) {
         var pid = "p" + i, on = st.sel.indexOf(pid) >= 0;
