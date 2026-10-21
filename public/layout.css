@@ -78,6 +78,7 @@ button.mode:active{background:rgba(0,0,0,.34)}
 .icons{display:flex;gap:2px}
 .ib{width:44px;height:44px;border:0;padding:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .homebottom{flex:none;display:flex;flex-direction:column;padding:8px 0 16px}
+#app[style*="--ad: 5"] .homebottom{padding-bottom:10px}
 .bigbtn{height:56px;flex:none;border:0;border-radius:28px;background:#F2C46B;color:#3B2405;font-family:inherit;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 0 #A9741E;cursor:pointer}
 .bigbtn:active{transform:translateY(2px);box-shadow:0 2px 0 #A9741E}
 .note{border-radius:12px;background:rgba(242,196,107,.14);box-shadow:inset 0 0 0 1.5px rgba(242,196,107,.5);padding:10px 12px;font-size:14px;line-height:1.4}
@@ -304,7 +305,8 @@ body{position:fixed;inset:0}
 .chip.danger{background:#B3261E;color:#fff}
 /* Ads (free version) and Premium. The slots sit outside #app in real pixels. */
 #app{padding-bottom:calc(var(--sb,0px) + var(--ad,0px))}
-#adbar{position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom,0);z-index:50;height:56px;display:flex;align-items:center;justify-content:center;background:#F7F4EC;color:#5D6B67;font-family:'Bricolage Grotesque',sans-serif}
+#view{height:100%}
+#adbar{position:absolute;left:0;right:0;bottom:var(--sb,0px);z-index:50;height:56px;display:flex;align-items:center;justify-content:center;background:#F7F4EC;color:#5D6B67;font-family:'Bricolage Grotesque',sans-serif}
 #adbar[hidden],#adfull[hidden]{display:none}
 .adslot{width:320px;height:50px;display:flex;align-items:center;justify-content:center;font-size:13px;border:1.5px dashed rgba(60,45,20,.25);box-sizing:border-box}
 .adtag{position:absolute;left:6px;top:3px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7A8682}

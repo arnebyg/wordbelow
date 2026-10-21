@@ -8,7 +8,7 @@ class DCLogic {
 }
 
 var App = (function () {
-  var comp = null, H = [], queued = false, root = null;
+  var comp = null, H = [], queued = false, root = null, view = null;
 
   function esc(x) { return String(x == null ? "" : x).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function on(fn) { if (typeof fn !== "function") return ""; H.push(fn); return ' data-h="' + (H.length - 1) + '"'; }
@@ -304,10 +304,10 @@ var App = (function () {
   function patch(html) {
     var t = document.createElement("template"); t.innerHTML = html;
     t.content.querySelectorAll("[data-region]").forEach(function (r) {
-      var cur = root.querySelector('[data-region="' + r.getAttribute("data-region") + '"]');
+      var cur = view.querySelector('[data-region="' + r.getAttribute("data-region") + '"]');
       if (cur) cur.innerHTML = r.innerHTML;
     });
-    var a = t.content.querySelectorAll("[data-h]"), b = root.querySelectorAll("[data-h]");
+    var a = t.content.querySelectorAll("[data-h]"), b = view.querySelectorAll("[data-h]");
     if (a.length !== b.length) return false;
     b.forEach(function (el, i) { el.setAttribute("data-h", a[i].getAttribute("data-h")); if (a[i].hasAttribute("disabled")) el.setAttribute("disabled", ""); else el.removeAttribute("disabled"); });
     return true;
@@ -318,7 +318,7 @@ var App = (function () {
     if (swipe && swipe.touch) { pending = true; return; }
     pending = false;
     var keep = {}, act = document.activeElement, focusId = act && act.id && act.tagName === "INPUT" ? act.id : null, focusSel = focusId ? [act.selectionStart, act.selectionEnd] : null;
-    root.querySelectorAll("[data-keep]").forEach(function (el) { keep[el.getAttribute("data-keep")] = el.scrollLeft; });
+    view.querySelectorAll("[data-keep]").forEach(function (el) { keep[el.getAttribute("data-keep")] = el.scrollLeft; });
     H = [];
     var v = comp.renderVals();
     var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
@@ -326,21 +326,21 @@ var App = (function () {
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
     lastPhase = v.phase;
-    root.innerHTML = html;
-    root.querySelectorAll("[data-keep]").forEach(function (el) { var k = el.getAttribute("data-keep"); if (keep[k]) el.scrollLeft = keep[k]; });
+    view.innerHTML = html;
+    view.querySelectorAll("[data-keep]").forEach(function (el) { var k = el.getAttribute("data-keep"); if (keep[k]) el.scrollLeft = keep[k]; });
     if (v.lname !== lastLay || !keep.lay) {
-      root.querySelectorAll('[data-keep] .chip.on').forEach(function (c) { var row = c.parentNode; row.scrollLeft = Math.max(0, c.offsetLeft - row.offsetLeft - (row.clientWidth - c.offsetWidth) / 2); });
+      view.querySelectorAll('[data-keep] .chip.on').forEach(function (c) { var row = c.parentNode; row.scrollLeft = Math.max(0, c.offsetLeft - row.offsetLeft - (row.clientWidth - c.offsetWidth) / 2); });
       lastLay = v.lname;
     }
-    if (focusId) { var fe = root.querySelector("#" + focusId); if (fe) { fe.focus(); try { fe.setSelectionRange(focusSel[0], focusSel[1]); } catch (e) {} } }
+    if (focusId) { var fe = view.querySelector("#" + focusId); if (fe) { fe.focus(); try { fe.setSelectionRange(focusSel[0], focusSel[1]); } catch (e) {} } }
     App.lastVals = v;
     showAds(v);
-    var af = root.querySelector("[data-autofocus]");
+    var af = view.querySelector("[data-autofocus]");
     if (af && document.activeElement !== af) { af.focus(); try { af.select(); } catch (e) {} }
     fitBoard();
   }
-  // Ads live outside the game's screen (index.html), so a re-render never reloads them. The banner sits at
-  // the bottom and the game leaves room for it (--ad); the full-screen ad covers everything until closed.
+  // Ads live outside the re-rendered view (index.html), so a re-render never reloads them. The banner sits in
+  // the game's own bottom padding (--ad), just above the home bar; the full-screen ad covers everything until closed.
   // window.WB_ADS.banner(el) / .interstitial(el) fill the slots once an ad network is connected (README).
   var adShown = { banner: false, full: false }, adBanner = null, adFull = null;
   function adFill(el, kind) { if (!el.getAttribute("data-filled") && window.WB_ADS && window.WB_ADS[kind]) { el.setAttribute("data-filled", "1"); try { window.WB_ADS[kind](el); } catch (e) {} } }
@@ -351,7 +351,7 @@ var App = (function () {
     if (banner !== adShown.banner) {
       adShown.banner = banner; adBanner.hidden = !banner;
       if (banner) adFill(adBanner.querySelector("[data-ad]"), "banner");
-      root.style.setProperty("--ad", banner ? Math.ceil(adBanner.offsetHeight / scaleNow) + "px" : "0px");
+      root.style.setProperty("--ad", banner ? adBanner.offsetHeight + "px" : "0px");
       fitBoard();
     }
     if (full !== adShown.full) {
@@ -366,7 +366,7 @@ var App = (function () {
   });
   // The board takes all the room the screen has left, scaled to where its tiles actually lie.
   function fitBoard() {
-    var inner = root.querySelector(".board > .bfit");
+    var inner = view.querySelector(".board > .bfit");
     if (!inner) return;
     var bd = inner.parentNode, f = inner.getAttribute("data-fit").split(",").map(Number);
     var bw = bd.clientWidth, bh = bd.clientHeight - (bd.querySelector(".bdots") ? 14 : 0);
@@ -404,7 +404,6 @@ var App = (function () {
     root.classList.toggle("edge", EDGE > 0);
     var x = Math.round(Math.max(0, (w - 390 * s) / 2)), y = 0;
     scaleNow = s;
-    if (adShown.banner && adBanner) root.style.setProperty("--ad", Math.ceil(adBanner.offsetHeight / s) + "px");
     // zoom lays the page out again at the new size, so text is drawn sharp; a transform shrinks a picture of it,
     // and Safari showed the part above the scrolling list blurred. A zoomed element's own left and top are zoomed too.
     if (useZoom) { root.style.zoom = s; root.style.transform = ""; root.style.left = x / s + "px"; root.style.top = y / s + "px"; }
@@ -413,7 +412,7 @@ var App = (function () {
   }
 
   function boot() {
-    root = document.getElementById("app");
+    root = document.getElementById("app"); view = document.getElementById("view");
     // A sideways swipe on an element marked data-swipe calls that handler with +1 (finger to the left) or -1.
     root.addEventListener("pointerdown", function (e) {
       if (e.pointerType === "touch" && swipe && swipe.touch) return;
