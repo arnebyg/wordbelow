@@ -1,5 +1,5 @@
 var PTS = { A:1,B:4,C:10,D:1,E:1,F:2,G:2,H:3,I:1,J:4,K:2,L:1,M:2,N:1,O:2,P:4,R:1,S:1,T:1,U:4,V:4,W:8,Y:6,Æ:6,Ø:5,Å:4,"*":0 };
-var LEN_BONUS = 5, RARE = "ÆYWC", VOW = "AEIOUYÆØÅ", ALPHABET = "ABCDEFGHIJKLMNOPRSTUVWYÆØÅ";
+var LEN_BONUS = 5, JOKER_EAGER = 8, RARE = "ÆYWC", VOW = "AEIOUYÆØÅ", ALPHABET = "ABCDEFGHIJKLMNOPRSTUVWYÆØÅ";
 // The Norwegian Scrabble set with six consonants swapped for vowels: 100 tiles, two of them blank (jokers).
 // One fewer N, R, S, T, D, K; one more A, I, O, U and two more E. That is 40 vowels of 98 letters, near the
 // 39 % vowels in the 3–5-letter words of NSF-ordlista; Scrabble's own 34 left far more tiles stuck in simulation.
@@ -583,29 +583,38 @@ class Component extends DCLogic {
     if (cleared) { s += 50; parts.push("ryddet brettet +50"); }
     return { total: s, parts: parts, cleared: cleared };
   }
-  // Words the active player can lay now from the open tiles and their own pocket (jokers left out), best first.
-  // maxLen limits the length; pool is how many of the quick-ranked words are scored in full.
+  // Words the active player can lay now from the open tiles, their own pocket and any open jokers, best first.
+  // A joker stands in only for a letter that is missing; it gives 0 points, so it is never spent where a real
+  // tile fits. Moves that use a joker rank a little higher (JOKER_EAGER), so the machine takes an open joker
+  // before the other player can, and the hint suggests it too.
   candidates(maxLen, pool) {
-    var st = this.state, S = this.S(), live = this.live(), groups = {};
-    Object.keys(live).filter(function (id) { return st.letters[id] !== "*" && freeIn(S, id, live); }).forEach(function (id) { (groups[st.letters[id]] = groups[st.letters[id]] || []).push(id); });
-    st.pocket.forEach(function (ch, i) { (groups[ch] = groups[ch] || []).push("p" + i); });
+    var st = this.state, S = this.S(), live = this.live(), groups = {}, jokers = [];
+    Object.keys(live).filter(function (id) { return freeIn(S, id, live); }).forEach(function (id) {
+      if (st.letters[id] === "*") jokers.push(id); else (groups[st.letters[id]] = groups[st.letters[id]] || []).push(id);
+    });
+    st.pocket.forEach(function (ch, i) { if (ch !== "*") (groups[ch] = groups[ch] || []).push("p" + i); });
     var avail = {}; Object.keys(groups).forEach(function (ch) { avail[ch] = groups[ch].length; });
-    var list = SEARCH || WORDS, quick = [];
+    var J = jokers.length, list = SEARCH || WORDS, quick = [];
     for (var k = 0; k < list.length; k++) {
-      var w = list[k], need = {}, ok = true, q = 0;
+      var w = list[k], need = {}, miss = 0, q = 0;
       if (maxLen && w.length > maxLen) continue;
-      for (var ch of w) { need[ch] = (need[ch] || 0) + 1; if (need[ch] > (avail[ch] || 0)) { ok = false; break; } q += PTS[ch] || 0; }
-      if (ok) quick.push({ w: w, q: q + LEN_BONUS * Math.max(0, w.length - 3) });
+      for (var ch of w) { need[ch] = (need[ch] || 0) + 1; if (need[ch] > (avail[ch] || 0)) { if (++miss > J) break; } else q += PTS[ch] || 0; }
+      if (miss <= J) quick.push({ w: w, miss: miss, q: q + LEN_BONUS * Math.max(0, w.length - 3) + JOKER_EAGER * miss });
     }
     quick.sort(function (a, b) { return b.q - a.q; });
     var out = [], self = this;
     quick.slice(0, pool || 60).forEach(function (x) {
-      var used = {}, sel = [];
-      for (var ch of x.w) { var n = used[ch] || 0; sel.push(groups[ch][n]); used[ch] = n + 1; }
+      var used = {}, sel = [], ja = {}, nj = 0;
+      for (var ch of x.w) {
+        var n = used[ch] || 0;
+        if (groups[ch] && n < groups[ch].length) { sel.push(groups[ch][n]); used[ch] = n + 1; }
+        else { var jid = jokers[nj++]; sel.push(jid); ja[jid] = ch; }
+      }
       if (!sel.some(function (id) { return id[0] !== "p"; })) return;
-      out.push({ w: x.w, sel: sel, pts: self.evaluate(sel).total });
+      var pts = self.evaluate(sel).total;
+      out.push({ w: x.w, sel: sel, ja: ja, jokers: x.miss, pts: pts, rank: pts + JOKER_EAGER * x.miss });
     });
-    out.sort(function (a, b) { return b.pts - a.pts; });
+    out.sort(function (a, b) { return b.rank - a.rank; });
     return out;
   }
   bestWord() { return this.candidates()[0] || null; }
@@ -627,7 +636,7 @@ class Component extends DCLogic {
   pocketTile(id) {
     var s2 = this.state, ch = s2.letters[id], gone = Object.assign({}, s2.gone); gone[id] = true;
     var me = this.online() ? (s2.account ? s2.account.name : "Du") : this.names()[s2.turn];
-    var who = this.duel() ? me + " tok " + ch + " i lommen." : ch + " ligger i lommen. Bruk den i et ord senere, ellers trekkes " + PTS[ch] + " poeng ved slutten.";
+    var who = this.duel() ? me + " tok " + ch + " i lommen." : ch + " ligger i lommen. Bruk den i et ord senere.";
     this.setState({ gone: gone, sel: [], confirm: null, passes: 0, pocket: s2.pocket.concat([ch]), tone: "info", msg: who });
     if (!Object.keys(this.live()).length) { this.finishGame(); return true; }
     this.endTurn(this.online() ? 0 : 900);
@@ -664,11 +673,12 @@ class Component extends DCLogic {
     var self = this, st = this.state;
     if (st.phase !== "play" || !this.cpuTurn()) return;
     var pick = null;
-    if (st.diff === "lett") { var c = this.candidates(4, 40); pick = c.length ? c[Math.floor(Math.random() * Math.min(c.length, 12))] : null; }
-    else if (st.diff === "middels") { var c2 = this.candidates(7, 60); pick = c2.length ? c2[Math.floor(Math.random() * Math.min(c2.length, 6))] : null; }
+    var withJoker = function (c) { return c.filter(function (x) { return x.jokers; })[0] || null; };
+    if (st.diff === "lett") { var c = this.candidates(4, 40); pick = withJoker(c) || (c.length ? c[Math.floor(Math.random() * Math.min(c.length, 12))] : null); }
+    else if (st.diff === "middels") { var c2 = this.candidates(7, 60); pick = withJoker(c2.slice(0, 12)) || (c2.length ? c2[Math.floor(Math.random() * Math.min(c2.length, 6))] : null); }
     else pick = this.bestWord();
     if (pick) {
-      this.setState({ sel: pick.sel, busy: true, msg: "Maskinen legger «" + pick.w + "» …", tone: "info" });
+      this.setState({ sel: pick.sel, jokerAs: Object.assign({}, st.jokerAs, pick.ja), busy: true, msg: "Maskinen legger «" + pick.w + "»" + (pick.jokers ? " med joker" : "") + " …", tone: "info" });
       this.timers.push(setTimeout(function () { self.setState({ busy: false }); if (!self.playWord()) self.pass(); }, 1100));
       return;
     }
@@ -1101,7 +1111,7 @@ class Component extends DCLogic {
       v.hint = function () {
         if (locked) return;
         var b = self.bestWord();
-        self.setState({ score: self.state.score - 5, tone: "info", msg: b ? "Hint −5: prøv «" + b.w + "» (" + b.pts + " p)" : "Hint −5: ingen ord uten joker. Prøv jokeren" + (duel ? ", lommen eller stå over." : ", eller lever.") });
+        self.setState({ score: self.state.score - 5, tone: "info", msg: b ? "Hint −5: prøv «" + b.w + "» (" + b.pts + " p)" + (b.jokers ? ", med jokeren som " + Object.keys(b.ja).map(function (k) { return b.ja[k]; }).join(" og ") : "") : "Hint −5: ingen ord nå. Prøv " + (duel ? "lommen eller stå over." : "lommen, eller lever.") });
       };
       v.finishLabel = duel ? "Stå over" : "Lever";
       v.finishOff = duel && locked;
