@@ -295,3 +295,5 @@ html.light .helpsheet{background:var(--lightbg,#EFE8D8)}
 .edgebar.them i{background:#7FC4DC}
 html.light #app.edge .edgebar{background:rgba(60,45,20,.12)}
 html.light .edgebar i{background:#D9A441}html.light .edgebar.them i{background:#2F7FA0}
+.namebox.warn .inp{border-color:#F2C46B;box-shadow:0 0 0 2px rgba(242,196,107,.35)}
+.ownrow{flex-wrap:wrap;overflow:visible}

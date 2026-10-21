@@ -158,7 +158,7 @@ var App = (function () {
             '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
           '</div>' +
           '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +
-          '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.editBoard) + '>Endre dette brettet</button>' : '') + '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button></div>' +
+          '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.renameBoard) + '>Gi nytt navn</button><button type="button" class="chip"' + on(v.editBoard) + '>Endre brettet</button>' : '') + '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button></div>' +
         '</div>' : '') +
       '</div>' +
       '<span class="foot">Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
@@ -195,7 +195,7 @@ var App = (function () {
       e.tap((ev.clientX - r.left) / r.width, (ev.clientY - r.top) / r.height);
     };
     return '<div class="screen sub">' + head("Lag eget brett", v.back) + '<div class="scroll">' +
-      '<div class="namebox"><label class="lbl" for="edname">Navn</label><input id="edname" class="inp" type="text" maxlength="24" autocomplete="off" value="' + esc(e.name) + '" data-input="edName"></div>' +
+      '<div class="namebox' + (e.needName ? ' warn' : '') + '"><label class="lbl" for="edname">Navn på brettet</label><input id="edname" class="inp" type="text" maxlength="24" autocomplete="off" autocapitalize="sentences" enterkeyhint="done" placeholder="For eksempel Pyramiden" value="' + esc(e.name) + '" data-input="edName"' + (e.focusName ? ' data-autofocus="1"' : '') + '></div>' +
       '<div class="chips" role="group" aria-label="Lag">' + each(e.layers, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + '</button>'; }) + '</div>' +
       '<div class="edsurf" role="application" aria-label="Brettet. Trykk for å legge eller ta bort en brikke."' + on(tap) + '><div style="' + esc(e.box) + '">' +
         '<span class="edgrid" style="' + esc(e.grid) + '"></span>' +
@@ -320,6 +320,8 @@ var App = (function () {
     }
     if (focusId) { var fe = root.querySelector("#" + focusId); if (fe) { fe.focus(); try { fe.setSelectionRange(focusSel[0], focusSel[1]); } catch (e) {} } }
     App.lastVals = v;
+    var af = root.querySelector("[data-autofocus]");
+    if (af && document.activeElement !== af) { af.focus(); try { af.select(); } catch (e) {} }
     fitBoard();
   }
   // The board takes all the room the screen has left, scaled to where its tiles actually lie.

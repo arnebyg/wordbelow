@@ -737,11 +737,11 @@ class Component extends DCLogic {
   }
   // The board editor. Tiles sit on half steps of a 7 × 6 grid, five layers deep; a tile above the
   // bottom layer must rest on one below, and one with a tile on it cannot be taken away.
-  openEditor(id) {
+  openEditor(id, focusName) {
     var L = id && LAYOUTS.filter(function (x) { return x.id === id; })[0], cells = [];
     if (L) layoutOf(L.id).pos.forEach(function (p) { cells.push({ c: p.c, r: p.r, l: p.l }); });
     var n = LAYOUTS.filter(function (x) { return x.grp === "own"; }).length + 1;
-    this.setState({ phase: "editor", ed: { id: L ? L.id : null, name: L ? L.name : "Mitt brett " + n, cells: cells, layer: 0, hist: [], msg: "", del: false } });
+    this.setState({ phase: "editor", ed: { id: L ? L.id : null, name: L ? L.name : "", cells: cells, layer: 0, hist: [], msg: "", del: false, focusName: !!focusName } });
   }
   edSet(ed, msg) { this.setState({ ed: Object.assign({}, this.state.ed, ed, { msg: msg || "" }) }); }
   edTap(fx, fy) {
@@ -761,7 +761,9 @@ class Component extends DCLogic {
     this.edSet({ cells: ed.cells.concat([{ c: c, r: r, l: l }]), hist: ed.hist.concat([ed.cells]) });
   }
   edSave(play) {
-    var ed = this.state.ed, name = (ed.name || "").trim() || "Mitt brett";
+    var ed = this.state.ed, name = (ed.name || "").trim();
+    if (!name) { this.edSet({ needName: true, focusName: true }, "Gi brettet et navn før du lagrer det."); return; }
+    if (LAYOUTS.some(function (L) { return L.id !== ed.id && L.name.toLowerCase() === name.toLowerCase(); })) { this.edSet({ needName: true, focusName: true }, "Det finnes alt et brett som heter «" + name + "». Velg et annet navn."); return; }
     if (ed.cells.length < OWN_MIN) { this.edSet({}, "Brettet trenger minst " + OWN_MIN + " brikker. Det har " + ed.cells.length + "."); return; }
     var o = { id: ed.id || "egen" + Date.now().toString(36), name: name, cells: cellsOf(ed.cells), start: openAtStart(ed.cells) };
     var i = LAYOUTS.findIndex(function (L) { return L.id === o.id; });
@@ -902,6 +904,7 @@ class Component extends DCLogic {
       v.isOwn = SP.L.grp === "own";
       v.makeBoard = function () { self.openEditor(null); };
       v.editBoard = function () { self.openEditor(SP.L.id); };
+      v.renameBoard = function () { self.openEditor(SP.L.id, true); };
       v.goFriends = function () { self.openFriends(); };
       v.goInvite = function () { self.invite(); };
       v.goRandom = function () { self.random(); };
@@ -917,7 +920,7 @@ class Component extends DCLogic {
     if (st.phase === "editor") {
       var ed = st.ed, n = ed.cells.length, sp = bagSplit(n), top = ed.cells.reduce(function (m, p) { return Math.max(m, p.l); }, -1);
       v.ed = {
-        name: ed.name, n: n, max: OWN_MAX, msg: ed.msg, isNew: !ed.id, del: ed.del,
+        name: ed.name, n: n, needName: !!ed.needName, focusName: !!ed.focusName, max: OWN_MAX, msg: ed.msg, isNew: !ed.id, del: ed.del,
         count: n + " av " + OWN_MAX + " brikker" + (n ? " · " + (top + 1) + " lag · " + openAtStart(ed.cells) + " åpne i starten" : ""),
         mix: n ? sp.v + " vokaler, " + sp.c + " konsonanter" + (sp.j ? " og " + sp.j + (sp.j === 1 ? " joker" : " jokere") : "") + " – 40 % vokaler, som i spillet ellers." : "Trykk på flaten for å legge brikker. Trykk på en brikke for å ta den bort.",
         layers: [0, 1, 2, 3, 4].map(function (l) { var on = l === ed.layer; return { name: "Lag " + (l + 1), on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { self.edSet({ layer: l }); } }; }),
@@ -932,7 +935,7 @@ class Component extends DCLogic {
         save: function () { self.edSave(false); }, play: function () { self.edSave(true); },
         remove: ed.id ? function () { self.edDelete(); } : null
       };
-      v.edName = function (e) { self.state.ed.name = e.target.value; };
+      v.edName = function (e) { self.state.ed.name = e.target.value; self.state.ed.needName = false; self.state.ed.focusName = false; };
       v.back = function () { self.setState({ phase: "home", ed: null }); };
       return v;
     }
