@@ -5,7 +5,12 @@
 // A game's board (layout and seed) and its state (tiles gone, both pockets and scores, whose turn)
 // are stored as the players' phones send them. The server checks that it is the sender's turn and
 // that the move builds on the latest version, but it does not check the word against the word list.
+//
+// A player has 72 hours for each move. When the time is up the game ends and the other player wins;
+// 12 hours before, the player whose turn it is gets a reminder. A Durable Object alarm wakes the hub
+// for both, and every request checks too. Phones that allow it get a push message when it is their turn.
 import { DurableObject } from "cloudflare:workers";
+import { makeVapid, sendPush } from "./push.js";
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 const err = (status, message) => json({ error: message }, status);
@@ -13,6 +18,7 @@ const rid = (n) => { const a = new Uint8Array(n); crypto.getRandomValues(a); ret
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const code = () => { const a = new Uint8Array(6); crypto.getRandomValues(a); return Array.from(a, (b) => CODE_CHARS[b % CODE_CHARS.length]).join(""); };
 const NAME_RE = /^[A-Za-z0-9ÆØÅæøå_.-]{3,16}$/;
+const MOVE_LIMIT = 72 * 3600e3, REMIND_BEFORE = 12 * 3600e3;
 
 export default {
   async fetch(request, env) {
@@ -26,6 +32,8 @@ export class Hub extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
+    // MOVE_LIMIT_MS shortens the limit for testing (wrangler dev --var MOVE_LIMIT_MS:20000); the reminder comes at five sixths of it.
+    this.limit = Number(env.MOVE_LIMIT_MS) || MOVE_LIMIT; this.remind = this.limit * REMIND_BEFORE / MOVE_LIMIT;
     this.sql.exec(`CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE COLLATE NOCASE, token TEXT NOT NULL, created INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS friends (uid TEXT NOT NULL, fid TEXT NOT NULL, PRIMARY KEY (uid, fid));
       CREATE TABLE IF NOT EXISTS games (id TEXT PRIMARY KEY, p0 TEXT NOT NULL, p1 TEXT, layout TEXT NOT NULL, seed INTEGER NOT NULL,
@@ -33,7 +41,11 @@ export class Hub extends DurableObject {
         state TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS games_p0 ON games (p0);
       CREATE INDEX IF NOT EXISTS games_p1 ON games (p1);
-      CREATE INDEX IF NOT EXISTS games_code ON games (code);`);
+      CREATE INDEX IF NOT EXISTS games_code ON games (code);
+      CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS subs (endpoint TEXT PRIMARY KEY, uid TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created INTEGER NOT NULL);
+      CREATE INDEX IF NOT EXISTS subs_uid ON subs (uid);`);
+    try { this.sql.exec("ALTER TABLE games ADD COLUMN reminded INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
   }
   one(q, ...a) { const r = this.sql.exec(q, ...a).toArray(); return r[0] || null; }
   all(q, ...a) { return this.sql.exec(q, ...a).toArray(); }
@@ -47,8 +59,53 @@ export class Hub extends DurableObject {
     const you = g.p0 === me ? 0 : 1, oppId = you === 0 ? g.p1 : g.p0, st = g.state ? JSON.parse(g.state) : null;
     return { id: g.id, you, opp: oppId ? { id: oppId, name: this.nameOf(oppId) } : null, status: g.status, kind: g.kind, code: g.code,
       layout: g.layout, seed: g.seed, turn: g.turn, ver: g.ver, myTurn: g.status === "active" && g.turn === you,
-      scores: st && st.P ? st.P.map((p) => p.score) : [0, 0], last: st ? st.last || "" : "", result: st ? st.result || null : null, updated: g.updated };
+      scores: st && st.P ? st.P.map((p) => p.score) : [0, 0], last: st ? st.last || "" : "", result: st ? st.result || null : null, updated: g.updated,
+      deadline: g.status === "active" ? g.updated + this.limit : null };
   }
+  // Push messages
+  async vapid() {
+    const row = this.one("SELECT v FROM kv WHERE k = 'vapid'");
+    if (row) return JSON.parse(row.v);
+    const v = await makeVapid();
+    this.sql.exec("INSERT OR IGNORE INTO kv (k, v) VALUES ('vapid', ?)", JSON.stringify(v));
+    return JSON.parse(this.one("SELECT v FROM kv WHERE k = 'vapid'").v);
+  }
+  notify(uid, title, body, game) {
+    const subs = uid ? this.all("SELECT * FROM subs WHERE uid = ?", uid) : [];
+    if (!subs.length) return;
+    const origin = (this.one("SELECT v FROM kv WHERE k = 'origin'") || {}).v || "https://wordbelow.app";
+    this.ctx.waitUntil((async () => {
+      const vapid = await this.vapid();
+      for (const sub of subs) {
+        try {
+          const status = await sendPush(vapid, sub, origin, { title, body, game: game || null });
+          if (status === 404 || status === 410) this.sql.exec("DELETE FROM subs WHERE endpoint = ?", sub.endpoint);
+        } catch (e) { /* the next message tries again */ }
+      }
+    })());
+  }
+  // The 72-hour limit and the reminder before it
+  expire() {
+    const now = Date.now();
+    for (const g of this.all("SELECT * FROM games WHERE status = 'active' AND updated < ?", now - this.limit)) {
+      const st = g.state ? JSON.parse(g.state) : { P: [{ score: 0, words: [], pocket: [] }, { score: 0, words: [], pocket: [] }] };
+      const late = g.turn, lateId = late === 0 ? g.p0 : g.p1, winId = late === 0 ? g.p1 : g.p0, lateName = this.nameOf(lateId), winName = this.nameOf(winId);
+      st.result = { timeout: late, resigned: late, winner: 1 - late };
+      st.last = lateName + " brukte mer enn 72 timer på trekket. " + winName + " vant.";
+      this.sql.exec("UPDATE games SET state = ?, status = 'done', ver = ver + 1, updated = ? WHERE id = ?", JSON.stringify(st), now, g.id);
+      this.notify(winId, "Du vant mot " + lateName, lateName + " gjorde ikke trekket sitt innen 72 timer.", g.id);
+      this.notify(lateId, "Tiden gikk ut", "Du brukte mer enn 72 timer på trekket mot " + winName + ", så " + winName + " vant.", g.id);
+    }
+    for (const g of this.all("SELECT * FROM games WHERE status = 'active' AND reminded = 0 AND updated < ?", now - (this.limit - this.remind))) {
+      this.sql.exec("UPDATE games SET reminded = 1 WHERE id = ?", g.id);
+      this.notify(g.turn === 0 ? g.p0 : g.p1, "12 timer igjen", "Du har 12 timer igjen på trekket mot " + this.nameOf(g.turn === 0 ? g.p1 : g.p0) + ". Etter det vinner " + this.nameOf(g.turn === 0 ? g.p1 : g.p0) + ".", g.id);
+    }
+  }
+  async schedule() {
+    const r = this.one("SELECT MIN(CASE WHEN reminded = 0 THEN updated + ? ELSE updated + ? END) AS t FROM games WHERE status = 'active'", this.limit - this.remind, this.limit);
+    if (r && r.t) await this.ctx.storage.setAlarm(Math.max(r.t + 1000, Date.now() + Math.min(60e3, this.limit / 10)));
+  }
+  async alarm() { this.expire(); await this.schedule(); }
   newGame(p0, p1, kind, body) {
     const now = Date.now(), id = rid(8), seed = Math.floor(Math.random() * 1e9);
     const layout = typeof body.layout === "string" && /^[a-z0-9]{2,20}$/.test(body.layout) ? body.layout : "lokket";
@@ -73,6 +130,28 @@ export class Hub extends DurableObject {
 
     const me = this.userOf(request);
     if (!me) return err(401, "Ikke logget inn.");
+    this.sql.exec("INSERT OR REPLACE INTO kv (k, v) VALUES ('origin', ?)", url.origin);
+    this.expire();
+    const res = await this.route(request, url, path, m, body, me);
+    await this.schedule();
+    return res;
+  }
+  async route(request, url, path, m, body, me) {
+    if (path === "/push/key" && m === "GET") return json({ key: (await this.vapid()).pub });
+    if (path === "/push/subscribe" && m === "POST") {
+      const ep = String(body.endpoint || ""), k = body.keys || {};
+      if (!/^https:\/\//.test(ep) || !k.p256dh || !k.auth) return err(400, "Mangler abonnement.");
+      this.sql.exec("INSERT OR REPLACE INTO subs (endpoint, uid, p256dh, auth, created) VALUES (?, ?, ?, ?, ?)", ep, me.id, String(k.p256dh), String(k.auth), Date.now());
+      return json({ ok: true });
+    }
+    if (path === "/push/unsubscribe" && m === "POST") {
+      this.sql.exec("DELETE FROM subs WHERE endpoint = ? AND uid = ?", String(body.endpoint || ""), me.id);
+      return json({ ok: true });
+    }
+    if (path === "/push/test" && m === "POST") {
+      this.notify(me.id, "Varsler er på", "Slik ser det ut når det er din tur.", null);
+      return json({ ok: true });
+    }
 
     if (path === "/me" && m === "GET") {
       const friends = this.all("SELECT u.id, u.name FROM friends f JOIN users u ON u.id = f.fid WHERE f.uid = ? ORDER BY u.name COLLATE NOCASE", me.id);
@@ -104,12 +183,15 @@ export class Hub extends DurableObject {
         const o = this.one("SELECT id FROM users WHERE id = ?", String(body.to));
         if (!o || o.id === me.id) return err(404, "Fant ikke spilleren.");
         this.sql.exec("INSERT OR IGNORE INTO friends (uid, fid) VALUES (?, ?)", me.id, o.id);
-        return json({ game: this.summary(this.newGame(me.id, o.id, "direct", body), me.id) });
+        const ng = this.newGame(me.id, o.id, "direct", body);
+        this.notify(o.id, me.name + " vil spille", me.name + " har startet et spill mot deg.", ng.id);
+        return json({ game: this.summary(ng, me.id) });
       }
       if (body.random) {
         const w = this.one("SELECT * FROM games WHERE status = 'waiting' AND kind = 'random' AND p0 != ? ORDER BY created LIMIT 1", me.id);
         if (w) {
           this.sql.exec("UPDATE games SET p1 = ?, status = 'active', updated = ? WHERE id = ?", me.id, Date.now(), w.id);
+          this.notify(w.p0, "Din tur", me.name + " ble med i det tilfeldige spillet ditt.", w.id);
           return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", w.id), me.id), matched: true });
         }
         const mine = this.one("SELECT * FROM games WHERE status = 'waiting' AND kind = 'random' AND p0 = ?", me.id);
@@ -126,6 +208,7 @@ export class Hub extends DurableObject {
       this.sql.exec("UPDATE games SET p1 = ?, status = 'active', updated = ? WHERE id = ?", me.id, Date.now(), g.id);
       this.sql.exec("INSERT OR IGNORE INTO friends (uid, fid) VALUES (?, ?)", me.id, g.p0);
       this.sql.exec("INSERT OR IGNORE INTO friends (uid, fid) VALUES (?, ?)", g.p0, me.id);
+      this.notify(g.p0, "Din tur", me.name + " ble med på invitasjonen din.", g.id);
       return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", g.id), me.id) });
     }
 
@@ -144,7 +227,10 @@ export class Hub extends DurableObject {
         const text = JSON.stringify(st);
         if (text.length > 60000) return err(400, "For stor spilltilstand.");
         const done = !!st.result, turn = done ? g.turn : 1 - you;
-        this.sql.exec("UPDATE games SET state = ?, turn = ?, ver = ver + 1, status = ?, updated = ? WHERE id = ?", text, turn, done ? "done" : "active", Date.now(), g.id);
+        this.sql.exec("UPDATE games SET state = ?, turn = ?, ver = ver + 1, status = ?, updated = ?, reminded = 0 WHERE id = ?", text, turn, done ? "done" : "active", Date.now(), g.id);
+        const oppId = you === 0 ? g.p1 : g.p0;
+        if (done) this.notify(oppId, "Spillet er ferdig", "Spillet mot " + me.name + " er ferdig. Se hvem som vant.", g.id);
+        else this.notify(oppId, "Din tur mot " + me.name, (typeof st.last === "string" && st.last ? st.last.slice(0, 140) + " " : "") + "Du har 72 timer på deg.", g.id);
         return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", g.id), me.id) });
       }
       if (gm[2] === "/resign" && m === "POST") {
@@ -153,6 +239,7 @@ export class Hub extends DurableObject {
         st.result = { resigned: you, winner: 1 - you };
         st.last = me.name + " ga opp.";
         this.sql.exec("UPDATE games SET state = ?, status = 'done', ver = ver + 1, updated = ? WHERE id = ?", JSON.stringify(st), Date.now(), g.id);
+        this.notify(you === 0 ? g.p1 : g.p0, "Du vant mot " + me.name, me.name + " ga opp.", g.id);
         return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", g.id), me.id) });
       }
       if (gm[2] === "/cancel" && m === "POST") {

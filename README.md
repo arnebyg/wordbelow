@@ -68,3 +68,12 @@ og åpne <http://localhost:8787>. Serveren og databasen kjører lokalt (i `.wran
 ## Toppliste
 
 Topplista for «Alene» lagres bare på telefonen.
+
+## Varsler og tidsgrense
+
+- Hver spiller har 72 timer på et trekk mot andre. Går tiden ut, avslutter serveren spillet og den andre vinner;
+  12 timer før får den som skal trekke en påminnelse. En Durable Object-alarm vekker serveren til begge.
+- Varsler er Web Push rett fra Workeren (`src/push.js`). Serveren lager sitt eget VAPID-nøkkelpar første gang
+  og lagrer det i databasen, så ingen hemmeligheter må settes opp. På iPhone og iPad virker varsler bare når
+  appen er lagt til på Hjem-skjermen (iOS 16.4 eller nyere).
+- For å prøve tidsgrensen lokalt: `npx wrangler dev --var MOVE_LIMIT_MS:20000` (20 sekunder i stedet for 72 timer).

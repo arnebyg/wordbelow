@@ -146,6 +146,7 @@ var App = (function () {
       (v.homeMsg ? '<div class="note">' + esc(v.homeMsg) + '</div>' : '') +
       (v.noAccount ? '<div class="card acc"><span class="ct">Spill mot andre</span><span class="cs">Velg et brukernavn, så kan venner finne deg og dere kan spille mot hverandre.</span><button type="button" class="pill solid"' + on(v.makeAccount) + '>Velg brukernavn</button></div>' : '') +
       (!v.noAccount && v.inviteCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closeInviteCard) + '>' + IC.close + '</button><span class="ct">WordBelow er morsommere med venner!</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.inviteNow) + '>Inviter</button><button type="button" class="pill"' + on(v.closeInviteCard) + '>Lukk</button></div></div>' : '') +
+      (v.pushCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closePushCard) + '>' + IC.close + '</button><span class="ct">Varsler</span><span class="cs">' + esc(v.pushCardSay) + '</span><div class="cbtns">' + (v.pushCardOn ? '<button type="button" class="pill solid"' + on(v.pushCardOn) + '>Slå på varsler</button>' : '') + '<button type="button" class="pill"' + on(v.closePushCard) + '>Ikke nå</button></div></div>' : '') +
       (games ? '<h2 class="sec">Dine spill' + (v.myTurns ? '<span class="secr">' + esc(v.myTurns) + '</span>' : '') + '</h2><div class="grow">' + games + '</div>' : '') +
       '<div class="ngpanel"><h2 class="sec">Nytt spill</h2>' +
         (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
@@ -227,6 +228,10 @@ var App = (function () {
         return '<button type="button" class="radio" role="radio" aria-checked="' + b.on + '"' + on(b.pick) + '><span class="dot' + (b.on ? ' on' : '') + '"></span><span class="swatch" style="background:' + b.hex + '"></span><span>' + esc(b.name) + '</span></button>';
       }) + '</div>' +
       '<p class="fine">' + esc(v.bgNote) + '</p>' +
+      '<h2 class="sec">Varsler</h2><div class="group"><div class="opt"><span class="ot"><span class="t">Når det er din tur</span><span class="s">' + esc(v.pushSay) + '</span></span>' +
+        (v.pushOn ? '<button type="button" class="act green go"' + on(v.pushOn) + '>Slå på</button>' : '') + (v.pushOff ? '<button type="button" class="pill small"' + on(v.pushOff) + '>Slå av</button>' : '') + '</div></div>' +
+      (v.pushMsg ? '<div class="note">' + esc(v.pushMsg) + '</div>' : '') +
+      '<p class="fine">Mot andre har hver spiller 72 timer på et trekk. Går tiden ut, er spillet over og den andre vinner.</p>' +
       '<h2 class="sec">Konto</h2><div class="group"><div class="opt"><span class="ot"><span class="t">' + esc(v.account ? v.account.name : "Ingen konto ennå") + '</span><span class="s">' + (v.account ? "Kontoen ligger på denne telefonen." : "Du får en når du spiller mot andre første gang.") + '</span></span></div></div>' +
       '</div></div>';
   }

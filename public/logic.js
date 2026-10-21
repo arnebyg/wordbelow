@@ -219,7 +219,7 @@ ownLoad();
 // The active player's score, pocket and words live in st.score, st.pocket and st.words, as in solo;
 // st.P holds both players and is brought up to date at the end of every turn.
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
-var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1";
+var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1";
 var API = "/api";
 var BG_KEY = "ordspill/bakgrunn/v1";
 var BGS = [{ id: "filt", name: "Filtgrønn (standard)", hex: "#1E6550" }, { id: "natt", name: "Nattblå", hex: "#142A52" }, { id: "fjord", name: "Fjordblå", hex: "#1D5470" },
@@ -236,6 +236,18 @@ function api(path, opts) {
     });
   }, function () { var e = new Error("Får ikke kontakt med serveren. Er du på nett?"); e.status = 0; throw e; });
 }
+function left(ms) {
+  var h = Math.max(0, (ms - Date.now()) / 3600e3);
+  return h >= 1 ? Math.floor(h) + " t igjen" : Math.max(1, Math.round(h * 60)) + " min igjen";
+}
+// Push: what this phone can do. iPhone and iPad allow it only for the app added to the Home Screen.
+function pushCan() {
+  var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+  if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return ios && !standalone ? "install" : "none";
+  return Notification.permission === "denied" ? "denied" : "ok";
+}
+function b64uBytes(s) { var b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
 function ago(ms) {
   var m = Math.round((Date.now() - ms) / 60000);
   if (m < 1) return "nå nettopp"; if (m < 60) return m + " min siden";
@@ -252,7 +264,7 @@ class Component extends DCLogic {
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
       account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
-      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" } };
+      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" }, push: "unknown", pushMsg: "", pushCard: !lsGet(PUSH_CARD_KEY) };
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
   fresh(id, msg, seed) {
@@ -269,6 +281,10 @@ class Component extends DCLogic {
     if (window.applyTheme) window.applyTheme(this.state.theme, this.state.bg);
     var join = (location.search.match(/[?&]join=([A-Za-z0-9]{4,10})/) || [])[1];
     if (join) { try { history.replaceState(null, "", location.pathname); } catch (e) {} this.state.codeIn = join.toUpperCase(); if (this.state.account) this.joinCode(); else this.setState({ phase: "account", after: "join" }); }
+    var gid = (location.search.match(/[?&]game=([0-9a-f]{16})/) || [])[1];
+    if (gid) { try { history.replaceState(null, "", location.pathname); } catch (e) {} if (this.state.account) this.openOnline(gid); }
+    if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.openGame && self.state.account) self.openOnline(e.data.openGame); });
+    this.pushCheck();
     this.refreshGames();
     this.poll = setInterval(function () { self.tick(); }, 5000);
     document.addEventListener("visibilitychange", function () { if (!document.hidden) self.tick(true); });
@@ -312,6 +328,46 @@ class Component extends DCLogic {
     this.setState({ board: all });
   }
   // Account and the server
+  // Push messages when it is your turn
+  pushCheck() {
+    var self = this, can = pushCan();
+    if (can !== "ok") { this.setState({ push: can }); return; }
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      self.setState({ push: sub ? "on" : "off" });
+      if (sub && self.state.account) api("/push/subscribe", { method: "POST", body: sub.toJSON() }).catch(function () {});
+    }).catch(function () { self.setState({ push: "off" }); });
+  }
+  pushOn() {
+    var self = this;
+    if (this.needAccount(null)) return;
+    if (pushCan() !== "ok") { this.pushCheck(); return; }
+    this.setState({ pushMsg: "Slår på varsler …" });
+    Notification.requestPermission().then(function (p) {
+      if (p !== "granted") throw new Error(p === "denied" ? "Telefonen sa nei til varsler. Slå dem på for WordBelow i telefonens innstillinger." : "Varsler ble ikke slått på.");
+      return Promise.all([navigator.serviceWorker.ready, api("/push/key")]);
+    }).then(function (r) {
+      return r[0].pushManager.getSubscription().then(function (old) { return old || r[0].pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(r[1].key) }); });
+    }).then(function (sub) { return api("/push/subscribe", { method: "POST", body: sub.toJSON() }); }).then(function () {
+      lsSet(PUSH_CARD_KEY, true);
+      self.setState({ push: "on", pushCard: false, pushMsg: "Varsler er på. Du skal ha fått et prøvevarsel nå." });
+      return api("/push/test", { method: "POST" });
+    }).catch(function (e) { self.setState({ push: pushCan() === "denied" ? "denied" : self.state.push, pushMsg: e.message }); });
+  }
+  pushOff() {
+    var self = this;
+    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
+      if (!sub) return;
+      return api("/push/unsubscribe", { method: "POST", body: { endpoint: sub.endpoint } }).catch(function () {}).then(function () { return sub.unsubscribe(); });
+    }).then(function () { self.setState({ push: "off", pushMsg: "Varsler er av." }); }, function (e) { self.setState({ pushMsg: e.message }); });
+  }
+  pushSay() {
+    var p = this.state.push;
+    return p === "on" ? "På. Du får beskjed når det er din tur, når noen blir med, og 12 timer før tiden går ut." :
+      p === "install" ? "På iPhone og iPad kommer varsler bare til appen på Hjem-skjermen. Åpne siden i Safari, trykk Del og «Legg til på Hjem-skjerm», og slå på varsler der." :
+      p === "denied" ? "Telefonen har sagt nei til varsler for WordBelow. Slå dem på i telefonens innstillinger." :
+      p === "none" ? "Denne nettleseren kan ikke vise varsler." :
+      !this.state.account ? "Varsler krever at du har valgt brukernavn." : "Av. Slå på for å få beskjed når det er din tur.";
+  }
   // Own boards live on this phone only, so the other player could not see them.
   ownOffline() {
     if (this.S().L.grp !== "own") return false;
@@ -427,7 +483,7 @@ class Component extends DCLogic {
       else next.msg = (turn === g.you ? "Din tur. " : o.oppName + " sin tur. ") + (s && s.last ? s.last : "Nytt spill på " + base.lay.replace(/^./, function (x) { return x.toUpperCase(); }) + ".");
       if (g.status === "done" && s && s.result) {
         next.phase = "done";
-        next.played = { duel: true, res: s.result.res || self.resultOf(P, Object.keys(base.letters).length - Object.keys(next.gone).length), left: s.result.left || 0, lay: g.layout, resigned: s.result.resigned };
+        next.played = { duel: true, res: s.result.res || self.resultOf(P, Object.keys(base.letters).length - Object.keys(next.gone).length), left: s.result.left || 0, lay: g.layout, resigned: s.result.resigned, timeout: s.result.timeout };
         self.statOnline({ id: g.id, you: g.you, result: Object.assign({}, s.result, { res: next.played.res }), scores: P.map(function (p) { return p.score; }) });
       }
       self.setState(next);
@@ -757,7 +813,11 @@ class Component extends DCLogic {
       var row = function (g) {
         var who = g.opp ? g.opp.name : g.kind === "invite" ? "Invitasjon · kode " + g.code : "Tilfeldig motspiller";
         var sc = g.scores[g.you] + "–" + g.scores[1 - g.you], L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0];
-        var line = g.status === "waiting" ? (g.kind === "invite" ? "Del koden med den du vil spille mot" : "Venter på at noen andre søker") : g.status === "done" ? (g.result && g.result.res ? (function () { var a = g.result.res[g.you].score, b = g.result.res[1 - g.you].score; return (g.result.resigned === g.you ? "Du ga opp · " : g.result.resigned === 1 - g.you ? "Motspilleren ga opp · " : "") + (a > b ? "Du vant " : a < b ? "Du tapte " : "Uavgjort ") + a + "–" + b; })() : "Ferdig") : (L ? L.name : g.layout) + " · " + sc + (g.last ? " · " + g.last : "");
+        var res = g.result, won = res && res.winner !== undefined ? (res.winner === g.you ? 1 : res.winner < 0 ? -1 : 0) : null;
+        var why = res && res.timeout !== undefined ? (res.timeout === g.you ? "Tiden din gikk ut · " : "Motspilleren brukte for lang tid · ") : res && res.resigned !== undefined ? (res.resigned === g.you ? "Du ga opp · " : "Motspilleren ga opp · ") : "";
+        var line = g.status === "waiting" ? (g.kind === "invite" ? "Del koden med den du vil spille mot" : "Venter på at noen andre søker") :
+          g.status === "done" ? (res && res.res ? (function () { var a = res.res[g.you].score, b = res.res[1 - g.you].score; return why + (a > b ? "Du vant " : a < b ? "Du tapte " : "Uavgjort ") + a + "–" + b; })() : res && won !== null ? why + (won > 0 ? "Du vant" : won < 0 ? "Uavgjort" : "Du tapte") : "Ferdig") :
+          (L ? L.name : g.layout) + " · " + sc + (g.deadline ? " · " + (g.myTurn ? "du har " : "de har ") + left(g.deadline) : "") + (g.last ? " · " + g.last : "");
         return { id: g.id, initial: (who[0] || "?").toUpperCase(), who: who, line: line, when: ago(g.updated), cls: "game" + (g.myTurn ? " mine" : ""), mine: !!g.myTurn,
           open: function () { if (g.status === "waiting" && g.kind === "invite") self.shareCode(g); else self.openOnline(g.id); },
           canCancel: g.status === "waiting", cancel: function () { self.cancelInvite(g); } };
@@ -775,6 +835,13 @@ class Component extends DCLogic {
       v.inviteCard = st.inviteCard;
       v.closeInviteCard = function () { lsSet(INVITE_CARD_KEY, true); self.setState({ inviteCard: false }); };
       v.inviteNow = function () { self.invite(); };
+      v.pushCard = st.account && st.pushCard && (st.push === "off" || st.push === "install") && gs.length > 0;
+      v.pushCardSay = st.push === "install" ? "Vil du ha beskjed når det er din tur? På iPhone må appen først legges til på Hjem-skjermen: trykk Del i Safari og «Legg til på Hjem-skjerm»." : "Få beskjed når det er din tur. Du har 72 timer på hvert trekk.";
+      v.pushCardOn = st.push === "off" ? function () { self.pushOn(); } : null;
+      v.openSettings = function () { self.setState({ phase: "settings" }); };
+      v.openStats = function () { self.setState({ phase: "stats" }); };
+      v.makeAccount = function () { self.setState({ phase: "account", after: null, acctMsg: "" }); };
+      v.closePushCard = function () { lsSet(PUSH_CARD_KEY, true); self.setState({ pushCard: false }); };
       var PICKS = [
         { id: "cpu", grp: "off", name: "Maskinen", go: "Spill mot maskinen", run: function () { self.start("duel", "cpu"); } },
         { id: "friend", grp: "on", name: "Venn", go: "Velg venn", say: "Velg blant vennene dine, eller send en invitasjon med kode. Dere spiller på brettet du velger her.", run: function () { self.openFriends(); } },
@@ -873,7 +940,10 @@ class Component extends DCLogic {
       v.bgNote = st.bg === "sand" ? "Sand er en lys bakgrunn og gir lyst tema uansett valget over." :
         lightNow ? "De mørke bakgrunnene vises i mørkt tema. Nå er lyst tema på, så du ser dem ikke før du velger Mørkt tema (eller telefonen går over til mørkt)." :
         "De mørke bakgrunnene vises i mørkt tema; Sand er lys.";
-      v.back = function () { self.goHome(); };
+      v.pushSay = this.pushSay(); v.pushMsg = st.pushMsg;
+      v.pushOn = st.push === "off" && st.account ? function () { self.pushOn(); } : null;
+      v.pushOff = st.push === "on" ? function () { self.pushOff(); } : null;
+      v.back = function () { self.setState({ pushMsg: "" }); self.goHome(); };
       return v;
     }
     if (st.phase === "stats") {
@@ -984,7 +1054,7 @@ class Component extends DCLogic {
         if (rec.resigned !== undefined) win = 1 - rec.resigned;
         var you = online ? st.online.you : 0;
         v.score = r[you].score + " – " + r[1 - you].score;
-        v.doneSub = (rec.resigned !== undefined ? (rec.resigned === you ? "Du ga opp" : nm[rec.resigned] + " ga opp") + " · " : "") +
+        v.doneSub = (rec.timeout !== undefined ? (rec.timeout === you ? "Du brukte mer enn 72 timer" : nm[rec.timeout] + " brukte mer enn 72 timer") + " · " : rec.resigned !== undefined ? (rec.resigned === you ? "Du ga opp" : nm[rec.resigned] + " ga opp") + " · " : "") +
           (win < 0 ? "Uavgjort" : online ? (win === you ? "Du vant mot " + st.online.oppName : st.online.oppName + " vant") :
             st.opp === "cpu" ? (win === 0 ? "Du vant mot maskinen (" + this.diffName() + ")" : "Maskinen (" + this.diffName() + ") vant") : nm[win] + " vant") +
           " · " + (rec.left ? rec.left + " brikker ble liggende" : "brettet ryddet");
