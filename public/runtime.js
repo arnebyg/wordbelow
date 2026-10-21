@@ -20,7 +20,8 @@ var App = (function () {
   '<div class="top">' +
     '<button type="button" class="back" aria-label="Til menyen"' + on(v.toMenu) + '><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13 4l-7 7 7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>' +
     '<div class="title"><span class="t1">' + esc(v.kicker) + '</span><span class="t2">' + esc(v.lsub) + '</span></div>' +
-    '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>Hint −5</button>' +
+    '<span class="topr"><button type="button" class="qb" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
+    '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>Hint −5</button></span>' +
   '</div>' +
   '<div class="stats">' +
     each(v.stats, function (x) { return '<div class="' + x.cls + '"><span class="k">' + esc(x.k) + '</span><span class="v">' + esc(x.v) + '</span></div>'; }) +
@@ -134,6 +135,7 @@ var App = (function () {
     else extra = '<p class="fine">' + esc(v.pickSay) + '</p>';
     return '<div class="screen home">' +
       '<div class="hometop"><span class="logo" role="img" aria-label="WordBelow"><span class="lw">word</span><span class="lb">below</span></span><span class="icons">' +
+        '<button type="button" class="ib qi" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
         '<button type="button" class="ib" aria-label="Statistikk"' + on(v.openStats) + '>' + IC.stats + '</button>' +
         '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button></span></div>' +
       '<div class="scroll">' +
@@ -162,6 +164,28 @@ var App = (function () {
       '</div>' +
       '<div class="homebottom"><button type="button" class="bigbtn"' + on(v.go) + '>' + IC.play + '<span>' + esc(v.goLabel) + '</span></button></div>' +
       '</div>';
+  }
+  // The rules and the scoring, over whatever screen is open; closing it leaves the game as it was.
+  function helpView(v) {
+    var sec = function (t, body) { return '<h2 class="sec">' + t + '</h2>' + body; };
+    var rows = function (list) { return '<div class="group statg">' + list.map(function (r) { return '<div class="srow"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join("") + '</div>'; };
+    return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Slik spiller du"><div class="helpsheet">' +
+      '<div class="helphead"><b>Slik spiller du</b><button type="button" class="x" aria-label="Lukk"' + on(v.closeHelp) + '>' + IC.close + '</button></div>' +
+      '<div class="scroll helpbody">' +
+      sec("Målet", '<p>Lag ord av brikkene som er åpne, og få flest poeng. Brikkene ligger i lag oppå hverandre, og når du tar bort de øverste, kommer nye bokstaver fram under. Alle ord i NSF-ordlista 2026 gjelder, uansett lengde.</p>') +
+      sec("Åpne brikker", '<p>En brikke er åpen når ingen brikke ligger oppå den, og den er fri på minst én side, til venstre eller til høyre. Sperrede brikker er mørkere og kan ikke trykkes.</p>') +
+      sec("Et trekk", '<p><b>Legg et ord:</b> trykk brikkene i den rekkefølgen ordet staves. Trykk en valgt brikke igjen for å ta den tilbake, og trykk «Send ord».</p>' +
+        '<p><b>I lommen:</b> i stedet for et ord kan du legge én åpen brikke i lommen. Lommen tar to brikker, og du kan bruke dem i et senere ord. Et ord må alltid ha minst én brikke fra brettet. Det som ligger igjen i lommen til slutt, koster ingenting.</p>' +
+        '<p><b>Stå over:</b> står begge over etter hverandre, er spillet slutt. Det er også slutt når brettet er ryddet. Alene trykker du «Lever» når du er ferdig.</p>' +
+        '<p><b>Joker:</b> det ligger to jokere i brettet. Trykk en åpen joker og velg hvilken bokstav den skal være. Den gir 0 poeng, men bonusene for ordet gjelder.</p>') +
+      sec("Poeng for et ord", '<p>Poengene regnes i denne rekkefølgen:</p>' + rows([
+        ["Bokstaver", "tallet på hver brikke"], ["Bokstavbonus 2×B / 3×B", "dobler eller tredobler den bokstaven"], ["Lag", "+1 for hvert lag brikken ligger over bunnen"],
+        ["Ordbonus 2×O / 3×O", "ganger bokstaver og lag"], ["Sjelden bokstav (Æ, Y, W, C)", "× 1,5"], ["Lengde", "+5 for hver bokstav over tre"],
+        ["Åpner 4 nye brikker eller flere", "+5"], ["Rydder hele brettet", "+50"], ["Hint", "−5"]]) +
+        '<p class="fine">Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Ligger brikkene til sammen 3 lag opp og ordet treffer 2×O, blir det (9 + 3) × 2 = 24, pluss 15 for seks bokstaver: 39 poeng.</p>') +
+      sec("Brettene", '<p><b>Stramme</b> brett har få åpne brikker hele spillet. <b>Åpner seg</b> starter med rundt 8–11 åpne og får flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: 40 % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
+      sec("Mot andre", '<p>Hver spiller har <b>72 timer</b> på et trekk. Går tiden ut, er spillet over og den andre vinner. Slå på varsler i innstillingene for å få beskjed når det er din tur. Ratingen starter på 1200 og går opp eller ned etter hvert spill mot en annen spiller.</p>') +
+      '</div></div></div>';
   }
   function editorView(v) {
     var e = v.ed;
@@ -283,7 +307,7 @@ var App = (function () {
     H = [];
     var v = comp.renderVals();
     var V = { home: homeView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
-    var html = (V[v.phase] || homeView)(v);
+    var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "");
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
     lastPhase = v.phase;

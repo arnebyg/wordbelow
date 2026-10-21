@@ -826,7 +826,8 @@ class Component extends DCLogic {
       lname: S.L.name,
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),
       kicker: online ? "Spill · " + S.L.name : duel ? "Duell · " + S.L.name : "Klassiker · " + S.L.name,
-      score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account
+      score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
+      help: !!st.help, openHelp: function () { self.setState({ help: true }); }, closeHelp: function () { self.setState({ help: false }); }
     };
     v.goHome = function () { self.goHome(); };
     v.toMenu = function () {

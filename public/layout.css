@@ -275,3 +275,16 @@ html.light .rchart .ln{stroke:#B7841F}html.light .rchart .pt{fill:#B7841F}
 @keyframes toast{0%{opacity:0;transform:translate(-50%,-6px)}6%,82%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
 html.light .toast{background:rgba(255,253,247,.95)}
 @media (prefers-reduced-motion: reduce){.toast{animation:toast-still 4s linear forwards}@keyframes toast-still{0%,85%{opacity:1}100%{opacity:0}}}
+/* Help: the rules over the open screen */
+.topr{display:flex;align-items:center;gap:8px;flex:none}
+.qb{width:36px;height:36px;border-radius:50%;border:2px solid rgba(244,239,226,.6);background:transparent;color:inherit;font-family:inherit;font-size:18px;font-weight:800;padding:0;cursor:pointer}
+.ib.qi{font-family:inherit;font-size:22px;font-weight:800}
+.helpov{position:absolute;inset:0;z-index:3000;background:rgba(5,20,16,.55);display:flex;flex-direction:column;justify-content:flex-end}
+.helpsheet{max-height:92%;display:flex;flex-direction:column;border-radius:22px 22px 0 0;background:var(--bg,#1E6550);box-shadow:0 -10px 30px rgba(0,0,0,.4);padding:6px 16px var(--sb,0)}
+.helphead{display:flex;align-items:center;justify-content:space-between;height:52px;flex:none;font-size:20px}
+.helphead .x{width:44px;height:44px;border:0;border-radius:22px;background:transparent;color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.helpbody p{margin:0;font-size:15px;line-height:1.45}
+.helpbody .statg .srow{font-size:14px}
+.helpbody .statg .srow b{font-weight:600}
+html.light .qb{border-color:rgba(28,38,38,.5)}
+html.light .helpsheet{background:var(--lightbg,#EFE8D8)}
