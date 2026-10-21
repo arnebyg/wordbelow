@@ -347,7 +347,9 @@ var App = (function () {
     // The background runs under the status bar and the home bar; the content keeps clear of both, and of the
     // band below the status bar where iOS blurs whatever lies under it (EDGE).
     var w = window.innerWidth, h = window.innerHeight, s = Math.min(w / 390, (h - top - bot) / 640), H = Math.floor(h / s);
-    var EDGE = top ? 24 : 0;
+    // iOS 26 draws a Liquid Glass blur over the top of an installed web app, about 38–40 pt below the status bar;
+    // nothing in the page turns it off, so the content starts below it (24 pt was too little).
+    var EDGE = top ? 40 : 0;
     root.style.height = H + "px";
     root.style.setProperty("--st", Math.round((top + EDGE) / s) + "px");
     root.style.setProperty("--sb", Math.round(bot / s) + "px");
