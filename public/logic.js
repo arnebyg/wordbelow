@@ -776,11 +776,17 @@ class Component extends DCLogic {
   edDelete() {
     var ed = this.state.ed;
     if (!ed.del) { this.edSet({ del: true }, "Trykk «Slett brettet» en gang til for å slette det."); return; }
-    var i = LAYOUTS.findIndex(function (L) { return L.id === ed.id; });
-    if (i >= 0) LAYOUTS.splice(i, 1);
-    delete BUILT[ed.id]; ownSave();
-    var id = LAYOUTS[0].id; lsSet("ordspill/klassiker/brett/v1", id);
-    this.setState(Object.assign(this.fresh(id), { phase: "home", ed: null, homeMsg: "«" + ed.name + "» er slettet." }));
+    this.ownDelete(ed.id, ed.name);
+  }
+  // Removes an own board for good; the board picker moves to the next one, or back to the first board.
+  ownDelete(id, name) {
+    var i = LAYOUTS.findIndex(function (L) { return L.id === id; });
+    if (i < 0) return;
+    LAYOUTS.splice(i, 1);
+    delete BUILT[id]; ownSave();
+    var next = LAYOUTS.filter(function (L) { return L.grp === "own"; })[0] || LAYOUTS[0];
+    lsSet("ordspill/klassiker/brett/v1", next.id);
+    this.setState(Object.assign(this.fresh(next.id), { phase: "home", ed: null, delAsk: null, homeMsg: "«" + name + "» er slettet." }));
   }
   goHome() { this.timers.forEach(clearTimeout); this.timers = []; this.setState({ phase: "home", confirm: null, busy: false, online: null, ngMsg: "" }); this.refreshGames(); }
   // A sideways swipe moves to the next or previous of all twelve boards: in a game only before the first move,
@@ -795,7 +801,7 @@ class Component extends DCLogic {
       this.switchTo(next.id);
     } else {
       lsSet("ordspill/klassiker/brett/v1", next.id);
-      this.setState(Object.assign(this.fresh(next.id), { phase: st.phase, msg: st.msg }));
+      this.setState(Object.assign(this.fresh(next.id), { phase: st.phase, msg: st.msg, delAsk: null, ngMsg: st.delAsk ? "" : st.ngMsg }));
     }
     this.setState({ slide: dir > 0 ? "l" : "r" });
     clearTimeout(this.slideT);
@@ -905,6 +911,11 @@ class Component extends DCLogic {
       v.makeBoard = function () { self.openEditor(null); };
       v.editBoard = function () { self.openEditor(SP.L.id); };
       v.renameBoard = function () { self.openEditor(SP.L.id, true); };
+      v.delAsk = st.delAsk === SP.L.id;
+      v.deleteBoard = function () {
+        if (st.delAsk !== SP.L.id) { self.setState({ delAsk: SP.L.id, ngMsg: "Trykk «Slett» en gang til for å slette «" + SP.L.name + "». Det kan ikke angres." }); return; }
+        self.ownDelete(SP.L.id, SP.L.name);
+      };
       v.goFriends = function () { self.openFriends(); };
       v.goInvite = function () { self.invite(); };
       v.goRandom = function () { self.random(); };

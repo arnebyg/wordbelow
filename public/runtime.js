@@ -158,7 +158,7 @@ var App = (function () {
             '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
           '</div>' +
           '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +
-          '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.renameBoard) + '>Gi nytt navn</button><button type="button" class="chip"' + on(v.editBoard) + '>Endre brettet</button>' : '') + '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button></div>' +
+          '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.renameBoard) + '>Gi nytt navn</button><button type="button" class="chip"' + on(v.editBoard) + '>Endre brettet</button><button type="button" class="chip' + (v.delAsk ? ' danger' : '') + '"' + on(v.deleteBoard) + '>' + (v.delAsk ? 'Slett – sikker?' : 'Slett') + '</button>' : '') + '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button></div>' +
         '</div>' : '') +
       '</div>' +
       '<span class="foot">Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
@@ -392,6 +392,14 @@ var App = (function () {
       var el = e.target.closest("[data-swipe]"), t = e.touches[0];
       if (el && t && e.touches.length === 1) swipe = { x: t.clientX, y: t.clientY, k: el.getAttribute("data-swipe"), touch: true };
     }, { passive: true });
+    // Nothing but the lists may move under a finger: a sideways swipe on a board belongs to the game, and the
+    // page itself never scrolls or rubber-bands (iOS moved the whole screen with the swipe).
+    document.addEventListener("touchmove", function (e) {
+      if (e.touches.length > 1) return;
+      var t = e.touches[0], el = e.target;
+      if (swipe && swipe.touch && el.closest && el.closest("[data-swipe]") && Math.abs(t.clientX - swipe.x) > Math.abs(t.clientY - swipe.y)) { e.preventDefault(); return; }
+      if (!el.closest || !el.closest(".scroll, .gamesrow, .chips, .helpbody, select, input")) e.preventDefault();
+    }, { passive: false });
     root.addEventListener("touchend", function (e) {
       if (!swipe || !swipe.touch) return;
       var t = e.changedTouches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y, k = swipe.k; swipe = null;
