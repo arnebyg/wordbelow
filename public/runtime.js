@@ -298,6 +298,7 @@ var App = (function () {
 
   // Scale the 390 × 844 game to the screen, inside the notch and home-bar insets.
   var probe = null;
+  var useZoom = !!(window.CSS && CSS.supports && CSS.supports("zoom", "2"));
   function fit() {
     if (!probe) {
       probe = document.createElement("div");
@@ -306,9 +307,11 @@ var App = (function () {
     }
     var cs = getComputedStyle(probe), top = parseFloat(cs.paddingTop) || 0, bot = parseFloat(cs.paddingBottom) || 0;
     var w = window.innerWidth, h = window.innerHeight - top - bot, s = Math.min(w / 390, h / 844);
-    root.style.transform = "scale(" + s + ")";
-    root.style.left = Math.max(0, (w - 390 * s) / 2) + "px";
-    root.style.top = top + Math.max(0, (h - 844 * s) / 2) + "px";
+    var x = Math.round(Math.max(0, (w - 390 * s) / 2)), y = Math.round(top + Math.max(0, (h - 844 * s) / 2));
+    // zoom lays the page out again at the new size, so text is drawn sharp; a transform shrinks a picture of it,
+    // and Safari showed the part above the scrolling list blurred. A zoomed element's own left and top are zoomed too.
+    if (useZoom) { root.style.zoom = s; root.style.transform = ""; root.style.left = x / s + "px"; root.style.top = y / s + "px"; }
+    else { root.style.transform = "scale(" + s + ")"; root.style.left = x + "px"; root.style.top = y + "px"; }
   }
 
   function boot() {
