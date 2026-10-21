@@ -247,3 +247,20 @@ html.light .edbtns .act.green{background:#4FB58A}
 html.light .segs{background:rgba(60,45,20,.1)}
 html.light .seg{color:#3F4A47}
 html.light .seg.on{background:#1E6550;color:#F4EFE2}
+/* Player statistics */
+.sthead{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0 4px;flex:none}
+.sthead b{font-size:22px}
+.sthead span:last-child{font-size:14px;color:#C6DCD5}
+.av.big{width:72px;height:84px;font-size:38px;border-radius:12px;box-shadow:0 5px 0 #C2702C}
+.stsel{height:48px;font-size:16px;flex:none}
+.statg.rating .rr{display:flex;align-items:center;gap:10px}
+.statg .info{width:26px;height:26px;border-radius:50%;border:1.5px solid currentColor;background:transparent;color:inherit;font:700 14px/1 Georgia,serif;font-style:italic;padding:0;cursor:pointer}
+.fine.pad{padding:0 16px 12px;margin:0}
+.rchart{display:block;width:100%;height:auto;padding:4px 10px 12px;box-sizing:border-box}
+.rchart .gl{stroke:rgba(244,239,226,.18);stroke-width:1}
+.rchart text{fill:#C6DCD5;font-size:11px;font-family:inherit}
+.rchart .ln{fill:none;stroke:#F2C46B;stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round}
+.rchart .pt{fill:#F2C46B}
+html.light .sthead span:last-child,html.light .rchart text{color:#5D6B67;fill:#5D6B67}
+html.light .rchart .gl{stroke:rgba(60,45,20,.18)}
+html.light .rchart .ln{stroke:#B7841F}html.light .rchart .pt{fill:#B7841F}

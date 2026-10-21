@@ -46,6 +46,9 @@ export class Hub extends DurableObject {
       CREATE TABLE IF NOT EXISTS subs (endpoint TEXT PRIMARY KEY, uid TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created INTEGER NOT NULL);
       CREATE INDEX IF NOT EXISTS subs_uid ON subs (uid);`);
     try { this.sql.exec("ALTER TABLE games ADD COLUMN reminded INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
+    try { this.sql.exec("ALTER TABLE games ADD COLUMN rated INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
+    try { this.sql.exec("ALTER TABLE users ADD COLUMN rating REAL NOT NULL DEFAULT 1200"); } catch (e) { /* already there */ }
+    this.sql.exec("CREATE TABLE IF NOT EXISTS ratings (uid TEXT NOT NULL, at INTEGER NOT NULL, r REAL NOT NULL, gid TEXT); CREATE INDEX IF NOT EXISTS ratings_uid ON ratings (uid, at);");
   }
   one(q, ...a) { const r = this.sql.exec(q, ...a).toArray(); return r[0] || null; }
   all(q, ...a) { return this.sql.exec(q, ...a).toArray(); }
@@ -84,6 +87,25 @@ export class Hub extends DurableObject {
       }
     })());
   }
+  // Rating: Elo from 1200, K = 32, once per finished game between two people. winner is 0, 1 or -1 for a draw.
+  rate(g, winner) {
+    if (!g.p1 || g.rated) return;
+    const a = this.one("SELECT rating FROM users WHERE id = ?", g.p0), b = this.one("SELECT rating FROM users WHERE id = ?", g.p1);
+    if (!a || !b) return;
+    const ea = 1 / (1 + Math.pow(10, (b.rating - a.rating) / 400)), sa = winner === 0 ? 1 : winner === 1 ? 0 : 0.5, now = Date.now();
+    const ra = a.rating + 32 * (sa - ea), rb = b.rating + 32 * ((1 - sa) - (1 - ea));
+    this.sql.exec("UPDATE users SET rating = ? WHERE id = ?", ra, g.p0);
+    this.sql.exec("UPDATE users SET rating = ? WHERE id = ?", rb, g.p1);
+    this.sql.exec("INSERT INTO ratings (uid, at, r, gid) VALUES (?, ?, ?, ?), (?, ?, ?, ?)", g.p0, now, ra, g.id, g.p1, now, rb, g.id);
+    this.sql.exec("UPDATE games SET rated = 1 WHERE id = ?", g.id);
+  }
+  winnerOf(st) {
+    const r = st && st.result;
+    if (!r) return -1;
+    if (r.winner === 0 || r.winner === 1) return r.winner;
+    if (r.res) { const a = r.res[0].score, b = r.res[1].score; return a > b ? 0 : b > a ? 1 : -1; }
+    return -1;
+  }
   // The 72-hour limit and the reminder before it
   expire() {
     const now = Date.now();
@@ -93,6 +115,7 @@ export class Hub extends DurableObject {
       st.result = { timeout: late, resigned: late, winner: 1 - late };
       st.last = lateName + " brukte mer enn 72 timer på trekket. " + winName + " vant.";
       this.sql.exec("UPDATE games SET state = ?, status = 'done', ver = ver + 1, updated = ? WHERE id = ?", JSON.stringify(st), now, g.id);
+      this.rate(g, 1 - late);
       this.notify(winId, "Du vant mot " + lateName, lateName + " gjorde ikke trekket sitt innen 72 timer.", g.id);
       this.notify(lateId, "Tiden gikk ut", "Du brukte mer enn 72 timer på trekket mot " + winName + ", så " + winName + " vant.", g.id);
     }
@@ -156,6 +179,18 @@ export class Hub extends DurableObject {
     if (path === "/me" && m === "GET") {
       const friends = this.all("SELECT u.id, u.name FROM friends f JOIN users u ON u.id = f.fid WHERE f.uid = ? ORDER BY u.name COLLATE NOCASE", me.id);
       return json({ id: me.id, name: me.name, friends });
+    }
+    if (path === "/stats" && m === "GET") {
+      const u = this.one("SELECT created, rating FROM users WHERE id = ?", me.id);
+      const history = this.all("SELECT at, r FROM ratings WHERE uid = ? ORDER BY at", me.id).map((x) => ({ at: x.at, r: Math.round(x.r) }));
+      const vs = {};
+      for (const g of this.all("SELECT * FROM games WHERE status = 'done' AND p1 IS NOT NULL AND (p0 = ? OR p1 = ?)", me.id, me.id)) {
+        const you = g.p0 === me.id ? 0 : 1, oid = you === 0 ? g.p1 : g.p0, st = g.state ? JSON.parse(g.state) : null, w = this.winnerOf(st);
+        const o = vs[oid] || (vs[oid] = { id: oid, name: this.nameOf(oid), w: 0, l: 0, d: 0, last: 0 });
+        if (w < 0) o.d++; else if (w === you) o.w++; else o.l++;
+        o.last = Math.max(o.last, g.updated);
+      }
+      return json({ since: u.created, rating: Math.round(u.rating), history, vs: Object.values(vs).sort((a, b) => b.last - a.last) });
     }
     if (path === "/users" && m === "GET") {
       const q = (url.searchParams.get("q") || "").trim();
@@ -229,6 +264,7 @@ export class Hub extends DurableObject {
         const done = !!st.result, turn = done ? g.turn : 1 - you;
         this.sql.exec("UPDATE games SET state = ?, turn = ?, ver = ver + 1, status = ?, updated = ?, reminded = 0 WHERE id = ?", text, turn, done ? "done" : "active", Date.now(), g.id);
         const oppId = you === 0 ? g.p1 : g.p0;
+        if (done) this.rate(g, this.winnerOf(st));
         if (done) this.notify(oppId, "Spillet er ferdig", "Spillet mot " + me.name + " er ferdig. Se hvem som vant.", g.id);
         else this.notify(oppId, "Din tur mot " + me.name, (typeof st.last === "string" && st.last ? st.last.slice(0, 140) + " " : "") + "Du har 72 timer på deg.", g.id);
         return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", g.id), me.id) });
@@ -239,6 +275,7 @@ export class Hub extends DurableObject {
         st.result = { resigned: you, winner: 1 - you };
         st.last = me.name + " ga opp.";
         this.sql.exec("UPDATE games SET state = ?, status = 'done', ver = ver + 1, updated = ? WHERE id = ?", JSON.stringify(st), Date.now(), g.id);
+        if (g.status === "active") this.rate(g, 1 - you);
         this.notify(you === 0 ? g.p1 : g.p0, "Du vant mot " + me.name, me.name + " ga opp.", g.id);
         return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", g.id), me.id) });
       }

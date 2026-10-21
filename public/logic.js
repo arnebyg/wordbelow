@@ -248,13 +248,21 @@ function pushCan() {
   return Notification.permission === "denied" ? "denied" : "ok";
 }
 function b64uBytes(s) { var b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+function lsDate(t) { var d = new Date(t); return d.getDate() + "." + (d.getMonth() + 1) + "."; }
 function ago(ms) {
   var m = Math.round((Date.now() - ms) / 60000);
   if (m < 1) return "nå nettopp"; if (m < 60) return m + " min siden";
   var h = Math.round(m / 60); if (h < 24) return h + " t siden";
   var d = Math.round(h / 24); return d === 1 ? "i går" : d + " dager siden";
 }
-function addStat(rec) { var all = lsGet(STATS_KEY) || []; if (rec.key && all.some(function (r) { return r.key === rec.key; })) return; all.push(Object.assign({ at: Date.now() }, rec)); lsSet(STATS_KEY, all.slice(-500)); }
+// One record per finished game. A game seen again (online games come back from the server) fills in what
+// the first record lacked, such as the words, without counting twice.
+function addStat(rec) {
+  var all = lsGet(STATS_KEY) || [], old = rec.key ? all.filter(function (r) { return r.key === rec.key; })[0] : null;
+  if (old) { Object.keys(rec).forEach(function (k) { if (rec[k] !== undefined && rec[k] !== null && (old[k] === undefined || old[k] === null)) old[k] = rec[k]; }); }
+  else all.push(Object.assign({ at: Date.now() }, rec));
+  lsSet(STATS_KEY, all.slice(-1000));
+}
 
 class Component extends DCLogic {
   constructor(p) {
@@ -328,6 +336,11 @@ class Component extends DCLogic {
     this.setState({ board: all });
   }
   // Account and the server
+  openStats() {
+    var self = this;
+    this.setState({ phase: "stats", srvStats: null });
+    if (this.state.account) api("/stats").then(function (d) { self.setState({ srvStats: d }); }, function () {});
+  }
   // Push messages when it is your turn
   pushCheck() {
     var self = this, can = pushCan();
@@ -393,13 +406,14 @@ class Component extends DCLogic {
     if (!this.state.account) return;
     api("/games").then(function (d) {
       self.setState({ games: d.games, gamesMsg: "" });
-      d.games.forEach(function (g) { if (g.status === "done" && g.result && g.result.res) self.statOnline(g); });
+      d.games.forEach(function (g) { if (g.status === "done" && g.result) self.statOnline(g); });
     }, function (e) { self.setState({ gamesMsg: e.status === 401 ? "Kontoen finnes ikke på serveren lenger." : e.message }); });
   }
-  statOnline(g) {
+  statOnline(g, words) {
     var r = g.result, me = g.you, my = r.res ? r.res[me].score : g.scores[me], their = r.res ? r.res[1 - me].score : g.scores[1 - me];
     var won = r.winner === undefined ? (my === their ? -1 : my > their ? 1 : 0) : r.winner === me ? 1 : r.winner < 0 ? -1 : 0;
-    addStat({ key: "online:" + g.id, mode: "online", won: won, my: my, their: their, best: r.res && r.res[me].best ? r.res[me].best : null });
+    addStat({ key: "online:" + g.id, mode: "online", won: won, my: my, their: their, best: r.res && r.res[me].best ? r.res[me].best : null,
+      lay: g.layout || null, opp: g.opp ? g.opp.name : null, gaveUp: r.resigned === me && r.timeout === undefined, lateLoss: r.timeout === me, words: words || null });
   }
   openFriends() {
     var self = this;
@@ -484,7 +498,7 @@ class Component extends DCLogic {
       if (g.status === "done" && s && s.result) {
         next.phase = "done";
         next.played = { duel: true, res: s.result.res || self.resultOf(P, Object.keys(base.letters).length - Object.keys(next.gone).length), left: s.result.left || 0, lay: g.layout, resigned: s.result.resigned, timeout: s.result.timeout };
-        self.statOnline({ id: g.id, you: g.you, result: Object.assign({}, s.result, { res: next.played.res }), scores: P.map(function (p) { return p.score; }) });
+        self.statOnline({ id: g.id, you: g.you, layout: g.layout, opp: g.opp, result: Object.assign({}, s.result, { res: next.played.res }), scores: P.map(function (p) { return p.score; }) }, P[g.you].words || []);
       }
       self.setState(next);
     }, function (e) { if (!quiet) self.setState({ msg: e.message, tone: "bad" }); });
@@ -677,14 +691,14 @@ class Component extends DCLogic {
       this.setState({ phase: "done", P: P, played: { duel: true, res: res, left: left, lay: st.lay }, submitted: true, busy: false, sel: [] });
       if (this.online()) {
         this.pushOnline({ P: P, gone: st.gone, passes: st.passes, last: st.msg, result: { res: res, left: left, winner: win } });
-        this.statOnline({ id: st.online.id, you: st.online.you, result: { res: res, winner: win }, scores: res.map(function (r) { return r.score; }) });
-      } else if (st.opp === "cpu") addStat({ mode: "cpu", diff: st.diff, won: win < 0 ? -1 : win === 0 ? 1 : 0, my: res[0].score, their: res[1].score, best: res[0].best });
+        this.statOnline({ id: st.online.id, you: st.online.you, layout: st.lay, opp: { name: st.online.oppName }, result: { res: res, winner: win }, scores: res.map(function (r) { return r.score; }) }, P[st.online.you].words || []);
+      } else if (st.opp === "cpu") addStat({ mode: "cpu", diff: st.diff, won: win < 0 ? -1 : win === 0 ? 1 : 0, my: res[0].score, their: res[1].score, best: res[0].best, lay: st.lay, opp: "Maskinen (" + this.diffName() + ")", words: P[0].words || [], cleared: left === 0 });
       else addStat({ mode: "local", won: -2, my: Math.max(res[0].score, res[1].score), their: Math.min(res[0].score, res[1].score), best: (res[0].best && res[1].best ? (res[0].best.pts >= res[1].best.pts ? res[0].best : res[1].best) : res[0].best || res[1].best) });
       return;
     }
     var pen = this.resultOf([{ pocket: st.pocket }])[0].pen;
     var rec = { lay: st.lay, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
-    addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best });
+    addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 });
     this.setState({ phase: "done", played: rec, submitted: false });
   }
   async submit() {
@@ -839,7 +853,7 @@ class Component extends DCLogic {
       v.pushCardSay = st.push === "install" ? "Vil du ha beskjed når det er din tur? På iPhone må appen først legges til på Hjem-skjermen: trykk Del i Safari og «Legg til på Hjem-skjerm»." : "Få beskjed når det er din tur. Du har 72 timer på hvert trekk.";
       v.pushCardOn = st.push === "off" ? function () { self.pushOn(); } : null;
       v.openSettings = function () { self.setState({ phase: "settings" }); };
-      v.openStats = function () { self.setState({ phase: "stats" }); };
+      v.openStats = function () { self.openStats(); };
       v.makeAccount = function () { self.setState({ phase: "account", after: null, acctMsg: "" }); };
       v.closePushCard = function () { lsSet(PUSH_CARD_KEY, true); self.setState({ pushCard: false }); };
       var PICKS = [
@@ -947,16 +961,60 @@ class Component extends DCLogic {
       return v;
     }
     if (st.phase === "stats") {
-      var all = lsGet(STATS_KEY) || [];
-      var group = function (mode, title) {
-        var r = all.filter(function (x) { return x.mode === mode; });
-        if (!r.length) return null;
-        var w = r.filter(function (x) { return x.won === 1; }).length, l = r.filter(function (x) { return x.won === 0; }).length, d = r.filter(function (x) { return x.won === -1; }).length;
-        var best = r.reduce(function (b, x) { return x.best && (!b || x.best.pts > b.pts) ? x.best : b; }, null);
-        var top = r.reduce(function (b, x) { return Math.max(b, x.my || 0); }, 0);
-        return { title: title, played: r.length, line: (mode === "solo" || mode === "local" ? "" : w + " vunnet · " + l + " tapt" + (d ? " · " + d + " uavgjort" : "") + " · "), top: top, best: best ? "«" + best.w + "» " + best.pts + " p" : "–" };
-      };
-      v.statGroups = [group("online", "Mot andre"), group("cpu", "Mot maskinen"), group("local", "To på én telefon"), group("solo", "Alene")].filter(Boolean);
+      var all = lsGet(STATS_KEY) || [], sm = st.statMode || "all", sl = st.statLay || "all", srv = st.srvStats;
+      var R = all.filter(function (x) { return (sm === "all" || x.mode === sm) && (sl === "all" || x.lay === sl); });
+      var duel = R.filter(function (x) { return x.mode === "online" || x.mode === "cpu"; });
+      var cnt = function (f) { return duel.filter(f).length; };
+      var words = [], withWords = R.filter(function (x) { return x.words && x.words.length; });
+      withWords.forEach(function (x) { words = words.concat(x.words); });
+      var best = R.reduce(function (b, x) { return x.best && (!b || x.best.pts > b.pts) ? x.best : b; }, null);
+      var longest = words.reduce(function (b, w) { return !b || w.w.length > b.w.length || (w.w.length === b.w.length && w.pts > b.pts) ? w : b; }, null) || best;
+      var longIn = function (x) { return (x.words || []).filter(function (w) { return w.w.length >= 7; }).length; };
+      var dash = "–", num = function (n) { return R.length ? String(n) : dash; };
+      v.statSince = srv && srv.since ? "Har spilt siden " + new Date(srv.since).toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric" }) :
+        all.length ? "Første spill " + new Date(all.reduce(function (m, x) { return Math.min(m, x.at); }, Date.now())).toLocaleDateString("nb-NO", { day: "numeric", month: "long", year: "numeric" }) : "Ingen ferdige spill ennå";
+      v.statName = st.account ? st.account.name : "Du";
+      v.statModes = [["all", "Alle"], ["online", "Mot andre"], ["cpu", "Mot maskinen"], ["solo", "Alene"], ["local", "Én telefon"]].map(function (m) {
+        var on = m[0] === sm; return { name: m[1], on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { self.setState({ statMode: m[0] }); } };
+      });
+      v.statLays = [{ id: "all", name: "Alle brett", on: sl === "all" }].concat(LAYOUTS.map(function (L) { return { id: L.id, name: L.name + (L.grp === "own" ? " (eget)" : ""), on: L.id === sl }; }));
+      v.statLayIn = function (e) { self.setState({ statLay: e.target.value }); };
+      v.statSay = R.length + (R.length === 1 ? " spill" : " spill") + (sl === "all" ? "" : " på dette brettet");
+      v.showResults = sm === "all" || sm === "online" || sm === "cpu";
+      v.results = [["Spill som er vunnet", cnt(function (x) { return x.won === 1; })], ["Spill som er tapt", cnt(function (x) { return x.won === 0; })], ["Uavgjorte spill", cnt(function (x) { return x.won === -1; })],
+        ["Spill som er gitt opp", cnt(function (x) { return x.gaveUp; })], ["Spill tapt på tid", cnt(function (x) { return x.lateLoss; })]].map(function (r) { return { k: r[0], v: duel.length ? String(r[1]) : dash }; });
+      v.scores = [
+        ["Spill ferdig", String(R.length)],
+        ["Høyeste poengsum i ett spill", R.length ? String(R.reduce(function (m, x) { return Math.max(m, x.my || 0); }, 0)) : dash],
+        ["Høyeste poeng på ett ord", best ? best.pts + " p" : dash],
+        ["Høyest scorende ord", best ? best.w : dash],
+        ["Lengste ord", longest ? longest.w + " (" + longest.w.length + ")" : dash],
+        ["Snitt per spill", R.length ? String(Math.round(R.reduce(function (a, x) { return a + (x.my || 0); }, 0) / R.length)) : dash],
+        ["Snitt per ord", words.length ? String(Math.round(words.reduce(function (a, w) { return a + w.pts; }, 0) / words.length)) : dash],
+        ["Ord per spill", withWords.length ? (words.length / withWords.length).toFixed(1).replace(".", ",") : dash]
+      ].map(function (r) { return { k: r[0], v: r[1] }; });
+      v.longs = [["Flest lange ord i ett spill", withWords.length ? String(withWords.reduce(function (m, x) { return Math.max(m, longIn(x)); }, 0)) : dash],
+        ["Lange ord totalt", withWords.length ? String(withWords.reduce(function (a, x) { return a + longIn(x); }, 0)) : dash],
+        ["Ganger du har ryddet brettet", R.length ? String(R.filter(function (x) { return x.cleared; }).length) : dash]].map(function (r) { return { k: r[0], v: r[1] }; });
+      v.showRating = !!st.account && (sm === "all" || sm === "online");
+      v.rating = srv ? String(srv.rating) : st.account ? "…" : dash;
+      v.ratingInfo = !!st.ratingInfo;
+      v.toggleRatingInfo = function () { self.setState({ ratingInfo: !st.ratingInfo }); };
+      v.chart = srv && srv.history.length >= 2 ? (function (h) {
+        var W = 300, H = 140, lo = Math.min.apply(null, h.map(function (p) { return p.r; })), hi = Math.max.apply(null, h.map(function (p) { return p.r; }));
+        lo = Math.floor((lo - 20) / 50) * 50; hi = Math.ceil((hi + 20) / 50) * 50;
+        var t0 = h[0].at, t1 = h[h.length - 1].at || t0 + 1, x = function (t) { return t1 === t0 ? 0 : (t - t0) / (t1 - t0) * W; }, y = function (r) { return H - (r - lo) / (hi - lo) * H; };
+        var d = (lsDate(t0) + "|" + lsDate((t0 + t1) / 2) + "|" + lsDate(t1)).split("|");
+        return { w: W, h: H, path: h.map(function (p, i) { return (i ? "L" : "M") + x(p.at).toFixed(1) + " " + y(p.r).toFixed(1); }).join(" "),
+          hi: hi, mid: Math.round((hi + lo) / 2), lo: lo, d0: d[0], d1: d[1], d2: d[2], last: { x: x(t1).toFixed(1), y: y(h[h.length - 1].r).toFixed(1) } };
+      })(srv.history) : null;
+      var vsMap = {};
+      if (srv && (sm === "all" || sm === "online")) srv.vs.forEach(function (o) { vsMap["u:" + o.id] = { name: o.name, w: o.w, l: o.l, d: o.d }; });
+      if (sm === "all" || sm === "cpu") all.filter(function (x) { return x.mode === "cpu"; }).forEach(function (x) {
+        var k = "c:" + (x.diff || "middels"), o = vsMap[k] || (vsMap[k] = { name: x.opp || "Maskinen", w: 0, l: 0, d: 0 });
+        if (x.won === 1) o.w++; else if (x.won === 0) o.l++; else o.d++;
+      });
+      v.vs = Object.keys(vsMap).map(function (k) { var o = vsMap[k]; return { name: o.name, line: o.w + " vunnet · " + o.l + " tapt" + (o.d ? " · " + o.d + " uavgjort" : ""), initial: (o.name[0] || "?").toUpperCase() }; });
       v.back = function () { self.goHome(); };
       return v;
     }

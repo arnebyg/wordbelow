@@ -236,14 +236,29 @@ var App = (function () {
       '</div></div>';
   }
   function statsView(v) {
-    return '<div class="screen sub">' + head("Statistikk", v.back) + '<div class="scroll">' +
-      (v.statGroups.length ? '' : '<div class="empty">Ingen spill ferdige ennå.</div>') +
-      each(v.statGroups, function (g) {
-        return '<h2 class="sec">' + esc(g.title) + '</h2><div class="group statg"><div class="srow"><span>Spilt</span><b>' + g.played + '</b></div>' +
-          (g.line ? '<div class="srow"><span>Resultat</span><b>' + esc(g.line.replace(/ · $/, '')) + '</b></div>' : '') +
-          '<div class="srow"><span>Høyeste poengsum</span><b>' + g.top + '</b></div><div class="srow"><span>Beste ord</span><b>' + esc(g.best) + '</b></div></div>';
-      }) + '</div></div>';
+    var rows = function (list) { return '<div class="group statg">' + each(list, function (r) { return '<div class="srow"><span>' + esc(r.k) + '</span><b>' + esc(r.v) + '</b></div>'; }) + '</div>'; };
+    var c = v.chart;
+    return '<div class="screen sub">' + head("Spillerstatistikk", v.back) + '<div class="scroll">' +
+      '<div class="sthead"><span class="av big">' + esc((v.statName[0] || "?").toUpperCase()) + '</span><b>' + esc(v.statName) + '</b><span>' + esc(v.statSince) + '</span></div>' +
+      '<h2 class="sec">Viser statistikk for</h2>' +
+      '<div class="chips">' + each(v.statModes, function (m) { return '<button type="button" class="' + m.cls + '" aria-pressed="' + m.on + '"' + on(m.pick) + '>' + esc(m.name) + '</button>'; }) + '</div>' +
+      '<select class="inp stsel" aria-label="Brett" data-input="statLayIn">' + each(v.statLays, function (o) { return '<option value="' + esc(o.id) + '"' + (o.on ? ' selected' : '') + '>' + esc(o.name) + '</option>'; }) + '</select>' +
+      '<p class="fine">' + esc(v.statSay) + '. Statistikken er gruppert på spilltype og brett.</p>' +
+      (v.showResults ? rows(v.results) : '') +
+      (v.showRating ? '<div class="group statg rating"><div class="srow"><span>Rating</span><span class="rr"><button type="button" class="info" aria-label="Om rating"' + on(v.toggleRatingInfo) + '>i</button><b>' + esc(v.rating) + '</b></span></div>' +
+        (v.ratingInfo ? '<p class="fine pad">Ratingen viser hvor god du er mot andre spillere. Alle starter på 1200. Etter hvert spill mot en annen spiller går den opp eller ned, og mer jo større forskjellen i rating er: slår du en som er rangert høyere enn deg, øker den mer. Spill mot maskinen teller ikke.</p>' : '') +
+        (c ? '<svg class="rchart" viewBox="-6 -8 ' + (c.w + 52) + ' ' + (c.h + 30) + '" role="img" aria-label="Ratingen over tid">' +
+          [0, 0.5, 1].map(function (f) { return '<line x1="0" x2="' + c.w + '" y1="' + (c.h * f) + '" y2="' + (c.h * f) + '" class="gl"></line>'; }).join("") +
+          '<text x="' + (c.w + 6) + '" y="4">' + c.hi + '</text><text x="' + (c.w + 6) + '" y="' + (c.h / 2 + 4) + '">' + c.mid + '</text><text x="' + (c.w + 6) + '" y="' + (c.h + 4) + '">' + c.lo + '</text>' +
+          '<text x="0" y="' + (c.h + 20) + '">' + esc(c.d0) + '</text><text x="' + (c.w / 2) + '" y="' + (c.h + 20) + '" text-anchor="middle">' + esc(c.d1) + '</text><text x="' + c.w + '" y="' + (c.h + 20) + '" text-anchor="end">' + esc(c.d2) + '</text>' +
+          '<path d="' + c.path + '" class="ln"></path><circle cx="' + c.last.x + '" cy="' + c.last.y + '" r="4" class="pt"></circle></svg>'
+          : '<p class="fine pad">Grafen kommer når du har spilt ferdig to spill mot andre.</p>') + '</div>' : '') +
+      rows(v.scores) +
+      rows(v.longs) + '<p class="fine">Et langt ord har sju bokstaver eller flere.</p>' +
+      (v.vs.length ? '<h2 class="sec">Statistikk mot motspillere</h2><div class="group">' + each(v.vs, function (o) { return '<div class="opt"><span class="av">' + esc(o.initial) + '</span><span class="ot"><span class="t">' + esc(o.name) + '</span><span class="s">' + esc(o.line) + '</span></span></div>'; }) + '</div>' : '') +
+      '</div></div>';
   }
+
 
   var lastPhase = null, lastLay = null, swipe = null, noClickUntil = 0, pending = false;
   function patch(html) {
