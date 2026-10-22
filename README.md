@@ -81,7 +81,7 @@ Topplista for «Alene» lagres bare på telefonen.
 ## Reklame og Premium
 
 Gratisversjonen viser et banner nederst (startsiden, spillet, resultatet) og en reklame over hele skjermen
-etter hvert av dine egne trekk; den kan lukkes etter 5 sekunder. Premium fjerner begge og åpner statistikken,
+etter hvert av dine egne trekk; den kan lukkes etter 5 sekunder. Reklamen over hele skjermen er satt på pause under utviklingen: sett `AD_FULL_ON = true` øverst i `public/logic.js` for å slå den på. Premium fjerner begge og åpner statistikken,
 som ellers vises med tallene skjult.
 
 - **Plassene står klare, men ingen annonser er koblet til.** De ligger i `index.html` (`#adbar`, `#adfull`),

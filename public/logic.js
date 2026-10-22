@@ -1,4 +1,6 @@
 var PTS = { A:1,B:4,C:10,D:1,E:1,F:2,G:2,H:3,I:1,J:4,K:2,L:1,M:2,N:1,O:2,P:4,R:1,S:1,T:1,U:4,V:4,W:8,Y:6,Æ:6,Ø:5,Å:4,"*":0 };
+// The full-screen ad after each move is paused while the app is being developed; set to true to turn it on.
+var AD_FULL_ON = false;
 var LEN_BONUS = 5, JOKER_EAGER = 8, RARE = "ÆYWC", VOW = "AEIOUYÆØÅ", ALPHABET = "ABCDEFGHIJKLMNOPRSTUVWYÆØÅ";
 // The Norwegian Scrabble set with six consonants swapped for vowels: 100 tiles, two of them blank (jokers).
 // One fewer N, R, S, T, D, K; one more A, I, O, U and two more E. That is 40 vowels of 98 letters, near the
@@ -346,7 +348,7 @@ class Component extends DCLogic {
   // Ads and Premium. The free version shows a banner at the bottom and a full-screen ad after each of your
   // own moves; Premium has neither, and opens the statistics. Payment is not connected yet (see README).
   humanMove() { var st = this.state; return st.phase === "play" && !this.cpuTurn() && !this.waitTurn(); }
-  adAfterMove() { if (!this.state.premium) this.setState({ adFull: Date.now() }); }
+  adAfterMove() { if (AD_FULL_ON && !this.state.premium) this.setState({ adFull: Date.now() }); }
   setPremium(on) { lsSet(PREMIUM_KEY, on); this.setState({ premium: on, adFull: null, premMsg: on ? "Premium er på for denne telefonen." : "Premium er av." }); }
   // Push messages when it is your turn
   pushCheck() {
