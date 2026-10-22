@@ -21,11 +21,11 @@ var App = (function () {
   '<div class="top">' +
     '<button type="button" class="back" aria-label="Til menyen"' + on(v.toMenu) + '><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13 4l-7 7 7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>' +
     '<div class="title"><span class="t1">' + esc(v.kicker) + '</span><span class="t2">' + esc(v.lsub) + '</span></div>' +
-    '<span class="topr"><button type="button" class="qb" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
+    '<span class="topr"><button type="button" class="qb" aria-label="Trekkhistorikk"' + on(v.openHist) + '>' + IC.list + '</button><button type="button" class="qb" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
     '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>Hint −5</button></span>' +
   '</div>' +
   '<div class="stats">' +
-    each(v.stats, function (x) { return '<div class="' + x.cls + '"><span class="k">' + esc(x.k) + '</span><span class="v">' + esc(x.v) + '</span></div>'; }) +
+    each(v.stats, function (x) { return '<div class="' + x.cls + '"><span class="k">' + esc(x.k) + '</span><span class="v">' + esc(x.v) + '</span>' + (x.last ? '<span class="lastmv">' + esc(x.last) + '</span>' : '') + '</div>'; }) +
   '</div>' +
   '<div class="board' + (v.slide ? ' slide-' + v.slide : '') + '"' + (v.canSwipe ? ' data-swipe="swipe"' : '') + '>' +
     '<div class="bfit" data-fit="' + esc(v.boardFit) + '" style="' + esc(v.boardBox) + '">' +
@@ -78,7 +78,7 @@ var App = (function () {
     return '<div class="' + r.cls + '"><span class="rk-n"></span><span class="who"><span class="nm">' + esc(r.name) + '</span><span class="det">' + esc(r.detail) + '</span></span><span class="sc">' + esc(r.score) + '</span></div>';
   }) + '</div></div>' :
   '<div class="lb">' +
-    '<div class="lbhead"><h2>Toppliste · ' + esc(v.lname) + '</h2><span>bare denne telefonen</span></div>' +
+    '<div class="lbhead"><h2>' + (v.isDaily ? 'Dagens liste' : 'Toppliste · ' + esc(v.lname)) + '</h2><span>' + esc(v.isDaily ? v.boardSay : 'bare denne telefonen') + '</span></div>' +
     '<div class="lblist">' +
       (v.boardEmpty ? '<span class="empty">Ingen har levert på dette brettet ennå. Du kan bli først.</span>' : '') +
       each(v.board, function (b) {
@@ -86,7 +86,10 @@ var App = (function () {
       }) +
     '</div>' +
   '</div>') +
+  (v.dailySay ? '<p class="fine dsay">' + esc(v.dailySay) + '</p>' : '') +
+  (v.missed && v.missed.length ? '<div class="missed"><h2 class="sec">Ord du kunne lagt</h2>' + each(v.missed, function (m) { return '<div class="mrow"><span>' + esc(m.played) + '</span><span class="arr">→</span><b>' + esc(m.best) + '</b></div>'; }) + '<button type="button" class="pill small"' + on(v.openHist) + '>Se alle trekk</button></div>' : '') +
   '<div class="actions">' +
+    (v.share ? '<button type="button" class="act green"' + on(v.share) + '>Del</button>' : '') +
     '<button type="button" class="act grey wide"' + on(v.toPicker) + '>' + esc(v.pickerLabel) + '</button>' +
     '<button type="button" class="act gold grow"' + on(v.again) + '>' + esc(v.againLabel) + '</button>' +
   '</div>' +
@@ -95,6 +98,8 @@ var App = (function () {
   }
 
   var IC = {
+    list: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg>',
+    fire: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2.4 1.2-3.7 2.4-4.8C9.6 10 10 11.5 11 12c0-3.5.2-6.5 1-9z" fill="currentColor"></path></svg>',
     gem: '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z M2 9h20 M9 3l-2 6 5 12 5-12-2-6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"></path></svg>',
     play: '<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M6 3.5v13l10.5-6.5z" fill="currentColor"></path></svg>',
     gear: '<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" stroke="currentColor" stroke-width="2" fill="none"></circle><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg>',
@@ -146,6 +151,12 @@ var App = (function () {
       (v.noAccount ? '<div class="card acc"><span class="ct">Spill mot andre</span><span class="cs">Velg et brukernavn, så kan venner finne deg og dere kan spille mot hverandre.</span><button type="button" class="pill solid"' + on(v.makeAccount) + '>Velg brukernavn</button></div>' : '') +
       (!v.noAccount && v.inviteCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closeInviteCard) + '>' + IC.close + '</button><span class="ct">WordBelow er morsommere med venner!</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.inviteNow) + '>Inviter</button><button type="button" class="pill"' + on(v.closeInviteCard) + '>Lukk</button></div></div>' : '') +
       (v.pushCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closePushCard) + '>' + IC.close + '</button><span class="ct">Varsler</span><span class="cs">' + esc(v.pushCardSay) + '</span><div class="cbtns">' + (v.pushCardOn ? '<button type="button" class="pill solid"' + on(v.pushCardOn) + '>Slå på varsler</button>' : '') + '<button type="button" class="pill"' + on(v.closePushCard) + '>Ikke nå</button></div></div>' : '') +
+      '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="dtop"><span class="dk">Dagens brett</span><span class="dstreak">' + IC.fire + esc(v.daily.streakSay) + '</span></div>' +
+        '<div class="dmain"><span class="dn">' + esc(v.daily.name) + '</span><span class="dl">' + esc(v.daily.line) + '</span></div>' +
+        '<div class="cbtns">' + (v.daily.done ? '<button type="button" class="pill solid"' + on(v.daily.share) + '>Del resultatet</button><button type="button" class="pill"' + on(v.daily.play) + '>Se brettet</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill dagens brett</button>') + '</div></div>' +
+      (v.offers.length ? '<h2 class="sec">Utfordringer</h2><div class="group">' + each(v.offers, function (o) {
+        return '<div class="opt offer"><span class="av">' + esc(o.initial) + '</span><span class="ot"><span class="t">' + esc(o.who) + '</span><span class="s">' + esc(o.line) + '</span></span><button type="button" class="pill small"' + on(o.no) + '>Avslå</button><button type="button" class="act green go"' + on(o.yes) + '>Godta</button></div>';
+      }) + '</div>' : '') +
       (games ? '<h2 class="sec">Dine spill' + (v.myTurns ? '<span class="secr">' + esc(v.myTurns) + '</span>' : '') + '</h2><div class="gamesrow">' + games + '</div>' : '') +
       '<div class="ngpanel"><h2 class="sec">Nytt spill</h2>' +
         (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
@@ -160,7 +171,7 @@ var App = (function () {
             '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
           '</div>' +
           '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +
-          '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.renameBoard) + '>Gi nytt navn</button><button type="button" class="chip"' + on(v.editBoard) + '>Endre brettet</button><button type="button" class="chip' + (v.delAsk ? ' danger' : '') + '"' + on(v.deleteBoard) + '>' + (v.delAsk ? 'Slett – sikker?' : 'Slett') + '</button>' : '') + '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button></div>' +
+          '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.renameBoard) + '>Gi nytt navn</button><button type="button" class="chip"' + on(v.editBoard) + '>Endre brettet</button><button type="button" class="chip"' + on(v.shareBoard) + '>Del</button><button type="button" class="chip' + (v.delAsk ? ' danger' : '') + '"' + on(v.deleteBoard) + '>' + (v.delAsk ? 'Slett – sikker?' : 'Slett') + '</button>' : '') + '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button></div>' +
         '</div>' : '') +
       '</div>' +
       '<span class="foot">Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
@@ -189,6 +200,14 @@ var App = (function () {
       sec("Brettene", '<p><b>Stramme</b> brett har få åpne brikker hele spillet. <b>Åpner seg</b> starter med rundt 8–11 åpne og får flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: 40 % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
       sec("Mot andre", '<p>Hver spiller har <b>72 timer</b> på et trekk. Går tiden ut, er spillet over og den andre vinner. Slå på varsler i innstillingene for å få beskjed når det er din tur. Ratingen starter på 1200 og går opp eller ned etter hvert spill mot en annen spiller.</p>') +
       '</div></div></div>';
+  }
+  // Every move in this game, newest first; your own words show the best word there was, when it scored more.
+  function histView(v) {
+    return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Trekkhistorikk"><div class="helpsheet">' +
+      '<div class="helphead"><b>Trekkhistorikk</b><button type="button" class="x" aria-label="Lukk"' + on(v.closeHist) + '>' + IC.close + '</button></div>' +
+      '<div class="scroll helpbody">' + (v.histRows.length ? '<div class="group statg">' + each(v.histRows, function (r) {
+        return '<div class="srow hrow"><span><b>' + esc(r.who) + '</b> ' + esc(r.what) + (r.best ? '<small>' + esc(r.best) + '</small>' : '') + '</span><b>' + esc(r.pts) + '</b></div>';
+      }) + '</div>' : '<p>Ingen trekk ennå.</p>') + '</div></div></div>';
   }
   function premiumView(v) {
     var li = function (t, s) { return '<div class="opt"><span class="tileic">' + IC.gem + '</span><span class="ot"><span class="t">' + t + '</span><span class="s">' + s + '</span></span></div>'; };
@@ -298,7 +317,7 @@ var App = (function () {
   function toastHtml(v) {
     if (v.toast !== toastText) { toastText = v.toast; toastAt = Date.now(); }
     var age = Date.now() - toastAt;
-    return '<div class="toast tone-' + esc(v.tone || "info") + (age > 4000 ? ' seen' : '') + '" role="status" style="animation-delay:-' + age + 'ms">' + esc(v.toast) + '</div>';
+    return '<div class="toast tone-' + esc(v.tone || "info") + (age > 8000 ? ' seen' : '') + '" role="status" style="animation-delay:-' + age + 'ms">' + esc(v.toast) + '</div>';
   }
   var lastPhase = null, lastLay = null, swipe = null, noClickUntil = 0, pending = false;
   function patch(html) {
@@ -322,7 +341,7 @@ var App = (function () {
     H = [];
     var v = comp.renderVals();
     var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
-    var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "");
+    var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "");
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
     lastPhase = v.phase;

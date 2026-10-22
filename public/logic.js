@@ -78,12 +78,38 @@ var LAYOUTS = [
   { id: "trappa", grp: "grow", name: "Trappa", asym: true, sub: "trapp ned mot høyre", start: 10, peak: 15,
     cells: "0.0.0 2.0.0 4.0.0 0.2.0 2.2.0 4.2.0 6.2.0 0.4.0 2.4.0 4.4.0 6.4.0 8.4.0 10.4.0 0.6.0 2.6.0 4.6.0 6.6.0 8.6.0 10.6.0 12.6.0 0.8.0 2.8.0 4.8.0 6.8.0 8.8.0 10.8.0 12.8.0 14.8.0 0.10.0 2.10.0 4.10.0 6.10.0 8.10.0 10.10.0 12.10.0 14.10.0 10.12.0 12.12.0 14.12.0 1.1.1 3.1.1 5.1.1 1.3.1 3.3.1 5.3.1 7.3.1 9.3.1 1.5.1 3.5.1 5.5.1 7.5.1 9.5.1 11.5.1 1.7.1 3.7.1 5.7.1 7.7.1 9.7.1 11.7.1 13.7.1 1.9.1 3.9.1 5.9.1 7.9.1 9.9.1 11.9.1 13.9.1 1.11.1 3.11.1 5.11.1 7.11.1 9.11.1 11.11.1 13.11.1 2.2.2 2.4.2 2.6.2 2.8.2 2.10.2 4.3.2 4.5.2 4.7.2 4.9.2 6.2.2 6.4.2 6.6.2 6.8.2 6.10.2 8.3.2 8.5.2 8.7.2 8.9.2 10.2.2 10.4.2 10.6.2 10.8.2 10.10.2 12.5.2 12.7.2 12.9.2" }
 ];
-var GROUPS = [{ id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }, { id: "own", name: "Egne brett", say: "brett du har laget" }];
+var GROUPS = [{ id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }, { id: "season", name: "Sesong", say: "bare i sesongen" }, { id: "own", name: "Egne brett", say: "brett du har laget" }];
 // Boards the player has made in the editor: kept on this phone, played without the server.
 var OWN_KEY = "ordspill/egnebrett/v1", OWN_MAX = 100, OWN_MIN = 20;
+// Season boards: shown in the board list only in their season. Easter moves with the calendar (Meeus' rule).
+function easter(y) {
+  var a = y % 19, b = Math.floor(y / 100), c = y % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3);
+  var h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  var mo = Math.floor((h + l - 7 * m + 114) / 31), da = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(y, mo - 1, da);
+}
+var SEASONS = [
+  { id: "gresskaret", name: "Gresskaret", sub: "halloween · fire lag", until: "1. november", on: function (d) { var m = d.getMonth(), x = d.getDate(); return (m === 9 && x >= 20) || (m === 10 && x <= 1); },
+    cells: "0.4.0 0.6.0 0.8.0 0.10.0 2.3.0 2.5.0 2.7.0 2.9.0 2.11.0 4.2.0 4.4.0 4.6.0 4.8.0 4.10.0 4.12.0 6.3.0 6.5.0 6.7.0 6.9.0 6.11.0 8.0.0 8.2.0 8.4.0 8.6.0 8.8.0 8.10.0 8.12.0 10.3.0 10.5.0 10.7.0 10.9.0 10.11.0 12.4.0 12.6.0 12.8.0 12.10.0 14.5.0 14.7.0 14.9.0 1.7.1 3.4.1 3.6.1 3.8.1 3.10.1 5.3.1 5.5.1 5.7.1 5.9.1 5.11.1 7.4.1 7.6.1 7.8.1 7.10.1 9.3.1 9.5.1 9.7.1 9.9.1 9.11.1 11.4.1 11.6.1 11.8.1 11.10.1 13.7.1 4.5.2 4.7.2 4.9.2 6.4.2 6.6.2 6.8.2 6.10.2 8.5.2 8.7.2 8.9.2 10.6.2 10.8.2 5.6.3 5.8.3 7.5.3 7.7.3 7.9.3 9.6.3 9.8.3" },
+  { id: "juletreet", name: "Juletreet", sub: "jul · fire lag", until: "6. januar", on: function (d) { var m = d.getMonth(), x = d.getDate(); return m === 11 || (m === 0 && x <= 6); },
+    cells: "0.10.0 2.7.0 2.9.0 2.11.0 4.4.0 4.6.0 4.8.0 4.10.0 6.3.0 6.5.0 6.7.0 6.9.0 6.11.0 6.13.0 8.2.0 8.4.0 8.6.0 8.8.0 8.10.0 8.12.0 10.5.0 10.7.0 10.9.0 10.11.0 12.8.0 12.10.0 14.9.0 14.11.0 3.10.1 5.7.1 5.9.1 5.11.1 7.2.1 7.4.1 7.6.1 7.8.1 7.10.1 9.7.1 9.9.1 9.11.1 11.10.1 4.11.2 6.6.2 6.8.2 6.10.2 8.7.2 8.9.2 8.11.2 7.7.3 7.9.3 7.11.3" },
+  { id: "paskeegget", name: "Påskeegget", sub: "påske · fire lag", until: "2. påskedag", on: function (d) { var e = easter(d.getFullYear()), t = (d - e) / 864e5; return t >= -10 && t < 2; },
+    cells: "2.3.0 2.5.0 2.7.0 2.9.0 4.2.0 4.4.0 4.6.0 4.8.0 4.10.0 6.1.0 6.3.0 6.5.0 6.7.0 6.9.0 6.11.0 8.0.0 8.2.0 8.4.0 8.6.0 8.8.0 8.10.0 8.12.0 10.1.0 10.3.0 10.5.0 10.7.0 10.9.0 10.11.0 12.4.0 12.6.0 12.8.0 3.4.1 3.6.1 3.8.1 5.3.1 5.5.1 5.7.1 5.9.1 7.2.1 7.4.1 7.6.1 7.8.1 7.10.1 9.3.1 9.5.1 9.7.1 9.9.1 11.4.1 11.6.1 11.8.1 4.5.2 4.7.2 6.4.2 6.6.2 6.8.2 8.3.2 8.5.2 8.7.2 8.9.2 10.6.2 10.8.2 7.5.3 7.7.3" },
+  { id: "flagget", name: "Flagget", sub: "17. mai · tre lag", until: "17. mai", on: function (d) { return d.getMonth() === 4 && d.getDate() >= 10 && d.getDate() <= 17; },
+    cells: "0.0.0 0.2.0 0.4.0 0.6.0 0.8.0 0.10.0 2.1.0 2.3.0 2.5.0 2.7.0 2.9.0 4.0.0 4.2.0 4.4.0 4.6.0 4.8.0 4.10.0 6.1.0 6.3.0 6.5.0 6.7.0 6.9.0 8.0.0 8.2.0 8.4.0 8.6.0 8.8.0 8.10.0 10.1.0 10.3.0 10.5.0 10.7.0 10.9.0 12.0.0 12.2.0 12.4.0 12.6.0 12.8.0 12.10.0 14.1.0 14.3.0 14.5.0 14.7.0 14.9.0 1.5.1 3.4.1 3.6.1 5.1.1 5.3.1 5.5.1 5.7.1 5.9.1 5.11.1 7.4.1 7.6.1 9.5.1 11.4.1 11.6.1 13.5.1 2.6.2 4.5.2 6.2.2 6.4.2 6.6.2 6.8.2 8.5.2 10.6.2 12.5.2" }
+];
+function seasonLoad() {
+  var now = new Date();
+  SEASONS.filter(function (z) { return z.on(now); }).forEach(function (z) {
+    LAYOUTS.push({ id: z.id, grp: "season", name: z.name, asym: false, sub: z.sub + " · til " + z.until, cells: z.cells, start: openAtStart(z.cells.split(" ").map(function (t) { var a = t.split("."); return { c: a[0] / 2, r: a[1] / 2, l: +a[2] }; })) });
+  });
+}
+// Boards met in an online game or a shared link that are not on this phone's list.
+var EXTRA = {};
+function sharedLayout(code, name, cells) { var id = "b" + code; if (!LAYOUTS.some(function (L) { return L.id === id; })) EXTRA[id] = { id: id, grp: "own", name: name, asym: true, sub: cells.split(" ").length + " brikker · delt brett", cells: cells, code: code }; return id; }
 function ownLoad() { (lsGet(OWN_KEY) || []).forEach(function (L) { if (L && L.id && L.cells) LAYOUTS.push(ownLayout(L)); }); }
-function ownLayout(o) { return { id: o.id, grp: "own", name: o.name, asym: true, sub: o.cells.split(" ").length + " brikker · eget brett", start: o.start, cells: o.cells }; }
-function ownSave() { lsSet(OWN_KEY, LAYOUTS.filter(function (L) { return L.grp === "own"; }).map(function (L) { return { id: L.id, name: L.name, cells: L.cells, start: L.start }; })); }
+function ownLayout(o) { return { id: o.id, grp: "own", name: o.name, asym: true, sub: o.cells.split(" ").length + " brikker · " + (o.by ? "fra " + o.by : "eget brett"), start: o.start, cells: o.cells, code: o.code || null, by: o.by || null }; }
+function ownSave() { lsSet(OWN_KEY, LAYOUTS.filter(function (L) { return L.grp === "own"; }).map(function (L) { return { id: L.id, name: L.name, cells: L.cells, start: L.start, code: L.code || null, by: L.by || null }; })); }
 function buildLayout(L) {
   var pos = [];
   if (L.cells) L.cells.split(" ").forEach(function (t) { var a = t.split("."); pos.push({ c: +a[0] / 2, r: +a[1] / 2, l: +a[2] }); });
@@ -105,7 +131,7 @@ function buildLayout(L) {
   return { L: L, pos: pos, map: map, offX: offX, offY: offY, box: [offX + x0 - 4, offY + y0 - 8, x1 - x0 + 8, y1 - y0 + 12].map(Math.round).join(",") };
 }
 var BUILT = {};
-function layoutOf(id) { if (!BUILT[id]) BUILT[id] = buildLayout(LAYOUTS.filter(function (L) { return L.id === id; })[0] || LAYOUTS[0]); return BUILT[id]; }
+function layoutOf(id) { if (!BUILT[id]) BUILT[id] = buildLayout(LAYOUTS.filter(function (L) { return L.id === id; })[0] || EXTRA[id] || LAYOUTS[0]); return BUILT[id]; }
 
 function freeIn(S, id, live) {
   var p = S.map[id], left = false, right = false, ks = Object.keys(live);
@@ -203,7 +229,7 @@ function genBoard(S, seed) {
   put(on(top), "3×O"); put(on(1), "2×O"); put(on(0), "3×B"); put(on(0).concat(on(1)), "2×B"); put(on(0).concat(on(1)), "2×B"); put(on(2), "2×B");
   return { letters: letters, bonus: b };
 }
-function openSay(L) { if (L.grp === "own") return "starter med " + L.start + " åpne"; return L.grp === "grow" ? "starter med " + L.start + " åpne, rundt " + L.peak + " midtveis" : "typisk " + L.open + " åpne hele veien"; }
+function openSay(L) { if (L.grp === "own" || L.grp === "season") return "starter med " + L.start + " åpne"; return L.grp === "grow" ? "starter med " + L.start + " åpne, rundt " + L.peak + " midtveis" : "typisk " + L.open + " åpne hele veien"; }
 function cellsOf(list) { return list.map(function (p) { return (p.c * 2) + "." + (p.r * 2) + "." + p.l; }).join(" "); }
 function openAtStart(list) {
   var S = buildLayout({ id: "_", cells: cellsOf(list) }), all = {};
@@ -213,6 +239,7 @@ function openAtStart(list) {
 function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 ownLoad();
+seasonLoad();
 
 // Screens: "home" (your games and a new game, one page), "account" (pick a username), "find" (search players), "friends",
 // "settings", "stats", "play" and "done".
@@ -253,6 +280,27 @@ function pushCan() {
 }
 function b64uBytes(s) { var b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
 function lsDate(t) { var d = new Date(t); return d.getDate() + "." + (d.getMonth() + 1) + "."; }
+// Today's board: the same board and letters for everyone each day. The board rotates through the app's
+// own boards (a season board every third day in its season); the letters come from the date.
+var DAILY_KEY = "ordspill/dagens/v1";
+function dayKey(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+function dailyOf(key) {
+  var n = Math.round(Date.parse(key + "T12:00:00Z") / 864e5), base = LAYOUTS.filter(function (L) { return L.grp === "tight" || L.grp === "grow"; });
+  var season = LAYOUTS.filter(function (L) { return L.grp === "season"; }), L = season.length && n % 3 === 0 ? season[0] : base[n % base.length];
+  return { key: key, lay: L.id, name: L.name, seed: +key.replace(/-/g, "") };
+}
+function dailyDone() { return lsGet(DAILY_KEY) || {}; }
+function streakOf(done) {
+  var d = new Date(), n = 0;
+  if (!done[dayKey(d)]) d.setDate(d.getDate() - 1);
+  while (done[dayKey(d)]) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function shareGrid(words) {
+  var sq = function (w) { var n = w.w.length; return n >= 8 ? "🟦" : n >= 6 ? "🟩" : n >= 4 ? "🟨" : "⬜"; }, out = "";
+  words.forEach(function (w, i) { out += sq(w) + ((i + 1) % 8 === 0 && i < words.length - 1 ? "\n" : ""); });
+  return out;
+}
 function ago(ms) {
   var m = Math.round((Date.now() - ms) / 60000);
   if (m < 1) return "nå nettopp"; if (m < 60) return m + " min siden";
@@ -280,10 +328,13 @@ class Component extends DCLogic {
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
   fresh(id, msg, seed) {
+    var f = this.freshRaw(id, msg, seed); if (!msg) f.introMsg = f.msg; return f;
+  }
+  freshRaw(id, msg, seed) {
     var S = layoutOf(id), g = genBoard(S, seed), duel = this.state && this.state.mode === "duel";
     return { lay: S.L.id, seed: seed || 0, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], pop: null,
-      turn: 0, passes: 0, busy: false, P: [{ score: 0, pocket: [], words: [] }, { score: 0, pocket: [], words: [] }],
-      phase: "play", played: null, submitted: false, confirm: null,
+      turn: 0, passes: 0, busy: false, P: [{ score: 0, pocket: [], words: [] }, { score: 0, pocket: [], words: [] }], log: [], daily: null,
+      phase: "play", played: null, submitted: false, confirm: null, introMsg: null,
       msg: msg || (duel ? this.turnSay(0) + " " : "") + S.L.name + ": " + S.L.sub + ". " + openSay(S.L).replace(/^./, function (x) { return x.toUpperCase(); }) + ".", tone: "info" };
   }
   componentDidMount() {
@@ -293,6 +344,8 @@ class Component extends DCLogic {
     if (window.applyTheme) window.applyTheme(this.state.theme, this.state.bg);
     var join = (location.search.match(/[?&]join=([A-Za-z0-9]{4,10})/) || [])[1];
     if (join) { try { history.replaceState(null, "", location.pathname); } catch (e) {} this.state.codeIn = join.toUpperCase(); if (this.state.account) this.joinCode(); else this.setState({ phase: "account", after: "join" }); }
+    var bcode = (location.search.match(/[?&]board=([a-z0-9]{6})/) || [])[1];
+    if (bcode) { try { history.replaceState(null, "", location.pathname); } catch (e) {} this.importBoard(bcode); }
     var gid = (location.search.match(/[?&]game=([0-9a-f]{16})/) || [])[1];
     if (gid) { try { history.replaceState(null, "", location.pathname); } catch (e) {} if (this.state.account) this.openOnline(gid); }
     if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.openGame && self.state.account) self.openOnline(e.data.openGame); });
@@ -390,11 +443,36 @@ class Component extends DCLogic {
       p === "none" ? "Denne nettleseren kan ikke vise varsler." :
       !this.state.account ? "Varsler krever at du har valgt brukernavn." : "Av. Slå på for å få beskjed når det er din tur.";
   }
-  // Own boards live on this phone only, so the other player could not see them.
-  ownOffline() {
-    if (this.S().L.grp !== "own") return false;
-    this.setState({ phase: "home", ngMsg: "Egne brett kan foreløpig bare spilles uten nett: mot maskinen, på én telefon eller alene. Velg et av appens brett for å spille mot andre." });
-    return true;
+  // An own board goes to the server before it is played online or shared, so the other player gets it too.
+  // Its id becomes "b" + the code, which is how games and links name it.
+  ensureShared(then) {
+    var self = this, L = this.S().L;
+    if (L.grp !== "own" || L.code) { then(L); return; }
+    if (this.needAccount(null)) return;
+    api("/boards", { method: "POST", body: { name: L.name, cells: L.cells } }).then(function (d) {
+      var old = L.id; L.code = d.code; L.id = "b" + d.code; delete BUILT[old]; ownSave();
+      lsSet("ordspill/klassiker/brett/v1", L.id);
+      self.setState(Object.assign(self.fresh(L.id), { phase: self.state.phase }));
+      then(L);
+    }, function (e) { self.setState({ ngMsg: "Brettet kunne ikke deles: " + e.message }); });
+  }
+  shareBoard() {
+    var self = this;
+    this.ensureShared(function (L) {
+      var link = location.origin + location.pathname + "?board=" + L.code, text = "Prøv brettet «" + L.name + "» i WordBelow: " + link;
+      self.setState({ ngMsg: "Del lenken, så kan andre spille «" + L.name + "», også mot deg: " + link });
+      if (navigator.share) navigator.share({ title: "WordBelow · " + L.name, text: text }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { self.setState({ ngMsg: "Lenken er kopiert: " + link }); }, function () {});
+    });
+  }
+  importBoard(code) {
+    var self = this;
+    api("/boards/" + code).then(function (b) {
+      var id = "b" + b.code, have = LAYOUTS.filter(function (L) { return L.id === id; })[0];
+      if (!have) { LAYOUTS.push(ownLayout({ id: id, name: b.name, cells: b.cells, code: b.code, by: b.by, start: openAtStart(b.cells.split(" ").map(function (t) { var a = t.split("."); return { c: a[0] / 2, r: a[1] / 2, l: +a[2] }; })) })); ownSave(); }
+      lsSet("ordspill/klassiker/brett/v1", id);
+      self.setState(Object.assign(self.fresh(id), { phase: "home", homeMsg: "«" + b.name + "»" + (b.by ? " fra " + b.by : "") + " ligger nå under Egne brett." }));
+    }, function (e) { self.setState({ homeMsg: e.message }); });
   }
   needAccount(after) { if (this.state.account) return false; this.setState({ phase: "account", after: after, acctMsg: "" }); return true; }
   register() {
@@ -426,7 +504,6 @@ class Component extends DCLogic {
   }
   openFriends() {
     var self = this;
-    if (this.ownOffline()) return;
     if (this.needAccount("friends")) return;
     this.setState({ phase: "friends", friendsMsg: "Henter vennene dine …" });
     api("/me").then(function (d) { self.setState({ friends: d.friends, friendsMsg: d.friends.length ? "" : "Du har ingen venner her ennå. Finn en spiller, eller send en invitasjon." }); },
@@ -443,14 +520,25 @@ class Component extends DCLogic {
     }, 300);
   }
   addFriend(u) { var self = this; api("/friends", { method: "POST", body: { id: u.id } }).then(function () { self.setState({ findMsg: u.name + " er lagt til som venn." }); }, function (e) { self.setState({ findMsg: e.message }); }); }
-  startWith(u) {
+  // A challenge waits until the other player accepts it; a rematch is a challenge on the same board.
+  startWith(u, rematch) {
     var self = this;
-    if (this.ownOffline()) return;
-    api("/games", { method: "POST", body: { to: u.id, layout: this.state.lay } }).then(function (d) { self.openOnline(d.game.id); }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
+    this.ensureShared(function () {
+      api("/games", { method: "POST", body: { to: u.id, layout: self.state.lay, rematch: !!rematch } }).then(function (d) {
+        self.goHome();
+        self.setState({ homeMsg: (rematch ? "Revansjen" : "Utfordringen") + " er sendt til " + (d.game.opp ? d.game.opp.name : u.name || "motspilleren") + ". Spillet starter når " + (d.game.opp ? d.game.opp.name : "de") + " godtar." });
+      }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
+    });
+  }
+  answerOffer(g, yes) {
+    var self = this;
+    api("/games/" + g.id + (yes ? "/accept" : "/decline"), { method: "POST" }).then(function () {
+      if (yes) self.openOnline(g.id); else { self.setState({ homeMsg: "Du avslo utfordringen fra " + (g.opp ? g.opp.name : "motspilleren") + "." }); self.refreshGames(); }
+    }, function (e) { self.setState({ homeMsg: e.message }); self.refreshGames(); });
   }
   random() {
     var self = this;
-    if (this.ownOffline()) return;
+    var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.random(); }); return; }
     if (this.needAccount("random")) return;
     this.setState({ ngMsg: "Leter etter en motspiller …" });
     api("/games", { method: "POST", body: { random: true, layout: this.state.lay } }).then(function (d) {
@@ -460,7 +548,7 @@ class Component extends DCLogic {
   }
   invite() {
     var self = this;
-    if (this.ownOffline()) return;
+    var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.invite(); }); return; }
     if (this.needAccount("invite")) return;
     api("/games", { method: "POST", body: { invite: true, layout: this.state.lay } }).then(function (d) {
       var c = d.game.code, link = location.origin + location.pathname + "?join=" + c;
@@ -498,9 +586,10 @@ class Component extends DCLogic {
       var st = self.state, g = d.game, s = d.state;
       if (!st.online || st.online.id !== id) return;
       if (quiet && st.online.ver === g.ver && st.online.status === g.status) return;
+      if (g.board) sharedLayout(g.board.code, g.board.name, g.board.cells);
       var base = self.fresh(g.layout, null, g.seed), P = s ? s.P : base.P, turn = g.turn;
       var o = { id: g.id, you: g.you, ver: g.ver, status: g.status, oppName: g.opp ? g.opp.name : "", oppId: g.opp ? g.opp.id : null, code: g.code, kind: g.kind };
-      var next = Object.assign(base, { online: o, gone: s ? s.gone : {}, jokerAs: s && s.jokerAs ? s.jokerAs : {}, P: P, turn: turn, passes: s ? s.passes : 0,
+      var next = Object.assign(base, { online: o, log: s && s.log ? s.log : [], gone: s ? s.gone : {}, jokerAs: s && s.jokerAs ? s.jokerAs : {}, P: P, turn: turn, passes: s ? s.passes : 0,
         score: P[turn].score, pocket: P[turn].pocket, words: P[turn].words, mode: "duel", opp: "online" });
       if (g.status === "waiting") next.msg = g.kind === "invite" ? "Venter på at noen blir med. Koden er " + g.code + "." : "Venter på en tilfeldig motspiller.";
       else next.msg = (turn === g.you ? "Din tur. " : o.oppName + " sin tur. ") + (s && s.last ? s.last : "Nytt spill på " + base.lay.replace(/^./, function (x) { return x.toUpperCase(); }) + ".");
@@ -550,6 +639,30 @@ class Component extends DCLogic {
     return st.opp === "cpu" ? (t === 0 ? "Din tur." : "Maskinens tur.") : nm[t] + " sin tur.";
   }
   diffName() { var st = this.state; return DIFFS.filter(function (d) { return d.id === st.diff; })[0].name.toLowerCase(); }
+  startDaily() {
+    var D = dailyOf(dayKey()), st = this.state, played = dailyDone()[D.key];
+    st.mode = "solo"; st.online = null;
+    this.timers.forEach(clearTimeout); this.timers = [];
+    this.setState(Object.assign(this.fresh(D.lay, "Dagens brett: " + D.name + ". Alle spiller de samme bokstavene i dag." + (played ? " Du har spilt det i dag; bare det første forsøket teller." : ""), D.seed), { daily: D.key }));
+  }
+  dailyFinish(rec) {
+    var self = this, st = this.state, key = st.daily, all = dailyDone();
+    if (!key) return;
+    var first = !all[key];
+    if (first) { all[key] = { score: rec.score, words: st.words, left: rec.left, lay: st.lay, at: Date.now() }; lsSet(DAILY_KEY, all); }
+    this.setState({ dailyTop: null, dailyFirst: first });
+    if (st.account) api("/daily/" + key, first ? { method: "POST", body: { score: rec.score, words: st.words.length, best: rec.best ? rec.best.w : "", left: rec.left } } : {}).then(function (d) { self.setState({ dailyTop: d }); }, function () {});
+  }
+  shareDaily() {
+    var key = this.state.daily || dayKey(), r = dailyDone()[key], D = dailyOf(key);
+    if (!r) return;
+    var longest = (r.words || []).reduce(function (b, w) { return Math.max(b, w.w.length); }, 0), d = key.split("-");
+    var text = "WordBelow · Dagens brett " + (+d[2]) + "." + (+d[1]) + ". · " + D.name + "\n" + r.score + " poeng · " + (r.words || []).length + " ord · lengste " + longest + " bokstaver · " +
+      (r.left ? r.left + " brikker igjen" : "brettet ryddet") + "\n" + shareGrid(r.words || []) + "\n" + location.origin + location.pathname;
+    var self = this;
+    if (navigator.share) navigator.share({ text: text }).catch(function () {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { self.setState({ toastNote: "Resultatet er kopiert. Lim det inn der du vil dele det." }); }, function () {});
+  }
   start(mode, opp, diff) {
     var st = this.state;
     st.mode = mode; if (opp) st.opp = opp; if (diff) st.diff = diff; st.online = null;
@@ -633,10 +746,13 @@ class Component extends DCLogic {
     if (!isWord(w2)) { this.setState({ msg: "«" + w2 + "» står ikke i ordlista.", tone: "bad" }); return false; }
     if (!s2.sel.some(function (id) { return id[0] !== "p"; })) { this.setState({ msg: "Et ord må ha minst én brikke fra brettet.", tone: "bad" }); return false; }
     var ev = this.evaluate(s2.sel), gone = Object.assign({}, s2.gone), usedP = [];
+    // For your own words, the best word there was, so the history and the result can show what you missed.
+    var top = human ? this.candidates(9, 80)[0] : null, missed = top && top.pts > ev.total && top.w !== w2 ? { w: top.w, pts: top.pts } : null;
+    var entry = { p: this.duel() ? s2.turn : 0, k: "w", w: w2, pts: ev.total, best: missed };
     s2.sel.forEach(function (id) { if (id[0] === "p") usedP.push(+id.slice(1)); else gone[id] = true; });
     var pocket = s2.pocket.filter(function (_, i) { return usedP.indexOf(i) < 0; });
     var who = this.duel() ? (this.online() ? (s2.online.you === s2.turn ? (s2.account ? s2.account.name : "Du") : s2.online.oppName) : this.names()[s2.turn]) + " la " : "";
-    this.setState({ gone: gone, sel: [], pocket: pocket, confirm: null, passes: 0, score: s2.score + ev.total, words: s2.words.concat([{ w: w2, pts: ev.total }]), pop: "+" + ev.total, msg: who + "«" + w2 + "» +" + ev.total + ": " + ev.parts.join(" · "), tone: "good" });
+    this.setState({ log: (s2.log || []).concat([entry]), gone: gone, sel: [], pocket: pocket, confirm: null, passes: 0, score: s2.score + ev.total, words: s2.words.concat([{ w: w2, pts: ev.total }]), pop: "+" + ev.total, msg: who + "«" + w2 + "» +" + ev.total + ": " + ev.parts.join(" · "), tone: "good" });
     this.timers.push(setTimeout(function () { self.setState({ pop: null }); }, 1200));
     if (ev.cleared) { if (this.online()) this.finishGame(); else this.timers.push(setTimeout(function () { self.finishGame(); }, 1300)); }
     else this.endTurn(this.online() ? 0 : 1300);
@@ -647,7 +763,7 @@ class Component extends DCLogic {
     var human = this.humanMove(), s2 = this.state, ch = s2.letters[id], gone = Object.assign({}, s2.gone); gone[id] = true;
     var me = this.online() ? (s2.account ? s2.account.name : "Du") : this.names()[s2.turn];
     var who = this.duel() ? me + " tok " + ch + " i lommen." : ch + " ligger i lommen. Bruk den i et ord senere.";
-    this.setState({ gone: gone, sel: [], confirm: null, passes: 0, pocket: s2.pocket.concat([ch]), tone: "info", msg: who });
+    this.setState({ log: (s2.log || []).concat([{ p: this.duel() ? s2.turn : 0, k: "p", w: ch }]), gone: gone, sel: [], confirm: null, passes: 0, pocket: s2.pocket.concat([ch]), tone: "info", msg: who });
     if (!Object.keys(this.live()).length) { this.finishGame(); return true; }
     this.endTurn(this.online() ? 0 : 900);
     if (human) this.adAfterMove();
@@ -657,7 +773,7 @@ class Component extends DCLogic {
     var st = this.state, passes = st.passes + 1, nm = this.names();
     if (this.humanMove()) this.adAfterMove();
     var me = this.online() ? (st.account ? st.account.name : "Du") : (st.opp === "cpu" && st.turn === 0 ? "Du" : nm[st.turn]);
-    this.setState({ sel: [], jokerAs: {}, passes: passes, tone: "info", msg: me + " sto over." + (passes >= 2 ? " Begge sto over, spillet er slutt." : "") });
+    this.setState({ log: (st.log || []).concat([{ p: st.turn, k: "s" }]), sel: [], jokerAs: {}, passes: passes, tone: "info", msg: me + " sto over." + (passes >= 2 ? " Begge sto over, spillet er slutt." : "") });
     if (passes >= 2) { if (this.online()) { this.finishGame(); return; } var self = this; this.timers.push(setTimeout(function () { self.finishGame(); }, 900)); return; }
     this.endTurn(this.online() ? 0 : 900);
   }
@@ -669,7 +785,7 @@ class Component extends DCLogic {
     if (this.online()) {
       var last = st.msg;
       this.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, sel: [], jokerAs: {}, picking: null, msg: this.turnSay(n) + " " + last, tone: "info" });
-      this.pushOnline({ P: P, gone: this.state.gone, passes: this.state.passes, last: last });
+      this.pushOnline({ P: P, gone: this.state.gone, passes: this.state.passes, last: last, log: this.state.log });
       return;
     }
     this.setState({ busy: true });
@@ -714,7 +830,7 @@ class Component extends DCLogic {
       var res = this.resultOf(P), win = res[0].score === res[1].score ? -1 : res[0].score > res[1].score ? 0 : 1;
       this.setState({ phase: "done", P: P, played: { duel: true, res: res, left: left, lay: st.lay }, submitted: true, busy: false, sel: [] });
       if (this.online()) {
-        this.pushOnline({ P: P, gone: st.gone, passes: st.passes, last: st.msg, result: { res: res, left: left, winner: win } });
+        this.pushOnline({ P: P, gone: st.gone, passes: st.passes, last: st.msg, log: st.log, result: { res: res, left: left, winner: win } });
         this.statOnline({ id: st.online.id, you: st.online.you, layout: st.lay, opp: { name: st.online.oppName }, result: { res: res, winner: win }, scores: res.map(function (r) { return r.score; }) }, P[st.online.you].words || []);
       } else if (st.opp === "cpu") addStat({ mode: "cpu", diff: st.diff, won: win < 0 ? -1 : win === 0 ? 1 : 0, my: res[0].score, their: res[1].score, best: res[0].best, lay: st.lay, opp: "Maskinen (" + this.diffName() + ")", words: P[0].words || [], cleared: left === 0 });
       else addStat({ mode: "local", won: -2, my: Math.max(res[0].score, res[1].score), their: Math.min(res[0].score, res[1].score), best: (res[0].best && res[1].best ? (res[0].best.pts >= res[1].best.pts ? res[0].best : res[1].best) : res[0].best || res[1].best) });
@@ -724,6 +840,7 @@ class Component extends DCLogic {
     var rec = { lay: st.lay, score: st.score, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
     addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 });
     this.setState({ phase: "done", played: rec, submitted: false });
+    if (st.daily) this.dailyFinish(rec);
   }
   async submit() {
     var st = this.state, rec = st.played, name = (st.name || "").trim();
@@ -843,10 +960,16 @@ class Component extends DCLogic {
       phase: st.phase, isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel, isOnline: online,
       lname: S.L.name,
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),
-      kicker: online ? "Spill · " + S.L.name : duel ? "Duell · " + S.L.name : "Klassiker · " + S.L.name,
+      kicker: online ? "Spill · " + S.L.name : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : "Klassiker · " + S.L.name,
       score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
       ads: !st.premium, premium: !!st.premium, adFull: !st.premium && !!st.adFull, closeAd: function () { self.setState({ adFull: null }); },
       openPremium: function () { self.setState({ phase: "premium", premMsg: "", help: false }); },
+      hist: !!st.hist, openHist: function () { self.setState({ hist: true }); }, closeHist: function () { self.setState({ hist: false }); },
+      histRows: (st.log || []).slice().reverse().map(function (e) {
+        var who = duel ? nm[e.p] : "Du";
+        return { who: who, what: e.k === "w" ? "«" + e.w + "»" : e.k === "p" ? e.w + " i lommen" : "sto over", pts: e.k === "w" ? "+" + e.pts : "",
+          best: e.best ? "Beste mulige: «" + e.best.w + "» +" + e.best.pts : "" };
+      }),
       help: !!st.help, openHelp: function () { self.setState({ help: true }); }, closeHelp: function () { self.setState({ help: false }); }
     };
     v.goHome = function () { self.goHome(); };
@@ -864,17 +987,28 @@ class Component extends DCLogic {
         var sc = g.scores[g.you] + "–" + g.scores[1 - g.you], L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0];
         var res = g.result, won = res && res.winner !== undefined ? (res.winner === g.you ? 1 : res.winner < 0 ? -1 : 0) : null;
         var why = res && res.timeout !== undefined ? (res.timeout === g.you ? "Tiden din gikk ut · " : "Motspilleren brukte for lang tid · ") : res && res.resigned !== undefined ? (res.resigned === g.you ? "Du ga opp · " : "Motspilleren ga opp · ") : "";
-        var line = g.status === "waiting" ? (g.kind === "invite" ? "Del koden med den du vil spille mot" : "Venter på at noen andre søker") :
+        var line = g.status === "offer" ? "Venter på at " + (g.opp ? g.opp.name : "motspilleren") + " godtar" : g.status === "waiting" ? (g.kind === "invite" ? "Del koden med den du vil spille mot" : "Venter på at noen andre søker") :
           g.status === "done" ? (res && res.res ? (function () { var a = res.res[g.you].score, b = res.res[1 - g.you].score; return why + (a > b ? "Du vant " : a < b ? "Du tapte " : "Uavgjort ") + a + "–" + b; })() : res && won !== null ? why + (won > 0 ? "Du vant" : won < 0 ? "Uavgjort" : "Du tapte") : "Ferdig") :
           (L ? L.name : g.layout) + " · " + sc + (g.deadline ? " · " + (g.myTurn ? "du har " : "de har ") + left(g.deadline) : "") + (g.last ? " · " + g.last : "");
         return { id: g.id, initial: (who[0] || "?").toUpperCase(), who: who, line: line, when: ago(g.updated), cls: "game" + (g.myTurn ? " mine" : ""), mine: !!g.myTurn,
           open: function () { if (g.status === "waiting" && g.kind === "invite") self.shareCode(g); else self.openOnline(g.id); },
-          canCancel: g.status === "waiting", cancel: function () { self.cancelInvite(g); } };
+          canCancel: g.status === "waiting" || g.status === "offer", cancel: function () { self.cancelInvite(g); } };
       };
+      var D = dailyOf(dayKey()), dd = dailyDone(), today = dd[D.key], streak = streakOf(dd);
+      v.daily = { name: D.name, done: !!today, score: today ? today.score : null, streak: streak,
+        line: today ? today.score + " poeng · " + (today.words || []).length + " ord" + (today.left ? "" : " · ryddet") : "Samme bokstaver for alle i dag",
+        streakSay: streak ? streak + (streak === 1 ? " dag" : " dager") + " på rad" : "Start en rekke i dag",
+        play: function () { self.startDaily(); }, share: function () { self.shareDaily(); } };
+      v.offers = gs.filter(function (g) { return g.incoming; }).map(function (g) {
+        var L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0];
+        return { who: g.opp ? g.opp.name : "Noen", initial: ((g.opp && g.opp.name) || "?")[0].toUpperCase(), line: "Vil spille på " + (L ? L.name : g.board ? g.board.name : g.layout) + " · " + ago(g.updated),
+          yes: function () { self.answerOffer(g, true); }, no: function () { self.answerOffer(g, false); } };
+      });
+      gs = gs.filter(function (g) { return !g.incoming; });
       v.sections = [
         { title: "Din tur", badge: "Din tur", rows: gs.filter(function (g) { return g.myTurn; }).map(row) },
         { title: "Deres tur", badge: "Deres tur", rows: gs.filter(function (g) { return g.status === "active" && !g.myTurn; }).map(row) },
-        { title: "Venter på motspiller", badge: "Venter", rows: gs.filter(function (g) { return g.status === "waiting"; }).map(row) },
+        { title: "Venter på motspiller", badge: "Venter", rows: gs.filter(function (g) { return g.status === "waiting" || g.status === "offer"; }).map(row) },
         { title: "Ferdige", badge: "Ferdig", rows: gs.filter(function (g) { return g.status === "done"; }).slice(0, 10).map(row) }
       ].filter(function (s) { return s.rows.length; });
       var mt = gs.filter(function (g) { return g.myTurn; }).length;
@@ -922,6 +1056,7 @@ class Component extends DCLogic {
       v.isOwn = SP.L.grp === "own";
       v.makeBoard = function () { self.openEditor(null); };
       v.editBoard = function () { self.openEditor(SP.L.id); };
+      v.shareBoard = function () { self.shareBoard(); };
       v.renameBoard = function () { self.openEditor(SP.L.id, true); };
       v.delAsk = st.delAsk === SP.L.id;
       v.deleteBoard = function () {
@@ -1087,7 +1222,7 @@ class Component extends DCLogic {
       v.slide = st.slide;
       // Messages show for a moment over the board: words laid, errors, the machine's moves. The opening line
       // about the board is left out; whose turn it is shows in the score boxes.
-      v.toast = st.msg && (st.tone === "good" || st.tone === "bad" || this.started() || this.duel() && st.turn !== 0) ? st.msg : null;
+      v.toast = st.msg && st.msg !== st.introMsg ? st.msg : null;
       v.left = Object.keys(live).length;
       // The strip in the band iOS blurs at the top: how much of the board is cleared, in the colour of whose turn it is.
       var total = S.pos.length, mine = !duel || (online ? st.turn === st.online.you : st.turn === 0);
@@ -1116,7 +1251,8 @@ class Component extends DCLogic {
       if (duel) {
         var sc = st.P.map(function (p, i) { return i === st.turn ? st.score : p.score; });
         var order = online && st.online.you === 1 ? [1, 0] : [0, 1];
-        v.stats = order.map(function (i) { return { k: nm[i] + (st.turn === i && (!online || st.online.status === "active") ? " · tur" : ""), v: sc[i], cls: st.turn === i ? "stat mine" : "stat" }; })
+        var lastOf = function (i) { var e = (st.log || []).filter(function (x) { return x.p === i; }).pop(); return !e ? "" : e.k === "w" ? e.w + " +" + e.pts : e.k === "p" ? e.w + " i lommen" : "sto over"; };
+        v.stats = order.map(function (i) { return { k: nm[i] + (st.turn === i && (!online || st.online.status === "active") ? " · tur" : ""), v: sc[i], last: lastOf(i), cls: st.turn === i ? "stat mine" : "stat" }; })
           .concat([{ k: "Åpne · igjen", v: nFree + " · " + v.left, cls: "stat" }]);
       } else {
         v.stats = [{ k: "Poeng", v: st.score, cls: "stat mine" }, { k: "Igjen av " + this.S().pos.length, v: v.left, cls: "stat" }, { k: "Åpne nå", v: nFree, cls: "stat" }];
@@ -1172,6 +1308,11 @@ class Component extends DCLogic {
     }
     if (st.phase === "done") {
       var rec = st.played || { score: st.score, words: st.words.length, left: 0, best: null };
+      // The words you could have done better with: the biggest gaps first.
+      var meIdx = online ? st.online.you : 0;
+      v.missed = (st.log || []).filter(function (e) { return e.k === "w" && e.best && (!duel || e.p === meIdx); })
+        .sort(function (a, b) { return (b.best.pts - b.pts) - (a.best.pts - a.pts); }).slice(0, 3)
+        .map(function (e) { return { played: "«" + e.w + "» +" + e.pts, best: "«" + e.best.w + "» +" + e.best.pts }; });
       if (rec.duel) {
         var r = rec.res, win = r[0].score === r[1].score ? -1 : r[0].score > r[1].score ? 0 : 1;
         if (rec.resigned !== undefined) win = 1 - rec.resigned;
@@ -1188,8 +1329,8 @@ class Component extends DCLogic {
             detail: x.words + " ord" + (x.best ? " · beste «" + x.best.w + "» " + x.best.pts + " p" : "") + (x.pen ? " · −" + x.pen + " for " + x.pocketLeft + " i lommen" : "") };
         });
         if (online) {
-          v.again = function () { if (st.online.oppId) self.startWith({ id: st.online.oppId }); else self.goHome(); };
-          v.againLabel = "Spill igjen";
+          v.again = function () { if (st.online.oppId) self.startWith({ id: st.online.oppId, name: st.online.oppName }, true); else self.goHome(); };
+          v.againLabel = "Revansje";
         } else { v.again = function () { self.start("duel"); }; v.againLabel = "Ny duell"; }
         v.toPicker = v.goHome; v.pickerLabel = "Til start";
         return v;
@@ -1208,6 +1349,17 @@ class Component extends DCLogic {
       v.boardSay = st.boardSrc === "db" ? "delt mellom alle som spiller" : st.boardSrc === "local" ? "bare denne telefonen" : "kobler til …";
       v.again = function () { self.setState(self.fresh(self.state.lay, "Samme brett, nytt forsøk. Bare en ny personlig rekord sendes inn.")); };
       v.againLabel = "Spill igjen";
+      if (st.daily) {
+        var dt = st.dailyTop, dd2 = dailyDone(), streak2 = streakOf(dd2);
+        v.isDaily = true; v.askName = false;
+        v.lname = "Dagens brett";
+        v.dailySay = (st.dailyFirst === false ? "Dette forsøket teller ikke; det første i dag gjør. " : "") + (streak2 ? streak2 + (streak2 === 1 ? " dag" : " dager") + " på rad." : "");
+        v.boardSay = dt ? dt.count + " har spilt i dag" + (dt.rank ? " · du er nr. " + dt.rank : "") : st.account ? "henter dagens liste …" : "velg brukernavn for å komme på dagens liste";
+        v.board = dt ? dt.top.map(function (r, i) { return { rank: i + 1, name: r.name, score: r.score, detail: r.words + " ord" + (r.best ? " · «" + r.best + "»" : "") + (r.left ? "" : " · ryddet"), cls: r.me ? "lrow me" : "lrow" }; }) : [];
+        v.boardEmpty = !!dt && dt.top.length === 0;
+        v.share = function () { self.shareDaily(); };
+        v.again = function () { self.startDaily(); }; v.againLabel = "Spill igjen";
+      }
       v.toPicker = v.goHome;
       v.pickerLabel = "Til start";
     }

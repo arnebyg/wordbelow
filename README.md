@@ -94,3 +94,18 @@ som ellers vises med tallene skjult.
   som nettapp kan det for eksempel være Stripe. Premium lagres foreløpig bare på telefonen
   (`ordspill/premium/v1`); med ekte betaling bør serveren bekrefte kjøpet og lagre det på kontoen.
 - **For testing** har Premium-siden en bryter som slår Premium av og på på denne telefonen.
+
+## Dagens brett, utfordringer, historikk, delte brett og sesongbrett
+
+- **Dagens brett:** samme brett og bokstaver for alle hver dag (brettet roterer, bokstavene kommer fra datoen).
+  Det første forsøket teller og går til dagens liste på serveren (`/api/daily/<dato>`). Startsiden viser rekken
+  (dager på rad) og «Del resultatet» med et rutenett: ⬜ 1–3, 🟨 4–5, 🟩 6–7 og 🟦 8 eller flere bokstaver.
+- **Utfordringer:** et spill mot en navngitt spiller (venn, søk, revansje) venter til den andre godtar
+  (`/accept`, `/decline`); ubesvart i 72 timer forsvinner den. «Revansje» etter et spill mot andre er en utfordring
+  på samme brett.
+- **Trekkhistorikk:** listeknappen i spillet viser alle trekk; for dine egne ord står det beste ordet som fantes når
+  det ga mer. Resultatet viser de tre ordene du kunne tjent mest på.
+- **Delte brett:** «Del» på et eget brett legger det på serveren (`/api/boards`) og gir en lenke `?board=KODE`.
+  Den som åpner lenken får brettet under Egne brett. Et delt brett kan brukes mot andre; begge får brettet med spillet.
+- **Sesongbrett:** Gresskaret (20. okt.–1. nov.), Juletreet (desember–6. jan.), Påskeegget (påsken) og Flagget
+  (10.–17. mai) ligger i lista bare i sesongen, og blir Dagens brett hver tredje dag i sesongen.

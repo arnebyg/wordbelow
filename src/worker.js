@@ -48,6 +48,8 @@ export class Hub extends DurableObject {
     try { this.sql.exec("ALTER TABLE games ADD COLUMN reminded INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE games ADD COLUMN rated INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE users ADD COLUMN rating REAL NOT NULL DEFAULT 1200"); } catch (e) { /* already there */ }
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS daily (date TEXT NOT NULL, uid TEXT NOT NULL, score INTEGER NOT NULL, words INTEGER NOT NULL, best TEXT, left INTEGER NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (date, uid));
+      CREATE TABLE IF NOT EXISTS boards (code TEXT PRIMARY KEY, owner TEXT NOT NULL, name TEXT NOT NULL, cells TEXT NOT NULL, created INTEGER NOT NULL);`);
     this.sql.exec("CREATE TABLE IF NOT EXISTS ratings (uid TEXT NOT NULL, at INTEGER NOT NULL, r REAL NOT NULL, gid TEXT); CREATE INDEX IF NOT EXISTS ratings_uid ON ratings (uid, at);");
   }
   one(q, ...a) { const r = this.sql.exec(q, ...a).toArray(); return r[0] || null; }
@@ -63,7 +65,14 @@ export class Hub extends DurableObject {
     return { id: g.id, you, opp: oppId ? { id: oppId, name: this.nameOf(oppId) } : null, status: g.status, kind: g.kind, code: g.code,
       layout: g.layout, seed: g.seed, turn: g.turn, ver: g.ver, myTurn: g.status === "active" && g.turn === you,
       scores: st && st.P ? st.P.map((p) => p.score) : [0, 0], last: st ? st.last || "" : "", result: st ? st.result || null : null, updated: g.updated,
-      deadline: g.status === "active" ? g.updated + this.limit : null };
+      deadline: g.status === "active" ? g.updated + this.limit : null,
+      incoming: g.status === "offer" && g.p1 === me, board: this.boardOf(g.layout) };
+  }
+  // A shared own board is played under the layout "b" + its code; both players get its cells with the game.
+  boardOf(layout) {
+    if (!/^b[a-z0-9]{6}$/.test(layout || "")) return null;
+    const b = this.one("SELECT code, name, cells FROM boards WHERE code = ?", layout.slice(1));
+    return b ? { code: b.code, name: b.name, cells: b.cells } : null;
   }
   // Push messages
   async vapid() {
@@ -109,6 +118,10 @@ export class Hub extends DurableObject {
   // The 72-hour limit and the reminder before it
   expire() {
     const now = Date.now();
+    for (const g of this.all("SELECT * FROM games WHERE status = 'offer' AND updated < ?", now - this.limit)) {
+      this.sql.exec("DELETE FROM games WHERE id = ?", g.id);
+      this.notify(g.p0, "Utfordringen gikk ut", this.nameOf(g.p1) + " svarte ikke innen 72 timer.", null);
+    }
     for (const g of this.all("SELECT * FROM games WHERE status = 'active' AND updated < ?", now - this.limit)) {
       const st = g.state ? JSON.parse(g.state) : { P: [{ score: 0, words: [], pocket: [] }, { score: 0, words: [], pocket: [] }] };
       const late = g.turn, lateId = late === 0 ? g.p0 : g.p1, winId = late === 0 ? g.p1 : g.p0, lateName = this.nameOf(lateId), winName = this.nameOf(winId);
@@ -129,10 +142,10 @@ export class Hub extends DurableObject {
     if (r && r.t) await this.ctx.storage.setAlarm(Math.max(r.t + 1000, Date.now() + Math.min(60e3, this.limit / 10)));
   }
   async alarm() { this.expire(); await this.schedule(); }
-  newGame(p0, p1, kind, body) {
+  newGame(p0, p1, kind, body, status0) {
     const now = Date.now(), id = rid(8), seed = Math.floor(Math.random() * 1e9);
     const layout = typeof body.layout === "string" && /^[a-z0-9]{2,20}$/.test(body.layout) ? body.layout : "lokket";
-    const status = p1 ? "active" : "waiting", c = kind === "invite" ? code() : null;
+    const status = status0 || (p1 ? "active" : "waiting"), c = kind === "invite" ? code() : null;
     this.sql.exec("INSERT INTO games (id, p0, p1, layout, seed, status, kind, code, turn, ver, state, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, ?, ?)",
       id, p0, p1 || null, layout, seed, status, kind, c, now, now);
     return this.one("SELECT * FROM games WHERE id = ?", id);
@@ -151,6 +164,12 @@ export class Hub extends DurableObject {
       return json({ id, name, token });
     }
 
+    const bm = path.match(/^\/boards\/([a-z0-9]{6})$/);
+    if (bm && m === "GET") {
+      const b = this.one("SELECT * FROM boards WHERE code = ?", bm[1]);
+      if (!b) return err(404, "Fant ikke brettet. Sjekk lenken.");
+      return json({ code: b.code, name: b.name, cells: b.cells, by: this.nameOf(b.owner) });
+    }
     const me = this.userOf(request);
     if (!me) return err(401, "Ikke logget inn.");
     this.sql.exec("INSERT OR REPLACE INTO kv (k, v) VALUES ('origin', ?)", url.origin);
@@ -179,6 +198,34 @@ export class Hub extends DurableObject {
     if (path === "/me" && m === "GET") {
       const friends = this.all("SELECT u.id, u.name FROM friends f JOIN users u ON u.id = f.fid WHERE f.uid = ? ORDER BY u.name COLLATE NOCASE", me.id);
       return json({ id: me.id, name: me.name, friends });
+    }
+    // Shared boards: the cells as the editor writes them ("2c.2r.layer"), up to 100 tiles.
+    if (path === "/boards" && m === "POST") {
+      const name = String(body.name || "").trim().slice(0, 24), cells = String(body.cells || "");
+      const list = cells.split(" ");
+      if (!name || list.length < 20 || list.length > 100 || !list.every((c) => /^\d{1,2}\.\d{1,2}\.[0-4]$/.test(c))) return err(400, "Brettet kan ikke deles.");
+      const old = this.one("SELECT code FROM boards WHERE owner = ? AND cells = ?", me.id, cells);
+      if (old) { this.sql.exec("UPDATE boards SET name = ? WHERE code = ?", name, old.code); return json({ code: old.code }); }
+      const CH = "abcdefghjkmnpqrstuvwxyz23456789", a = new Uint8Array(6); let c;
+      do { crypto.getRandomValues(a); c = Array.from(a, (x) => CH[x % CH.length]).join(""); } while (this.one("SELECT code FROM boards WHERE code = ?", c));
+      this.sql.exec("INSERT INTO boards (code, owner, name, cells, created) VALUES (?, ?, ?, ?, ?)", c, me.id, name, cells, Date.now());
+      return json({ code: c });
+    }
+    // Today's board: the first finished game of the day counts; the list is that day's.
+    const dm = path.match(/^\/daily\/(\d{4}-\d{2}-\d{2})$/);
+    if (dm) {
+      const day = dm[1], near = Math.abs(Date.parse(day + "T12:00:00Z") - Date.now()) < 2 * 864e5;
+      if (!near) return err(400, "Feil dato.");
+      if (m === "POST") {
+        const sc = Math.max(0, Math.min(5000, Math.round(Number(body.score) || 0)));
+        this.sql.exec("INSERT OR IGNORE INTO daily (date, uid, score, words, best, left, at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          day, me.id, sc, Math.max(0, Math.round(Number(body.words) || 0)), String(body.best || "").slice(0, 40), Math.max(0, Math.round(Number(body.left) || 0)), Date.now());
+      }
+      const top = this.all("SELECT d.score, d.words, d.best, d.left, u.name, d.uid FROM daily d JOIN users u ON u.id = d.uid WHERE d.date = ? ORDER BY d.score DESC, d.at ASC LIMIT 20", day);
+      const mine = this.one("SELECT score FROM daily WHERE date = ? AND uid = ?", day, me.id);
+      const count = this.one("SELECT COUNT(*) AS n FROM daily WHERE date = ?", day).n;
+      const rank = mine ? this.one("SELECT COUNT(*) AS n FROM daily WHERE date = ? AND score > ?", day, mine.score).n + 1 : null;
+      return json({ date: day, count, rank, top: top.map((x) => ({ name: x.name, score: x.score, words: x.words, best: x.best, left: x.left, me: x.uid === me.id })) });
     }
     if (path === "/stats" && m === "GET") {
       const u = this.one("SELECT created, rating FROM users WHERE id = ?", me.id);
@@ -218,8 +265,9 @@ export class Hub extends DurableObject {
         const o = this.one("SELECT id FROM users WHERE id = ?", String(body.to));
         if (!o || o.id === me.id) return err(404, "Fant ikke spilleren.");
         this.sql.exec("INSERT OR IGNORE INTO friends (uid, fid) VALUES (?, ?)", me.id, o.id);
-        const ng = this.newGame(me.id, o.id, "direct", body);
-        this.notify(o.id, me.name + " vil spille", me.name + " har startet et spill mot deg.", ng.id);
+        // A challenge to a named player waits until they accept it.
+        const ng = this.newGame(me.id, o.id, "direct", body, "offer");
+        this.notify(o.id, (body.rematch ? "Revansje fra " : "Utfordring fra ") + me.name, me.name + (body.rematch ? " vil ha revansje. Godta eller avslå i appen." : " vil spille mot deg. Godta eller avslå i appen."), ng.id);
         return json({ game: this.summary(ng, me.id) });
       }
       if (body.random) {
@@ -247,7 +295,7 @@ export class Hub extends DurableObject {
       return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", g.id), me.id) });
     }
 
-    const gm = path.match(/^\/games\/([0-9a-f]{16})(\/move|\/resign|\/cancel)?$/);
+    const gm = path.match(/^\/games\/([0-9a-f]{16})(\/move|\/resign|\/cancel|\/accept|\/decline)?$/);
     if (gm) {
       const g = this.one("SELECT * FROM games WHERE id = ?", gm[1]);
       if (!g || (g.p0 !== me.id && g.p1 !== me.id)) return err(404, "Fant ikke spillet.");
@@ -279,8 +327,20 @@ export class Hub extends DurableObject {
         this.notify(you === 0 ? g.p1 : g.p0, "Du vant mot " + me.name, me.name + " ga opp.", g.id);
         return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", g.id), me.id) });
       }
+      if (gm[2] === "/accept" && m === "POST") {
+        if (g.status !== "offer" || g.p1 !== me.id) return err(409, "Utfordringen er ikke åpen lenger.");
+        this.sql.exec("UPDATE games SET status = 'active', updated = ? WHERE id = ?", Date.now(), g.id);
+        this.notify(g.p0, "Din tur mot " + me.name, me.name + " godtok utfordringen.", g.id);
+        return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", g.id), me.id) });
+      }
+      if (gm[2] === "/decline" && m === "POST") {
+        if (g.status !== "offer" || g.p1 !== me.id) return err(409, "Utfordringen er ikke åpen lenger.");
+        this.sql.exec("DELETE FROM games WHERE id = ?", g.id);
+        this.notify(g.p0, me.name + " sa nei takk", me.name + " avslo utfordringen.", null);
+        return json({ ok: true });
+      }
       if (gm[2] === "/cancel" && m === "POST") {
-        if (g.status !== "waiting" || g.p0 !== me.id) return err(409, "Bare en invitasjon som venter kan trekkes.");
+        if ((g.status !== "waiting" && g.status !== "offer") || g.p0 !== me.id) return err(409, "Bare en invitasjon som venter kan trekkes.");
         this.sql.exec("DELETE FROM games WHERE id = ?", g.id);
         return json({ ok: true });
       }

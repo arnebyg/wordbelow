@@ -271,11 +271,11 @@ html.light .sthead span:last-child,html.light .rchart text{color:#5D6B67;fill:#5
 html.light .rchart .gl{stroke:rgba(60,45,20,.18)}
 html.light .rchart .ln{stroke:#B7841F}html.light .rchart .pt{fill:#B7841F}
 /* Messages over the board for a moment, instead of a row of their own */
-.toast{position:absolute;left:50%;top:6px;transform:translateX(-50%);z-index:1900;max-width:calc(100% - 24px);box-sizing:border-box;padding:8px 14px;border-radius:14px;background:rgba(8,30,24,.88);box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:14px;line-height:1.35;text-align:center;pointer-events:none;animation:toast 4s ease forwards}
+.toast{position:absolute;left:50%;top:6px;transform:translateX(-50%);z-index:1900;max-width:calc(100% - 24px);box-sizing:border-box;padding:8px 14px;border-radius:14px;background:rgba(8,30,24,.88);box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:14px;line-height:1.35;text-align:center;pointer-events:none;animation:toast 8s ease forwards}
 .toast.seen{animation:none;opacity:0}
-@keyframes toast{0%{opacity:0;transform:translate(-50%,-6px)}6%,82%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,-6px)}3%,90%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
 html.light .toast{background:rgba(255,253,247,.95)}
-@media (prefers-reduced-motion: reduce){.toast{animation:toast-still 4s linear forwards}@keyframes toast-still{0%,85%{opacity:1}100%{opacity:0}}}
+@media (prefers-reduced-motion: reduce){.toast{animation:toast-still 8s linear forwards}@keyframes toast-still{0%,90%{opacity:1}100%{opacity:0}}}
 /* Help: the rules over the open screen */
 .topr{display:flex;align-items:center;gap:8px;flex:none}
 .qb{width:36px;height:36px;border-radius:50%;border:2px solid rgba(244,239,226,.6);background:transparent;color:inherit;font-family:inherit;font-size:18px;font-weight:800;padding:0;cursor:pointer}
@@ -326,3 +326,26 @@ body{position:fixed;inset:0}
 .premhero span{color:#C6DCD5}
 .sub .bigbtn{flex:none}
 html.light .premhero b{color:#1C2626}html.light .premhero span{color:#5D6B67}html.light .hiddenchart{color:rgba(60,45,20,.18)}
+/* Last move under each score, history rows, today's board, challenges, missed words */
+.stat .lastmv{display:block;font-size:11px;line-height:1.2;color:#C6DCD5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.qb svg{display:block;margin:auto}
+.hrow span small{display:block;font-size:12px;color:#F2C46B;margin-top:2px}
+.daily{flex:none;border-radius:18px;padding:14px 16px;background:linear-gradient(135deg,#F2C46B,#E3A54A);color:#3B2405;display:flex;flex-direction:column;gap:8px;box-shadow:0 4px 0 #A9741E}
+.daily .dtop{display:flex;justify-content:space-between;align-items:center}
+.daily .dk{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.daily .dstreak{display:flex;align-items:center;gap:4px;font-size:13px;font-weight:700}
+.daily .dmain{display:flex;flex-direction:column}
+.daily .dn{font-size:24px;font-weight:800;line-height:1.1}
+.daily .dl{font-size:14px;color:#5A3A0C}
+.daily .cbtns{display:flex;gap:8px}
+.daily .pill{border-color:#3B2405;color:#3B2405}
+.daily .pill.solid{background:#3B2405;border-color:#3B2405;color:#F2C46B}
+.opt.offer{gap:10px}
+.opt.offer .act.go{height:40px;padding:0 14px}
+.missed{display:flex;flex-direction:column;gap:6px;flex:none}
+.missed .mrow{display:flex;gap:8px;align-items:center;font-size:14px}
+.missed .mrow .arr{color:#C6DCD5}
+.missed .pill{align-self:flex-start}
+.dsay{text-align:center;margin:0}
+html.light .stat .lastmv,html.light .missed .mrow .arr{color:#5D6B67}html.light .hrow span small{color:#9A6A12}
+.done .actions .act.green{flex:none;padding:0 20px}
