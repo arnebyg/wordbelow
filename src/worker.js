@@ -48,6 +48,8 @@ export class Hub extends DurableObject {
     try { this.sql.exec("ALTER TABLE games ADD COLUMN reminded INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE games ADD COLUMN rated INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE users ADD COLUMN rating REAL NOT NULL DEFAULT 1200"); } catch (e) { /* already there */ }
+    try { this.sql.exec("ALTER TABLE users ADD COLUMN chat INTEGER NOT NULL DEFAULT 1"); } catch (e) { /* already there */ }
+    this.sql.exec("CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, gid TEXT NOT NULL, uid TEXT NOT NULL, at INTEGER NOT NULL, text TEXT NOT NULL); CREATE INDEX IF NOT EXISTS chat_gid ON chat (gid, id);");
     this.sql.exec(`CREATE TABLE IF NOT EXISTS daily (date TEXT NOT NULL, uid TEXT NOT NULL, score INTEGER NOT NULL, words INTEGER NOT NULL, best TEXT, left INTEGER NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (date, uid));
       CREATE TABLE IF NOT EXISTS boards (code TEXT PRIMARY KEY, owner TEXT NOT NULL, name TEXT NOT NULL, cells TEXT NOT NULL, created INTEGER NOT NULL);`);
     this.sql.exec("CREATE TABLE IF NOT EXISTS ratings (uid TEXT NOT NULL, at INTEGER NOT NULL, r REAL NOT NULL, gid TEXT); CREATE INDEX IF NOT EXISTS ratings_uid ON ratings (uid, at);");
@@ -295,12 +297,25 @@ export class Hub extends DurableObject {
       return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", g.id), me.id) });
     }
 
-    const gm = path.match(/^\/games\/([0-9a-f]{16})(\/move|\/resign|\/cancel|\/accept|\/decline)?$/);
+    // Reactions and short messages in a game between two people; off for both when either has turned them off.
+    if (path === "/me/chat" && m === "POST") { this.sql.exec("UPDATE users SET chat = ? WHERE id = ?", body.on ? 1 : 0, me.id); return json({ ok: true }); }
+    const gm = path.match(/^\/games\/([0-9a-f]{16})(\/move|\/resign|\/cancel|\/accept|\/decline|\/chat)?$/);
     if (gm) {
       const g = this.one("SELECT * FROM games WHERE id = ?", gm[1]);
       if (!g || (g.p0 !== me.id && g.p1 !== me.id)) return err(404, "Fant ikke spillet.");
       const you = g.p0 === me.id ? 0 : 1;
-      if (!gm[2] && m === "GET") return json({ game: this.summary(g, me.id), state: g.state ? JSON.parse(g.state) : null });
+      const oppId = you === 0 ? g.p1 : g.p0, mineOn = (this.one("SELECT chat FROM users WHERE id = ?", me.id) || {}).chat !== 0, oppOn = !oppId || (this.one("SELECT chat FROM users WHERE id = ?", oppId) || {}).chat !== 0;
+      const chat = () => mineOn && oppOn ? this.all("SELECT id, uid, at, text FROM chat WHERE gid = ? ORDER BY id DESC LIMIT 60", g.id).reverse().map((c) => ({ id: c.id, me: c.uid === me.id, at: c.at, text: c.text })) : [];
+      if (!gm[2] && m === "GET") return json({ game: this.summary(g, me.id), state: g.state ? JSON.parse(g.state) : null, chat: chat(), chatOn: mineOn && oppOn, chatWhy: !mineOn ? "mine" : !oppOn ? "opp" : null });
+      if (gm[2] === "/chat" && m === "POST") {
+        if (!mineOn || !oppOn) return err(409, !mineOn ? "Du har slått av reaksjoner og chat." : "Motspilleren har slått av reaksjoner og chat.");
+        const text = String(body.text || "").replace(/\s+/g, " ").trim().slice(0, 140);
+        if (!text) return err(400, "Tom melding.");
+        if ((this.one("SELECT COUNT(*) AS n FROM chat WHERE gid = ? AND uid = ? AND at > ?", g.id, me.id, Date.now() - 60e3) || {}).n >= 12) return err(429, "Litt for mange meldinger. Vent et øyeblikk.");
+        this.sql.exec("INSERT INTO chat (gid, uid, at, text) VALUES (?, ?, ?, ?)", g.id, me.id, Date.now(), text);
+        if (oppId && text.length > 2) this.notify(oppId, me.name, text, g.id);
+        return json({ chat: chat() });
+      }
       if (gm[2] === "/move" && m === "POST") {
         if (g.status !== "active") return err(409, "Spillet er ikke i gang.");
         if (g.turn !== you) return err(409, "Det er ikke din tur.");

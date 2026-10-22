@@ -349,3 +349,33 @@ html.light .premhero b{color:#1C2626}html.light .premhero span{color:#5D6B67}htm
 .dsay{text-align:center;margin:0}
 html.light .stat .lastmv,html.light .missed .mrow .arr{color:#5D6B67}html.light .hrow span small{color:#9A6A12}
 .done .actions .act.green{flex:none;padding:0 20px}
+/* Tall and Sett tiles */
+.tile.op .ch,.rk .ch{transition:none}
+.tile.op .ch{color:#22609A}
+.syms{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none}
+.rk .syms{gap:2px}
+.sym{display:block;width:13px;height:13px}
+.rk .sym{width:9px;height:9px}
+.sym.s0{border-radius:50%}
+.sym.s1{clip-path:polygon(50% 0,100% 100%,0 100%)}
+.sym.c0{background:#C98A12}.sym.c1{background:#22609A}.sym.c2{background:#D2553A}
+.eqbtn{flex:none;width:40px;height:46px;border:0;border-radius:8px;background:#DCEBF2;color:#22609A;font-family:inherit;font-size:26px;font-weight:800;box-shadow:0 4px 0 #5C8FA8;cursor:pointer;margin-right:4px}
+.rk.eqk{background:#DCEBF2;color:#22609A;box-shadow:0 4px 0 #5C8FA8}
+/* Reactions and chat */
+.qb.chatb{position:relative}
+.qb.chatb.unread::after{content:"";position:absolute;right:-2px;top:-2px;width:10px;height:10px;border-radius:5px;background:#F2C46B;box-shadow:0 0 0 2px var(--bg,#1E6550)}
+.toast.chatpop{top:auto;bottom:10px;background:#F4EFE2;color:#1C2626;animation:toast 6s ease forwards}
+.reacts{display:flex;justify-content:space-between;gap:6px;flex:none}
+.react{width:48px;height:48px;border:0;border-radius:14px;background:rgba(0,0,0,.24);font-size:26px;cursor:pointer}
+.react:active{transform:scale(.92)}
+.cmsgs{display:flex;flex-direction:column;gap:6px;flex:none;padding:4px 0}
+.cmsg{align-self:flex-start;max-width:78%;padding:8px 12px;border-radius:16px 16px 16px 4px;background:rgba(0,0,0,.28);font-size:15px;line-height:1.35;word-break:break-word}
+.cmsg.me{align-self:flex-end;border-radius:16px 16px 4px 16px;background:#F2C46B;color:#3B2405}
+.cmsg.big{font-size:30px;background:transparent;padding:0 4px}
+.crow{display:flex;gap:8px;flex:none;padding-bottom:10px}
+.crow .inp{flex:1;min-width:0}
+.crow .act{flex:none;height:48px;padding:0 16px}
+html.light .react,html.light .cmsg{background:rgba(60,45,20,.08)}html.light .cmsg.me{background:#D9A441}
+.title{flex:1;min-width:0}
+.title .t1,.title .t2{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topr .qb{width:34px;height:34px}

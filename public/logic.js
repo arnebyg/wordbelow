@@ -78,7 +78,120 @@ var LAYOUTS = [
   { id: "trappa", grp: "grow", name: "Trappa", asym: true, sub: "trapp ned mot høyre", start: 10, peak: 15,
     cells: "0.0.0 2.0.0 4.0.0 0.2.0 2.2.0 4.2.0 6.2.0 0.4.0 2.4.0 4.4.0 6.4.0 8.4.0 10.4.0 0.6.0 2.6.0 4.6.0 6.6.0 8.6.0 10.6.0 12.6.0 0.8.0 2.8.0 4.8.0 6.8.0 8.8.0 10.8.0 12.8.0 14.8.0 0.10.0 2.10.0 4.10.0 6.10.0 8.10.0 10.10.0 12.10.0 14.10.0 10.12.0 12.12.0 14.12.0 1.1.1 3.1.1 5.1.1 1.3.1 3.3.1 5.3.1 7.3.1 9.3.1 1.5.1 3.5.1 5.5.1 7.5.1 9.5.1 11.5.1 1.7.1 3.7.1 5.7.1 7.7.1 9.7.1 11.7.1 13.7.1 1.9.1 3.9.1 5.9.1 7.9.1 9.9.1 11.9.1 13.9.1 1.11.1 3.11.1 5.11.1 7.11.1 9.11.1 11.11.1 13.11.1 2.2.2 2.4.2 2.6.2 2.8.2 2.10.2 4.3.2 4.5.2 4.7.2 4.9.2 6.2.2 6.4.2 6.6.2 6.8.2 6.10.2 8.3.2 8.5.2 8.7.2 8.9.2 10.2.2 10.4.2 10.6.2 10.8.2 10.10.2 12.5.2 12.7.2 12.9.2" }
 ];
-var GROUPS = [{ id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }, { id: "season", name: "Sesong", say: "bare i sesongen" }, { id: "own", name: "Egne brett", say: "brett du har laget" }];
+// Game types. Letters are the word game; Tall builds equations from digits and operators; Sett takes three
+// tiles whose shape, colour and count are each all the same or all different. Tall and Sett have their own,
+// more open boards: on the letter boards they ran out of moves after five or six turns (simulated).
+var KINDS = [{ id: "ord", name: "Bokstaver", say: "lag ord av bokstavene" }, { id: "tall", name: "Tall", say: "lag regnestykker som går opp" }, { id: "sett", name: "Sett", say: "finn tre som passer sammen" }];
+var KIND_KEY = "ordspill/spilltype/v1";
+function kindOf(L) { return (L && L.kind) || "ord"; }
+// Open boards: columns in pairs with a gap between pairs, so a bottom tile has a free side once uncovered.
+function openPts(rows, cols1, rows1, tops) {
+  var cols = [0, 1, 2.2, 3.2, 4.4, 5.4, 6.6], out = [];
+  cols.forEach(function (c, i) { for (var k = 0; k < rows; k++) out.push({ c: c, r: k + (i % 2) * 0.5, l: 0 }); });
+  cols1.forEach(function (c, j) { for (var k = 0; k < rows1; k++) out.push({ c: c, r: k + 0.5 + (j % 2) * 0.25, l: 1 }); });
+  tops.forEach(function (p) { out.push({ c: p[0], r: p[1], l: 2 }); });
+  return out;
+}
+[["tall", "regnestykket", "Regnestykket", "tre lag · 46 brikker", openPts(4, [0.5, 1.6, 2.7, 3.8, 4.9], 3, [[2.7, 1.25], [2.7, 2.25], [4.9, 1.75]])],
+ ["tall", "tavla", "Tavla", "tre lag · 63 brikker", openPts(5, [0.5, 1.6, 2.7, 3.8, 4.9, 6.0], 4, [[1.6, 1.5], [2.7, 2.5], [3.8, 1.5], [4.9, 2.5]])],
+ ["sett", "parene", "Parene", "tre lag · 46 brikker", openPts(4, [0.5, 1.6, 2.7, 3.8, 4.9], 3, [[2.7, 1.25], [2.7, 2.25], [4.9, 1.75]])],
+ ["sett", "rutenettet", "Rutenettet", "tre lag · 63 brikker", openPts(5, [0.5, 1.6, 2.7, 3.8, 4.9, 6.0], 4, [[1.6, 1.5], [2.7, 2.5], [3.8, 1.5], [4.9, 2.5]])]
+].forEach(function (b) { LAYOUTS.push({ id: b[1], kind: b[0], grp: "open", name: b[2], asym: false, sub: b[3], pts: b[4] }); });
+// Tall: digits worth 1, operators by how hard they are to use. About one tile in five is an operator.
+var TALL_PTS = { "+": 1, "−": 2, "×": 3, "÷": 4 };
+function dealTall(S, R) {
+  var one = [];
+  "123456789".split("").forEach(function (d) { for (var i = 0; i < 5; i++) one.push(d); });
+  ["+", "+", "+", "−", "−", "−", "×", "×", "÷", "÷"].forEach(function (o) { one.push(o); });
+  var bag = []; while (bag.length < S.pos.length) bag = bag.concat(one);
+  var m = {}, b = shuffleR(bag, R).slice(0, S.pos.length);
+  S.pos.forEach(function (p, i) { m[p.id] = b[i]; });
+  return m;
+}
+// Sett: a tile is three digits: shape, colour, count − 1. Two decks of 27, shuffled.
+var SETT_SHAPES = ["●", "▲", "■"], SETT_NAMES = { s: "formen", c: "fargen", n: "antallet" };
+function andList(a) { return a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " og " + a[a.length - 1]; }
+function dealSett(S, R) {
+  var deck = [];
+  while (deck.length < S.pos.length) for (var a = 0; a < 3; a++) for (var b = 0; b < 3; b++) for (var c = 0; c < 3; c++) deck.push("" + a + b + c);
+  var d = shuffleR(deck, R).slice(0, S.pos.length), m = {};
+  S.pos.forEach(function (p, i) { m[p.id] = d[i]; });
+  return m;
+}
+function shuffleR(a, R) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
+function settCard(code) { return { s: +code[0], c: +code[1], n: +code[2] + 1 }; }
+function settWhy(codes) {
+  var cs = codes.map(settCard);
+  return ["s", "c", "n"].filter(function (k) { var a = cs[0][k], b = cs[1][k], c = cs[2][k]; return !((a === b && b === c) || (a !== b && b !== c && a !== c)); });
+}
+function symsOf(code) { var c = settCard(code), out = []; for (var i = 0; i < c.n; i++) out.push("sym s" + c.s + " c" + c.c); return out; }
+function settSay(code) { var c = settCard(code); return c.n + " " + ["gull", "blå", "korall"][c.c] + " " + ["sirkel", "trekant", "firkant"][c.s] + (c.n > 1 ? "er" : ""); }
+function settText(codes) { return codes.map(function (x) { var c = settCard(x); return new Array(c.n + 1).join(SETT_SHAPES[c.s]); }).join(" "); }
+// Tall: runs of digits are one number (at most three digits), standard order of operations, exact division.
+function tallTokens(chars) {
+  var out = [], num = "";
+  for (var i = 0; i < chars.length; i++) {
+    var ch = chars[i];
+    if (/[0-9]/.test(ch)) { num += ch; if (num.length > 3) return null; }
+    else { if (!num || !TALL_PTS[ch]) return null; out.push(+num); num = ""; out.push(ch); }
+  }
+  if (!num) return null; out.push(+num); return out;
+}
+function tallCalc(t) {
+  if (!t) return null; var a = [t[0]];
+  for (var i = 1; i < t.length; i += 2) {
+    var op = t[i], n = t[i + 1];
+    if (op === "×") a[a.length - 1] *= n; else if (op === "÷") { if (n === 0 || a[a.length - 1] % n) return null; a[a.length - 1] /= n; } else { a.push(op); a.push(n); }
+  }
+  var v = a[0]; for (var j = 1; j < a.length; j += 2) v = a[j] === "+" ? v + a[j + 1] : v - a[j + 1];
+  return v;
+}
+function tallCheck(chars) {
+  var k = chars.indexOf("="); if (k < 0 || chars.lastIndexOf("=") !== k) return null;
+  if (!chars.some(function (c) { return TALL_PTS[c]; })) return null;
+  var a = tallCalc(tallTokens(chars.slice(0, k))), b = tallCalc(tallTokens(chars.slice(k + 1)));
+  return a !== null && b !== null && a === b ? a : null;
+}
+function tallPretty(chars) { return chars.join("").replace(/([^0-9])/g, " $1 ").replace(/\s+/g, " ").trim(); }
+// Every equation from the given tiles, up to five tiles plus "=", for the machine, the hint and the history.
+// Each side is worked out once: all expressions of up to four tiles from the tiles' letters with their values,
+// then pairs with the same value whose tiles together are available. Far faster than trying every order.
+function tallAll(tiles, maxLen, limit) {
+  var have = {}, byCh = {};
+  tiles.forEach(function (t) { have[t.ch] = (have[t.ch] || 0) + 1; (byCh[t.ch] = byCh[t.ch] || []).push(t.id); });
+  var chs = Object.keys(have), sides = {}, side = Math.min(4, maxLen - 1);
+  function go(str, used, lastOp) {
+    if (str.length && !lastOp) {
+      var v = tallCalc(tallTokens(str.split("")));
+      if (v !== null) (sides[v] = sides[v] || []).push({ s: str, used: Object.assign({}, used), op: /[^0-9]/.test(str) });
+    }
+    if (str.length >= side) return;
+    for (var i = 0; i < chs.length; i++) {
+      var ch = chs[i], op = !!TALL_PTS[ch];
+      if ((used[ch] || 0) >= have[ch] || (op && (!str.length || lastOp))) continue;
+      used[ch] = (used[ch] || 0) + 1; go(str + ch, used, op); used[ch]--;
+    }
+  }
+  go("", {}, false);
+  var found = [], seen = {};
+  Object.keys(sides).forEach(function (v) {
+    var list = sides[v];
+    for (var i = 0; i < list.length && found.length < limit; i++) for (var j = 0; j < list.length && found.length < limit; j++) {
+      var A = list[i], B = list[j];
+      if (A.s.length + B.s.length > maxLen || !(A.op || B.op) || A.s.length < B.s.length) continue;
+      var ok = true, need = {};
+      [A, B].forEach(function (x) { Object.keys(x.used).forEach(function (c) { need[c] = (need[c] || 0) + x.used[c]; }); });
+      for (var c in need) if (need[c] > have[c]) { ok = false; break; }
+      var key = A.s + "=" + B.s;
+      if (!ok || seen[key]) continue;
+      seen[key] = 1;
+      var take = {}, ids = (A.s + "=" + B.s).split("").map(function (ch) { if (ch === "=") return "eq"; var n = take[ch] || 0; take[ch] = n + 1; return byCh[ch][n]; });
+      found.push({ w: tallPretty((A.s + "=" + B.s).split("")), sel: ids, n: A.s.length + B.s.length });
+    }
+  });
+  return found;
+}
+var GROUPS = [{ id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }, { id: "season", name: "Sesong", say: "bare i sesongen" }, { id: "open", name: "Åpne brett", say: "laget for tall og sett" }, { id: "own", name: "Egne brett", say: "brett du har laget" }];
 // Boards the player has made in the editor: kept on this phone, played without the server.
 var OWN_KEY = "ordspill/egnebrett/v1", OWN_MAX = 100, OWN_MIN = 20;
 // Season boards: shown in the board list only in their season. Easter moves with the calendar (Meeus' rule).
@@ -112,7 +225,8 @@ function ownLayout(o) { return { id: o.id, grp: "own", name: o.name, asym: true,
 function ownSave() { lsSet(OWN_KEY, LAYOUTS.filter(function (L) { return L.grp === "own"; }).map(function (L) { return { id: L.id, name: L.name, cells: L.cells, start: L.start, code: L.code || null, by: L.by || null }; })); }
 function buildLayout(L) {
   var pos = [];
-  if (L.cells) L.cells.split(" ").forEach(function (t) { var a = t.split("."); pos.push({ c: +a[0] / 2, r: +a[1] / 2, l: +a[2] }); });
+  if (L.pts) L.pts.forEach(function (p) { pos.push({ c: p.c, r: p.r, l: p.l }); });
+  else if (L.cells) L.cells.split(" ").forEach(function (t) { var a = t.split("."); pos.push({ c: +a[0] / 2, r: +a[1] / 2, l: +a[2] }); });
   else L.spec.forEach(function (s) {
     var l = s[0], c0 = s[1], hs = s[2], ctr = s[3];
     hs.forEach(function (h, i) {
@@ -222,14 +336,14 @@ function dealRamp(S, R) {
 // The same layout always deals the same letters; an online game adds its own seed so each game is new.
 function genBoard(S, seed) {
   var R = rng(strSeed("klassiker/" + S.L.id + (seed ? "/" + seed : "")));
-  var letters = S.L.grp === "tight" ? deal(S, R) : dealRamp(S, R), b = {};
+  var kind = kindOf(S.L), letters = kind === "tall" ? dealTall(S, R) : kind === "sett" ? dealSett(S, R) : S.L.grp === "tight" ? deal(S, R) : dealRamp(S, R), b = {};
   var on = function (l) { return S.pos.filter(function (p) { return p.l === l && letters[p.id] !== "*"; }); };
   var top = Math.max.apply(null, S.pos.map(function (p) { return p.l; }));
   function put(list, s) { list = list.filter(function (p) { return !b[p.id]; }); var p = list[Math.floor(R() * list.length)]; if (p) b[p.id] = { m: +s[0], t: s.slice(-1) }; }
   put(on(top), "3×O"); put(on(1), "2×O"); put(on(0), "3×B"); put(on(0).concat(on(1)), "2×B"); put(on(0).concat(on(1)), "2×B"); put(on(2), "2×B");
   return { letters: letters, bonus: b };
 }
-function openSay(L) { if (L.grp === "own" || L.grp === "season") return "starter med " + L.start + " åpne"; return L.grp === "grow" ? "starter med " + L.start + " åpne, rundt " + L.peak + " midtveis" : "typisk " + L.open + " åpne hele veien"; }
+function openSay(L) { if (L.grp === "open") return "mange åpne brikker hele veien"; if (L.grp === "own" || L.grp === "season") return "starter med " + L.start + " åpne"; return L.grp === "grow" ? "starter med " + L.start + " åpne, rundt " + L.peak + " midtveis" : "typisk " + L.open + " åpne hele veien"; }
 function cellsOf(list) { return list.map(function (p) { return (p.c * 2) + "." + (p.r * 2) + "." + p.l; }).join(" "); }
 function openAtStart(list) {
   var S = buildLayout({ id: "_", cells: cellsOf(list) }), all = {};
@@ -250,7 +364,8 @@ seasonLoad();
 // The active player's score, pocket and words live in st.score, st.pocket and st.words, as in solo;
 // st.P holds both players and is brought up to date at the end of every turn.
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
-var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1";
+var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1", CHAT_KEY = "ordspill/chat/v1";
+var REACTIONS = ["👏", "😮", "😅", "😂", "🔥", "🙈"];
 var API = "/api";
 var BG_KEY = "ordspill/bakgrunn/v1";
 var BGS = [{ id: "filt", name: "Filtgrønn (standard)", hex: "#1E6550" }, { id: "natt", name: "Nattblå", hex: "#142A52" }, { id: "fjord", name: "Fjordblå", hex: "#1D5470" },
@@ -324,7 +439,7 @@ class Component extends DCLogic {
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
       account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
-      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" }, push: "unknown", pushMsg: "", pushCard: !lsGet(PUSH_CARD_KEY), premium: !!lsGet(PREMIUM_KEY) };
+      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" }, push: "unknown", pushMsg: "", pushCard: !lsGet(PUSH_CARD_KEY), premium: !!lsGet(PREMIUM_KEY), chatPref: lsGet(CHAT_KEY) !== false, chat: null, chatOpen: false, chatIn: "", chatPop: null };
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
   fresh(id, msg, seed) {
@@ -361,7 +476,8 @@ class Component extends DCLogic {
     var st = this.state;
     this.ticks = (this.ticks || 0) + 1;
     if (st.phase === "home" && (now || this.ticks % 4 === 0)) this.refreshGames();
-    if ((st.phase === "play" || st.phase === "done") && st.online && (now || st.online.status === "waiting" || (st.phase === "play" && st.turn !== st.online.you))) this.loadOnline(st.online.id, true);
+    // On your own turn too, every 15 s, so reactions and messages arrive.
+    if ((st.phase === "play" || st.phase === "done") && st.online && (now || st.online.status === "waiting" || (st.phase === "play" && st.turn !== st.online.you) || this.ticks % 3 === 0)) this.loadOnline(st.online.id, true);
   }
   // The shared leaderboard lives in the artifact's database when the page can reach it; else this phone alone.
   async connect() {
@@ -402,6 +518,12 @@ class Component extends DCLogic {
   // own moves; Premium has neither, and opens the statistics. Payment is not connected yet (see README).
   humanMove() { var st = this.state; return st.phase === "play" && !this.cpuTurn() && !this.waitTurn(); }
   adAfterMove() { if (AD_FULL_ON && !this.state.premium) this.setState({ adFull: Date.now() }); }
+  setKind(id) {
+    lsSet(KIND_KEY, id);
+    var first = LAYOUTS.filter(function (L) { return kindOf(L) === id; })[0];
+    lsSet("ordspill/klassiker/brett/v1", first.id);
+    this.setState(Object.assign(this.fresh(first.id), { phase: this.state.phase, help: false }));
+  }
   setPremium(on) { lsSet(PREMIUM_KEY, on); this.setState({ premium: on, adFull: null, premMsg: on ? "Premium er på for denne telefonen." : "Premium er av." }); }
   // Push messages when it is your turn
   pushCheck() {
@@ -530,6 +652,28 @@ class Component extends DCLogic {
       }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
     });
   }
+  // Reactions and short messages, in online games only. A new one from the other player shows for a moment.
+  applyChat(id, d) {
+    var st = this.state, old = st.chat && st.chat.gid === id ? st.chat : null, list = d.chat || [];
+    var lastSeen = old ? old.lastSeen : (list.length ? list[list.length - 1].id : 0);
+    var fresh = old ? list.filter(function (c) { return !c.me && c.id > old.top; }) : [];
+    var top = list.length ? list[list.length - 1].id : 0;
+    var next = { chat: { gid: id, list: list, on: !!d.chatOn, why: d.chatWhy || null, top: top, lastSeen: st.chatOpen ? top : lastSeen } };
+    if (fresh.length && !st.chatOpen) next.chatPop = (st.online.oppName || "Motspilleren") + ": " + fresh[fresh.length - 1].text;
+    this.setState(next);
+  }
+  sendChat(text) {
+    var self = this, o = this.state.online; text = (text || "").trim();
+    if (!o || !text) return;
+    api("/games/" + o.id + "/chat", { method: "POST", body: { text: text } }).then(function (d) {
+      self.applyChat(o.id, { chat: d.chat, chatOn: true });
+      self.setState({ chatIn: "" });
+    }, function (e) { self.setState({ chatPop: e.message }); });
+  }
+  setChatPref(on) {
+    lsSet(CHAT_KEY, on); this.setState({ chatPref: on });
+    if (this.state.account) api("/me/chat", { method: "POST", body: { on: on } }).catch(function () {});
+  }
   answerOffer(g, yes) {
     var self = this;
     api("/games/" + g.id + (yes ? "/accept" : "/decline"), { method: "POST" }).then(function () {
@@ -585,6 +729,7 @@ class Component extends DCLogic {
     api("/games/" + id).then(function (d) {
       var st = self.state, g = d.game, s = d.state;
       if (!st.online || st.online.id !== id) return;
+      self.applyChat(id, d);
       if (quiet && st.online.ver === g.ver && st.online.status === g.status) return;
       if (g.board) sharedLayout(g.board.code, g.board.name, g.board.cells);
       var base = self.fresh(g.layout, null, g.seed), P = s ? s.P : base.P, turn = g.turn;
@@ -621,8 +766,14 @@ class Component extends DCLogic {
   }
   S() { return layoutOf(this.state.lay); }
   live() { var m = {}, g = this.state.gone; this.S().pos.forEach(function (p) { if (!g[p.id]) m[p.id] = true; }); return m; }
-  chOf(id) { if (id[0] === "p") return this.state.pocket[+id.slice(1)]; var raw = this.state.letters[id]; return raw === "*" ? (this.state.jokerAs[id] || "?") : raw; }
-  word(sel) { var self = this; return sel.map(function (id) { return self.chOf(id); }).join(""); }
+  kind() { return kindOf(this.S().L); }
+  chOf(id) { if (id === "eq") return "="; if (id[0] === "p") return this.state.pocket[+id.slice(1)]; var raw = this.state.letters[id]; return raw === "*" ? (this.state.jokerAs[id] || "?") : raw; }
+  word(sel) {
+    var self = this, chars = sel.map(function (id) { return self.chOf(id); }), k = this.kind();
+    return k === "tall" ? tallPretty(chars) : k === "sett" ? settText(chars) : chars.join("");
+  }
+  // A tile's points: letters by the Scrabble values, Tall by TALL_PTS (digits 1), Sett tiles 1.
+  ptsOf(raw) { var k = this.kind(); return k === "tall" ? (TALL_PTS[raw] || 1) : k === "sett" ? 1 : (PTS[raw] || 0); }
   // Players
   duel() { return this.state.mode === "duel"; }
   online() { return this.state.mode === "duel" && this.state.opp === "online" && !!this.state.online; }
@@ -679,23 +830,27 @@ class Component extends DCLogic {
   }
   started() { var st = this.state; return st.words.length > 0 || st.P[0].words.length > 0 || st.P[1].words.length > 0 || Object.keys(st.gone).length > 0; }
   evaluate(sel) {
-    var st = this.state, S = this.S(), parts = [], base = 0, layer = 0, wm = 1, rare = false;
+    var st = this.state, S = this.S(), parts = [], base = 0, layer = 0, wm = 1, rare = false, self = this, kind = this.kind();
+    sel = sel.filter(function (id) { return id !== "eq"; });
     sel.forEach(function (id) {
-      if (id[0] === "p") { var pc = st.pocket[+id.slice(1)]; if (RARE.indexOf(pc) >= 0) rare = true; base += PTS[pc] || 0; return; }
-      var raw = st.letters[id], p = PTS[raw] || 0, b = st.bonus[id];
-      if (RARE.indexOf(raw) >= 0) rare = true;
+      if (id[0] === "p") { var pc = st.pocket[+id.slice(1)]; if (kind === "ord" && RARE.indexOf(pc) >= 0) rare = true; base += self.ptsOf(pc); return; }
+      var raw = st.letters[id], p = self.ptsOf(raw), b = st.bonus[id];
+      if (kind === "ord" && RARE.indexOf(raw) >= 0) rare = true;
       if (b && b.t === "B") p *= b.m;
       if (b && b.t === "O") wm *= b.m;
       layer += S.map[id].l; base += p;
     });
-    parts.push("bokstaver " + base);
+    // Sett: 3 for a set and 2 more for each property that differs on all three, instead of length.
+    if (kind === "sett" && sel.length === 3) { var cs = sel.map(function (id) { return settCard(self.chOf(id)); });
+      base += 2 * ["s", "c", "n"].filter(function (k) { return cs[0][k] !== cs[1][k]; }).length; }
+    parts.push((kind === "tall" ? "brikker " : kind === "sett" ? "sett " : "bokstaver ") + base);
     if (layer) parts.push("lag +" + layer);
     var s = (base + layer) * wm;
     if (wm > 1) parts.push("×" + wm + " ord");
     if (rare) { s = Math.round(s * 1.5); parts.push("×1,5 sjelden"); }
     // Length is an addition, not a factor: +5 for each letter past three. As a factor (× letters − 2) it made one
     // long word worth 13 short ones and could decide a game alone (simulation, 21 October 2026).
-    var lb = LEN_BONUS * Math.max(0, sel.length - 3); if (lb) { s += lb; parts.push(sel.length + " bokstaver +" + lb); }
+    var lb = kind === "sett" ? 0 : LEN_BONUS * Math.max(0, sel.length - 3); if (lb) { s += lb; parts.push(sel.length + (kind === "tall" ? " brikker +" : " bokstaver +") + lb); }
     var before = this.live(), after = {};
     Object.keys(before).forEach(function (k) { if (sel.indexOf(k) < 0) after[k] = true; });
     var opened = 0;
@@ -710,6 +865,8 @@ class Component extends DCLogic {
   // tile fits. Moves that use a joker rank a little higher (JOKER_EAGER), so the machine takes an open joker
   // before the other player can, and the hint suggests it too.
   candidates(maxLen, pool) {
+    var k = this.kind();
+    if (k === "tall" || k === "sett") return this.candidatesOther(k, maxLen, pool);
     var st = this.state, S = this.S(), live = this.live(), groups = {}, jokers = [];
     Object.keys(live).filter(function (id) { return freeIn(S, id, live); }).forEach(function (id) {
       if (st.letters[id] === "*") jokers.push(id); else (groups[st.letters[id]] = groups[st.letters[id]] || []).push(id);
@@ -739,17 +896,40 @@ class Component extends DCLogic {
     out.sort(function (a, b) { return b.rank - a.rank; });
     return out;
   }
+  // Tall: equations from the open tiles and the pocket; Sett: every set of three among them.
+  candidatesOther(k, maxLen, pool) {
+    var st = this.state, S = this.S(), live = this.live(), self = this;
+    var tiles = Object.keys(live).filter(function (id) { return freeIn(S, id, live); }).map(function (id) { return { id: id, ch: st.letters[id] }; })
+      .concat(st.pocket.map(function (ch, i) { return { id: "p" + i, ch: ch }; }));
+    var found = [];
+    if (k === "tall") found = tallAll(tiles, Math.min(maxLen || 5, 5), 250);
+    else for (var i = 0; i < tiles.length; i++) for (var j = i + 1; j < tiles.length; j++) for (var m = j + 1; m < tiles.length; m++) {
+      var three = [tiles[i], tiles[j], tiles[m]];
+      if (!settWhy(three.map(function (t) { return t.ch; })).length) found.push({ w: settText(three.map(function (t) { return t.ch; })), sel: three.map(function (t) { return t.id; }) });
+    }
+    var out = found.filter(function (x) { return x.sel.some(function (id) { return id[0] !== "p" && id !== "eq"; }); }).map(function (x) {
+      var pts = self.evaluate(x.sel).total; return { w: x.w, sel: x.sel, ja: {}, jokers: 0, pts: pts, rank: pts };
+    });
+    out.sort(function (a, b) { return b.rank - a.rank; });
+    return out.slice(0, pool || 60);
+  }
   bestWord() { return this.candidates()[0] || null; }
   // Moves. Each returns true when the move was made.
   playWord() {
     var self = this, s2 = this.state, w2 = this.word(s2.sel), human = this.humanMove();
-    if (!isWord(w2)) { this.setState({ msg: "«" + w2 + "» står ikke i ordlista.", tone: "bad" }); return false; }
-    if (!s2.sel.some(function (id) { return id[0] !== "p"; })) { this.setState({ msg: "Et ord må ha minst én brikke fra brettet.", tone: "bad" }); return false; }
+    var kind = this.kind(), chars = s2.sel.map(function (id) { return self.chOf(id); });
+    if (kind === "ord" && !isWord(w2)) { this.setState({ msg: "«" + w2 + "» står ikke i ordlista.", tone: "bad" }); return false; }
+    if (kind === "tall" && tallCheck(chars) === null) { this.setState({ msg: chars.indexOf("=") < 0 ? "Et regnestykke trenger «=». Trykk «=»-knappen." : "«" + w2 + "» går ikke opp.", tone: "bad" }); return false; }
+    if (kind === "sett") {
+      if (s2.sel.length !== 3) { this.setState({ msg: "Et sett er tre brikker.", tone: "bad" }); return false; }
+      var why = settWhy(chars); if (why.length) { this.setState({ msg: "Ikke et sett: " + andList(why.map(function (x) { return SETT_NAMES[x]; })) + (why.length > 1 ? " er" : " er") + " lik på to, men ikke på den tredje.", tone: "bad" }); return false; }
+    }
+    if (!s2.sel.some(function (id) { return id[0] !== "p" && id !== "eq"; })) { this.setState({ msg: "Et ord må ha minst én brikke fra brettet.", tone: "bad" }); return false; }
     var ev = this.evaluate(s2.sel), gone = Object.assign({}, s2.gone), usedP = [];
     // For your own words, the best word there was, so the history and the result can show what you missed.
     var top = human ? this.candidates(9, 80)[0] : null, missed = top && top.pts > ev.total && top.w !== w2 ? { w: top.w, pts: top.pts } : null;
     var entry = { p: this.duel() ? s2.turn : 0, k: "w", w: w2, pts: ev.total, best: missed };
-    s2.sel.forEach(function (id) { if (id[0] === "p") usedP.push(+id.slice(1)); else gone[id] = true; });
+    s2.sel.forEach(function (id) { if (id === "eq") return; if (id[0] === "p") usedP.push(+id.slice(1)); else gone[id] = true; });
     var pocket = s2.pocket.filter(function (_, i) { return usedP.indexOf(i) < 0; });
     var who = this.duel() ? (this.online() ? (s2.online.you === s2.turn ? (s2.account ? s2.account.name : "Du") : s2.online.oppName) : this.names()[s2.turn]) + " la " : "";
     this.setState({ log: (s2.log || []).concat([entry]), gone: gone, sel: [], pocket: pocket, confirm: null, passes: 0, score: s2.score + ev.total, words: s2.words.concat([{ w: w2, pts: ev.total }]), pop: "+" + ev.total, msg: who + "«" + w2 + "» +" + ev.total + ": " + ev.parts.join(" · "), tone: "good" });
@@ -919,9 +1099,9 @@ class Component extends DCLogic {
   // A sideways swipe moves to the next or previous of all twelve boards: in a game only before the first move,
   // on the new-game screen any time.
   cycleLay(dir, inGame) {
-    var self = this, st = this.state, n = LAYOUTS.length, i = 0;
-    LAYOUTS.forEach(function (L, k) { if (L.id === st.lay) i = k; });
-    var next = LAYOUTS[(i + dir + n) % n];
+    var self = this, st = this.state, kind = this.kind(), list = LAYOUTS.filter(function (L) { return kindOf(L) === kind; }), n = list.length, i = 0;
+    list.forEach(function (L, k) { if (L.id === st.lay) i = k; });
+    var next = list[(i + dir + n) % n];
     if (inGame) {
       if (this.online() || st.busy || this.cpuTurn()) return;
       if (this.started()) { this.setState({ tone: "bad", msg: "Brettet kan bare byttes før første trekk. Trykk et navn i raden over for å begynne på nytt på et annet." }); return; }
@@ -934,7 +1114,7 @@ class Component extends DCLogic {
     clearTimeout(this.slideT);
     this.slideT = setTimeout(function () { self.setState({ slide: null }); }, 400);
   }
-  dots() { var st = this.state; return LAYOUTS.map(function (L) { return { cls: "dot" + (L.id === st.lay ? " on" : "") + (L.grp === "grow" ? " grow" : L.grp === "own" ? " own" : "") }; }); }
+  dots() { var st = this.state, kind = this.kind(); return LAYOUTS.filter(function (L) { return kindOf(L) === kind; }).map(function (L) { return { cls: "dot" + (L.id === st.lay ? " on" : "") + (L.grp === "grow" ? " grow" : L.grp === "own" ? " own" : "") }; }); }
   boardChips(lockedFn, confirm) {
     var self = this, st = this.state, S = this.S();
     var go = function (id, name) {
@@ -960,7 +1140,7 @@ class Component extends DCLogic {
       phase: st.phase, isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel, isOnline: online,
       lname: S.L.name,
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),
-      kicker: online ? "Spill · " + S.L.name : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : "Klassiker · " + S.L.name,
+      kicker: online ? "Spill · " + S.L.name : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name,
       score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
       ads: !st.premium, premium: !!st.premium, adFull: !st.premium && !!st.adFull, closeAd: function () { self.setState({ adFull: null }); },
       openPremium: function () { self.setState({ phase: "premium", premMsg: "", help: false }); },
@@ -970,6 +1150,15 @@ class Component extends DCLogic {
         return { who: who, what: e.k === "w" ? "«" + e.w + "»" : e.k === "p" ? e.w + " i lommen" : "sto over", pts: e.k === "w" ? "+" + e.pts : "",
           best: e.best ? "Beste mulige: «" + e.best.w + "» +" + e.best.pts : "" };
       }),
+      chatBtn: online && st.chatPref, chatUnread: !!(st.chat && st.chat.top > st.chat.lastSeen),
+      openChat: function () { self.setState({ chatOpen: true, chatPop: null, chat: st.chat ? Object.assign({}, st.chat, { lastSeen: st.chat.top }) : st.chat }); },
+      closeChat: function () { self.setState({ chatOpen: false }); },
+      chatOpen: online && !!st.chatOpen, chatPop: online ? st.chatPop : null,
+      chatOn: !!(st.chat && st.chat.on), chatWhy: st.chat ? st.chat.why : null, opp: online ? st.online.oppName : "",
+      chatList: (st.chat && st.chat.list || []).map(function (c) { return { text: c.text, cls: "cmsg" + (c.me ? " me" : "") + (REACTIONS.indexOf(c.text) >= 0 ? " big" : "") }; }),
+      reactions: REACTIONS.map(function (r) { return { r: r, send: function () { self.sendChat(r); } }; }),
+      chatIn: st.chatIn, onChatIn: function (e) { self.state.chatIn = e.target.value; },
+      sendChatIn: function () { self.sendChat(self.state.chatIn); },
       help: !!st.help, openHelp: function () { self.setState({ help: true }); }, closeHelp: function () { self.setState({ help: false }); }
     };
     v.goHome = function () { self.goHome(); };
@@ -1054,6 +1243,7 @@ class Component extends DCLogic {
       };
       v.swipe = function (dir) { self.cycleLay(dir, false); };
       v.isOwn = SP.L.grp === "own";
+      v.canMake = kindOf(SP.L) === "ord";
       v.makeBoard = function () { self.openEditor(null); };
       v.editBoard = function () { self.openEditor(SP.L.id); };
       v.shareBoard = function () { self.shareBoard(); };
@@ -1138,6 +1328,10 @@ class Component extends DCLogic {
       v.bgNote = st.bg === "sand" ? "Sand er en lys bakgrunn og gir lyst tema uansett valget over." :
         lightNow ? "De mørke bakgrunnene vises i mørkt tema. Nå er lyst tema på, så du ser dem ikke før du velger Mørkt tema (eller telefonen går over til mørkt)." :
         "De mørke bakgrunnene vises i mørkt tema; Sand er lys.";
+      v.chatPref = st.chatPref;
+      v.toggleChat = function () { self.setChatPref(!st.chatPref); };
+      var curKind = kindOf(S.L);
+      v.kinds = KINDS.map(function (k) { return { name: k.name, say: k.say, on: k.id === curKind, pick: function () { if (k.id !== curKind) self.setKind(k.id); } }; });
       v.pushSay = this.pushSay(); v.pushMsg = st.pushMsg;
       v.pushOn = st.push === "off" && st.account ? function () { self.pushOn(); } : null;
       v.pushOff = st.push === "on" ? function () { self.pushOff(); } : null;
@@ -1213,7 +1407,7 @@ class Component extends DCLogic {
     }
     if (st.phase === "play") {
       var live = this.live(), nFree = 0;
-      var nL = LAYOUTS.length, iL = 0; LAYOUTS.forEach(function (L, k) { if (L.id === st.lay) iL = k; });
+      var kL = LAYOUTS.filter(function (L) { return kindOf(L) === kindOf(S.L); }), nL = kL.length, iL = 0; kL.forEach(function (L, k) { if (L.id === st.lay) iL = k; });
       v.boardBar = { name: S.L.name, group: GROUPS.filter(function (G) { return G.id === S.L.grp; })[0].name, n: (iL + 1) + " av " + nL,
         show: !online && !this.started(), can: !online && !this.started() && !locked, prev: function () { self.cycleLay(-1, true); }, next: function () { self.cycleLay(1, true); } };
       v.canSwipe = !online && !this.started();
@@ -1230,14 +1424,15 @@ class Component extends DCLogic {
       v.boardFit = S.box;
       v.boardBox = "position:absolute;left:0;top:0;width:" + (BOX_W / SCALE) + "px;height:" + (BOX_H / SCALE) + "px;transform:scale(" + SCALE + ");transform-origin:0 0";
       v.tiles = S.pos.filter(function (p) { return live[p.id]; }).map(function (p) {
-        var id = p.id, raw = st.letters[id], jk = raw === "*", ch = self.chOf(id), pts = PTS[raw] || 0, free = freeIn(S, id, live), b = st.bonus[id], bonus = b ? b.m + "×" + b.t : "";
+        var id = p.id, raw = st.letters[id], jk = raw === "*", ch = self.chOf(id), pts = self.ptsOf(raw), free = freeIn(S, id, live), b = st.bonus[id], bonus = b ? b.m + "×" + b.t : "";
+        var kd = kindOf(S.L), syms = kd === "sett" ? symsOf(raw) : null;
         if (free) nFree++;
         var x = S.offX + p.c * 49 - p.l * 4, y = S.offY + p.r * 60 - p.l * 7;
         return {
-          ch: ch, p: jk ? "" : pts, bonus: bonus, bnCls: "bn " + (b && b.t === "O" ? "ob" : "lb"),
-          cls: "tile l" + p.l + (jk ? " jk" : "") + (b ? " bonus" : "") + (st.sel.indexOf(id) >= 0 ? (self.cpuTurn() ? " sel cpu" : " sel") : ""),
+          ch: syms ? "" : ch, p: jk || syms ? "" : pts, syms: syms, bonus: bonus, bnCls: "bn " + (b && b.t === "O" ? "ob" : "lb"),
+          cls: "tile l" + p.l + (jk ? " jk" : "") + (kd === "tall" && TALL_PTS[raw] ? " op" : "") + (b ? " bonus" : "") + (st.sel.indexOf(id) >= 0 ? (self.cpuTurn() ? " sel cpu" : " sel") : ""),
           blocked: !free, pos: "left:" + x + "px;top:" + y + "px;z-index:" + Math.round(p.l * 1000 + p.r * 20 + p.c * 2 + 1),
-          label: (jk ? "Joker" + (st.jokerAs[id] ? " som " + st.jokerAs[id] : "") : ch + ", " + pts + " poeng") + (bonus ? ", bonus " + bonus : "") + (free ? ", åpen" : ", sperret"),
+          label: (jk ? "Joker" + (st.jokerAs[id] ? " som " + st.jokerAs[id] : "") : syms ? settSay(raw) : ch + ", " + pts + " poeng") + (bonus ? ", bonus " + bonus : "") + (free ? ", åpen" : ", sperret"),
           pick: function () {
             if (!free || self.state.busy || self.cpuTurn() || self.waitTurn()) return;
             var s0 = self.state, s = s0.sel.slice(), j = s.indexOf(id);
@@ -1269,8 +1464,8 @@ class Component extends DCLogic {
       });
       v.cancelPick = function () { self.setState({ picking: null }); };
       v.rack = st.sel.map(function (id) {
-        var jk = id[0] !== "p" && st.letters[id] === "*", ch = self.chOf(id);
-        return { ch: ch, p: jk ? 0 : PTS[ch], cls: "rk" + (jk ? " jk" : "") + (id[0] === "p" ? " pk" : ""), label: "Fjern " + ch + " fra ordet", back: function () {
+        var jk = id[0] !== "p" && st.letters[id] === "*", ch = self.chOf(id), sy = kindOf(S.L) === "sett" ? symsOf(ch) : null;
+        return { ch: sy ? "" : ch, syms: sy, p: jk || sy || id === "eq" ? "" : self.ptsOf(ch), cls: "rk" + (jk ? " jk" : "") + (id[0] === "p" ? " pk" : "") + (id === "eq" ? " eqk" : ""), label: "Fjern " + ch + " fra ordet", back: function () {
           if (locked) return;
           var ja = Object.assign({}, self.state.jokerAs); delete ja[id];
           self.setState({ sel: self.state.sel.filter(function (x) { return x !== id; }), jokerAs: ja });
@@ -1281,7 +1476,8 @@ class Component extends DCLogic {
         st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : "Trykk en brikke i lommen for å bruke den i et ord.") : (duel ? "Legg et ord, ta en brikke i lommen eller stå over." : "Lommen tar to brikker du kan bruke i et senere ord.");
       v.pocket = st.pocket.map(function (ch, i) {
         var pid = "p" + i, on = st.sel.indexOf(pid) >= 0;
-        return { ch: ch, p: PTS[ch], on: on ? "true" : "false", cls: "rk pk" + (on ? " on" : ""), label: ch + " i lommen, " + PTS[ch] + " poeng" + (on ? ", i ordet" : ""), tap: function () {
+        var sy = kindOf(S.L) === "sett" ? symsOf(ch) : null;
+        return { ch: sy ? "" : ch, syms: sy, p: sy ? "" : self.ptsOf(ch), on: on ? "true" : "false", cls: "rk pk" + (on ? " on" : ""), label: (sy ? settSay(ch) : ch) + " i lommen" + (on ? ", i ordet" : ""), tap: function () {
           if (locked) return;
           var s0 = self.state.sel.slice(), j = s0.indexOf(pid);
           if (j >= 0) s0.splice(j, 1); else s0.push(pid);
@@ -1290,10 +1486,12 @@ class Component extends DCLogic {
       });
       v.slots = Array.from({ length: 2 - st.pocket.length }, function () { return {}; });
       var boardSel = st.sel.filter(function (id) { return id[0] !== "p"; });
+      v.isTall = kindOf(S.L) === "tall";
+      v.eqKey = function () { if (!locked && self.state.sel.indexOf("eq") < 0) self.setState({ sel: self.state.sel.concat(["eq"]) }); };
       v.pocketOff = locked || st.sel.length !== 1 || boardSel.length !== 1 || st.letters[boardSel[0]] === "*" || st.pocket.length >= 2;
       v.pocketIt = function () { if (!locked) self.pocketTile(self.state.sel[0]); };
       var w = this.word(st.sel);
-      v.sendOff = locked || st.sel.length < 1;
+      v.sendOff = locked || st.sel.length < 1 || (kindOf(S.L) === "sett" && st.sel.length !== 3);
       v.sendLabel = this.cpuTurn() ? "Maskinens tur" : this.waitTurn() ? (st.online.status === "waiting" ? "Venter …" : st.online.oppName + " sin tur") : st.sel.length < 1 ? "Send ord" : "«" + w + "» · " + this.evaluate(st.sel).total + " p";
       v.send = function () { if (!locked) self.playWord(); };
       v.hintOff = locked;

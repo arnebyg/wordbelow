@@ -109,3 +109,12 @@ som ellers vises med tallene skjult.
   Den som åpner lenken får brettet under Egne brett. Et delt brett kan brukes mot andre; begge får brettet med spillet.
 - **Sesongbrett:** Gresskaret (20. okt.–1. nov.), Juletreet (desember–6. jan.), Påskeegget (påsken) og Flagget
   (10.–17. mai) ligger i lista bare i sesongen, og blir Dagens brett hver tredje dag i sesongen.
+
+## Tall, Sett, reaksjoner og chat
+
+- **Spilltype** velges i innstillingene: Bokstaver, **Tall** (regnestykker som går opp; «=» er en egen knapp) eller
+  **Sett** (tre brikker der form, farge og antall hver er lik på alle eller ulik på alle). Tall og Sett har egne,
+  mer åpne brett (kolonner i par), fordi bokstavbrettene gikk tom for trekk etter fem–seks trekk. Brettet
+  bestemmer spilltypen, så spill mot andre virker uten noe ekstra. Maskinen, hint og trekkhistorikk virker i alle tre.
+- **Reaksjoner og chat** i spill mot andre: 👏 😮 😅 😂 🔥 🙈 og korte meldinger (140 tegn), lagret på serveren.
+  Kan slås av under Innstillinger › Mot andre; da er det av for begge i spillene dine, og ingen kan sende deg noe.

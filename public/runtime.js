@@ -21,7 +21,7 @@ var App = (function () {
   '<div class="top">' +
     '<button type="button" class="back" aria-label="Til menyen"' + on(v.toMenu) + '><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13 4l-7 7 7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>' +
     '<div class="title"><span class="t1">' + esc(v.kicker) + '</span><span class="t2">' + esc(v.lsub) + '</span></div>' +
-    '<span class="topr"><button type="button" class="qb" aria-label="Trekkhistorikk"' + on(v.openHist) + '>' + IC.list + '</button><button type="button" class="qb" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
+    '<span class="topr">' + (v.chatBtn ? '<button type="button" class="qb chatb' + (v.chatUnread ? ' unread' : '') + '" aria-label="Reaksjoner og chat"' + on(v.openChat) + '>' + IC.chat + '</button>' : '') + '<button type="button" class="qb" aria-label="Trekkhistorikk"' + on(v.openHist) + '>' + IC.list + '</button><button type="button" class="qb" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
     '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>Hint −5</button></span>' +
   '</div>' +
   '<div class="stats">' +
@@ -32,11 +32,12 @@ var App = (function () {
       each(v.tiles, function (t) {
         return '<button type="button" class="' + t.cls + (t.blocked ? ' blocked' : '') + '" style="' + esc(t.pos) + '"' + (t.blocked ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t.label) + '"' + on(t.pick) + '>' +
           (t.bonus ? '<span class="' + t.bnCls + '">' + esc(t.bonus) + '</span>' : '') +
-          '<span class="ch">' + esc(t.ch) + '</span><span class="pt">' + esc(t.p) + '</span></button>';
+          (t.syms ? '<span class="syms">' + t.syms.map(function (c) { return '<span class="' + c + '"></span>'; }).join('') + '</span>' : '') + '<span class="ch">' + esc(t.ch) + '</span><span class="pt">' + esc(t.p) + '</span></button>';
       }) +
     '</div>' +
     (v.pop ? '<div class="pop" aria-hidden="true">' + esc(v.pop) + '</div>' : '') +
     (v.toast ? toastHtml(v) : '') +
+    (v.chatPop && !v.chatOpen ? '<div class="toast chatpop" role="status">' + esc(v.chatPop) + '</div>' : '') +
     (v.dots ? '<div class="bdots" aria-hidden="true">' + each(v.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' : '') +
     (v.picking ? '<div class="over" role="dialog" aria-label="Velg bokstav for jokeren">' +
       '<div class="overtop"><span>Hvilken bokstav er jokeren?</span><button type="button" class="small"' + on(v.cancelPick) + '>Avbryt</button></div>' +
@@ -46,13 +47,14 @@ var App = (function () {
   '</div>' +
   '<div class="rackrow">' +
     '<div class="pocket" role="group" aria-label="Lommen">' +
-      each(v.pocket, function (pk) { return '<button type="button" class="' + pk.cls + '" aria-label="' + esc(pk.label) + '" aria-pressed="' + pk.on + '"' + on(pk.tap) + '><span class="ch">' + esc(pk.ch) + '</span><span class="pt">' + esc(pk.p) + '</span></button>'; }) +
+      each(v.pocket, function (pk) { return '<button type="button" class="' + pk.cls + '" aria-label="' + esc(pk.label) + '" aria-pressed="' + pk.on + '"' + on(pk.tap) + '>' + (pk.syms ? '<span class="syms">' + pk.syms.map(function (c) { return '<span class="' + c + '"></span>'; }).join('') + '</span>' : '') + '<span class="ch">' + esc(pk.ch) + '</span><span class="pt">' + esc(pk.p) + '</span></button>'; }) +
       each(v.slots, function () { return '<span class="slot" aria-hidden="true"></span>'; }) +
     '</div>' +
     '<span class="divider" aria-hidden="true"></span>' +
+    (v.isTall ? '<button type="button" class="eqbtn" aria-label="Likhetstegn"' + on(v.eqKey) + '>=</button>' : '') +
     '<div class="word">' +
       (v.rackEmpty ? '<span class="rackhint">' + esc(v.rackHint) + '</span>' : '') +
-      each(v.rack, function (r) { return '<button type="button" class="' + r.cls + '" aria-label="' + esc(r.label) + '"' + on(r.back) + '><span class="ch">' + esc(r.ch) + '</span><span class="pt">' + esc(r.p) + '</span></button>'; }) +
+      each(v.rack, function (r) { return '<button type="button" class="' + r.cls + '" aria-label="' + esc(r.label) + '"' + on(r.back) + '>' + (r.syms ? '<span class="syms">' + r.syms.map(function (c) { return '<span class="' + c + '"></span>'; }).join('') + '</span>' : '') + '<span class="ch">' + esc(r.ch) + '</span><span class="pt">' + esc(r.p) + '</span></button>'; }) +
     '</div>' +
   '</div>' +
   '<div class="actions">' +
@@ -98,6 +100,7 @@ var App = (function () {
   }
 
   var IC = {
+    chat: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linejoin="round"></path></svg>',
     list: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></path></svg>',
     fire: '<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2.4 1.2-3.7 2.4-4.8C9.6 10 10 11.5 11 12c0-3.5.2-6.5 1-9z" fill="currentColor"></path></svg>',
     gem: '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z M2 9h20 M9 3l-2 6 5 12 5-12-2-6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"></path></svg>',
@@ -171,7 +174,7 @@ var App = (function () {
             '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
           '</div>' +
           '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +
-          '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.renameBoard) + '>Gi nytt navn</button><button type="button" class="chip"' + on(v.editBoard) + '>Endre brettet</button><button type="button" class="chip"' + on(v.shareBoard) + '>Del</button><button type="button" class="chip' + (v.delAsk ? ' danger' : '') + '"' + on(v.deleteBoard) + '>' + (v.delAsk ? 'Slett – sikker?' : 'Slett') + '</button>' : '') + '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button></div>' +
+          '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.renameBoard) + '>Gi nytt navn</button><button type="button" class="chip"' + on(v.editBoard) + '>Endre brettet</button><button type="button" class="chip"' + on(v.shareBoard) + '>Del</button><button type="button" class="chip' + (v.delAsk ? ' danger' : '') + '"' + on(v.deleteBoard) + '>' + (v.delAsk ? 'Slett – sikker?' : 'Slett') + '</button>' : '') + (v.canMake ? '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button>' : '') + '</div>' +
         '</div>' : '') +
       '</div>' +
       '<span class="foot">Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
@@ -197,6 +200,9 @@ var App = (function () {
         ["Ordbonus 2×O / 3×O", "ganger bokstaver og lag"], ["Sjelden bokstav (Æ, Y, W, C)", "× 1,5"], ["Lengde", "+5 for hver bokstav over tre"],
         ["Åpner 4 nye brikker eller flere", "+5"], ["Rydder hele brettet", "+50"], ["Hint", "−5"]]) +
         '<p class="fine">Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Ligger brikkene til sammen 3 lag opp og ordet treffer 2×O, blir det (9 + 3) × 2 = 24, pluss 15 for seks bokstaver: 39 poeng.</p>') +
+      sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen, lagene og bonusene virker som ellers.</p>' +
+        '<p><b>Tall:</b> bygg et regnestykke som går opp, for eksempel 9 × 2 = 18. Sifre ved siden av hverandre blir ett tall, og det må være minst ett regnetegn. «=»-knappen er gratis og brukes én gang. Vanlig regnerekkefølge, og deling må gå opp. Poeng: siffer 1, + 1, − 2, × 3, ÷ 4, +5 per brikke over tre.</p>' +
+        '<p><b>Sett:</b> hver brikke har form, farge og antall. Tre brikker er et sett når hver egenskap enten er lik på alle tre eller ulik på alle tre. Poeng: 3, +2 for hver egenskap som er ulik på alle.</p>') +
       sec("Brettene", '<p><b>Stramme</b> brett har få åpne brikker hele spillet. <b>Åpner seg</b> starter med rundt 8–11 åpne og får flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: 40 % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
       sec("Mot andre", '<p>Hver spiller har <b>72 timer</b> på et trekk. Går tiden ut, er spillet over og den andre vinner. Slå på varsler i innstillingene for å få beskjed når det er din tur. Ratingen starter på 1200 og går opp eller ned etter hvert spill mot en annen spiller.</p>') +
       '</div></div></div>';
@@ -208,6 +214,16 @@ var App = (function () {
       '<div class="scroll helpbody">' + (v.histRows.length ? '<div class="group statg">' + each(v.histRows, function (r) {
         return '<div class="srow hrow"><span><b>' + esc(r.who) + '</b> ' + esc(r.what) + (r.best ? '<small>' + esc(r.best) + '</small>' : '') + '</span><b>' + esc(r.pts) + '</b></div>';
       }) + '</div>' : '<p>Ingen trekk ennå.</p>') + '</div></div></div>';
+  }
+  // Reactions and short messages with the other player.
+  function chatView(v) {
+    var body = !v.chatOn ? '<p>' + (v.chatWhy === "mine" ? 'Du har slått av reaksjoner og chat i innstillingene.' : v.chatWhy === "opp" ? esc(v.opp) + ' har slått av reaksjoner og chat.' : 'Chatten er ikke tilgjengelig i dette spillet.') + '</p>' :
+      '<div class="reacts">' + each(v.reactions, function (r) { return '<button type="button" class="react"' + on(r.send) + '>' + r.r + '</button>'; }) + '</div>' +
+      '<div class="cmsgs">' + (v.chatList.length ? each(v.chatList, function (c) { return '<div class="' + c.cls + '">' + esc(c.text) + '</div>'; }) : '<p class="fine">Ingen meldinger ennå. Send en reaksjon eller skriv noe kort.</p>') + '</div>' +
+      '<div class="crow"><input id="chatin" class="inp" type="text" maxlength="140" autocomplete="off" placeholder="Skriv en kort melding" value="' + esc(v.chatIn) + '" data-input="onChatIn"><button type="button" class="act green"' + on(v.sendChatIn) + '>Send</button></div>';
+    return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Reaksjoner og chat"><div class="helpsheet">' +
+      '<div class="helphead"><b>' + esc(v.opp || 'Chat') + '</b><button type="button" class="x" aria-label="Lukk"' + on(v.closeChat) + '>' + IC.close + '</button></div>' +
+      '<div class="scroll helpbody">' + body + '</div></div></div>';
   }
   function premiumView(v) {
     var li = function (t, s) { return '<div class="opt"><span class="tileic">' + IC.gem + '</span><span class="ot"><span class="t">' + t + '</span><span class="s">' + s + '</span></span></div>'; };
@@ -275,6 +291,11 @@ var App = (function () {
       '<h2 class="sec">Tema</h2><div class="group" role="radiogroup" aria-label="Tema">' + each(v.themes, function (t) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + t.on + '"' + on(t.pick) + '><span class="dot' + (t.on ? ' on' : '') + '"></span><span>' + esc(t.name) + '</span></button>';
       }) + '</div>' +
+      '<h2 class="sec">Mot andre</h2><div class="group"><div class="opt"><span class="ot"><span class="t">Reaksjoner og chat</span><span class="s">' + (v.chatPref ? 'På: send 👏 😮 😅 og korte meldinger i spill mot andre.' : 'Av: du ser ingen meldinger, og ingen kan sende deg noen.') + '</span></span><button type="button" class="pill small"' + on(v.toggleChat) + '>' + (v.chatPref ? 'Slå av' : 'Slå på') + '</button></div></div>' +
+      '<h2 class="sec">Spilltype</h2><div class="group" role="radiogroup" aria-label="Spilltype">' + each(v.kinds, function (k) {
+        return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t">' + esc(k.name) + '</span><span class="s">' + esc(k.say) + '</span></span></button>';
+      }) + '</div>' +
+      '<p class="fine">Tall og Sett har egne, mer åpne brett. Dagens brett er alltid med bokstaver.</p>' +
       '<h2 class="sec">Bakgrunn</h2><div class="group" role="radiogroup" aria-label="Bakgrunn">' + each(v.bgs, function (b) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + b.on + '"' + on(b.pick) + '><span class="dot' + (b.on ? ' on' : '') + '"></span><span class="swatch" style="background:' + b.hex + '"></span><span>' + esc(b.name) + '</span></button>';
       }) + '</div>' +
@@ -341,7 +362,7 @@ var App = (function () {
     H = [];
     var v = comp.renderVals();
     var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
-    var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "");
+    var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "");
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
     lastPhase = v.phase;
