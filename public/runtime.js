@@ -480,8 +480,11 @@ var App = (function () {
     }, { passive: true });
     // Nothing but the lists may move under a finger: a sideways swipe on a board belongs to the game, and the
     // page itself never scrolls or rubber-bands (iOS moved the whole screen with the swipe).
+    // While a text field has focus the page may move, so the keyboard can show the field (iOS lost the focus).
+    document.addEventListener("focusin", function (e) { if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) document.body.classList.add("typing"); });
+    document.addEventListener("focusout", function () { document.body.classList.remove("typing"); });
     document.addEventListener("touchmove", function (e) {
-      if (e.touches.length > 1) return;
+      if (e.touches.length > 1 || document.body.classList.contains("typing")) return;
       var t = e.touches[0], el = e.target;
       if (swipe && swipe.touch && el.closest && el.closest("[data-swipe]") && Math.abs(t.clientX - swipe.x) > Math.abs(t.clientY - swipe.y)) { e.preventDefault(); return; }
       if (!el.closest || !el.closest(".scroll, .gamesrow, .chips, .helpbody, select, input")) e.preventDefault();

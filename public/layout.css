@@ -399,3 +399,4 @@ html.light .react,html.light .cmsg{background:rgba(60,45,20,.08)}html.light .cms
 .home .preview{height:150px}
 .home .pvboard{transform:scale(.74)}
 .home .ngpanel .chips.lvl + p.fine{display:none}
+body.typing{position:static}

@@ -1069,6 +1069,8 @@ class Component extends DCLogic {
   }
   edSave(play) {
     var ed = this.state.ed, name = (ed.name || "").trim();
+    // The phone's own text box when the field was left empty: it always works, also where the field did not.
+    if (!name && typeof window.prompt === "function") { name = (window.prompt("Navn på brettet", "") || "").trim().slice(0, 24); if (name) ed.name = name; }
     if (!name) { this.edSet({ needName: true, focusName: true }, "Gi brettet et navn før du lagrer det."); return; }
     if (LAYOUTS.some(function (L) { return L.id !== ed.id && L.name.toLowerCase() === name.toLowerCase(); })) { this.edSet({ needName: true, focusName: true }, "Det finnes alt et brett som heter «" + name + "». Velg et annet navn."); return; }
     if (ed.cells.length < OWN_MIN) { this.edSet({}, "Brettet trenger minst " + OWN_MIN + " brikker. Det har " + ed.cells.length + "."); return; }
@@ -1247,7 +1249,16 @@ class Component extends DCLogic {
       v.makeBoard = function () { self.openEditor(null); };
       v.editBoard = function () { self.openEditor(SP.L.id); };
       v.shareBoard = function () { self.shareBoard(); };
-      v.renameBoard = function () { self.openEditor(SP.L.id, true); };
+      v.renameBoard = function () {
+        var nm = typeof window.prompt === "function" ? window.prompt("Nytt navn på «" + SP.L.name + "»", SP.L.name) : null;
+        if (nm === null) return;
+        nm = nm.trim().slice(0, 24);
+        if (!nm) return;
+        if (LAYOUTS.some(function (L) { return L.id !== SP.L.id && L.name.toLowerCase() === nm.toLowerCase(); })) { self.setState({ ngMsg: "Det finnes alt et brett som heter «" + nm + "». Velg et annet navn." }); return; }
+        SP.L.name = nm; SP.L.sub = SP.L.sub; delete BUILT[SP.L.id]; ownSave();
+        if (SP.L.code && self.state.account) api("/boards", { method: "POST", body: { name: nm, cells: SP.L.cells } }).catch(function () {});
+        self.setState(Object.assign(self.fresh(SP.L.id), { phase: "home", ngMsg: "Brettet heter nå «" + nm + "»." }));
+      };
       v.delAsk = st.delAsk === SP.L.id;
       v.deleteBoard = function () {
         if (st.delAsk !== SP.L.id) { self.setState({ delAsk: SP.L.id, ngMsg: "Trykk «Slett» en gang til for å slette «" + SP.L.name + "». Det kan ikke angres." }); return; }
