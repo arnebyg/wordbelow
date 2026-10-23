@@ -365,8 +365,12 @@ var App = (function () {
     var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "");
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
+    // Keep where each scrolling list was when the same screen is drawn again (a swipe on the board picker
+    // redraws the page, and the list jumped back to the top).
+    var tops = lastPhase === v.phase ? Array.prototype.map.call(view.querySelectorAll(".scroll"), function (el) { return el.scrollTop; }) : [];
     lastPhase = v.phase;
     view.innerHTML = html;
+    Array.prototype.forEach.call(view.querySelectorAll(".scroll"), function (el, i) { if (tops[i]) el.scrollTop = tops[i]; });
     view.querySelectorAll("[data-keep]").forEach(function (el) { var k = el.getAttribute("data-keep"); if (keep[k]) el.scrollLeft = keep[k]; });
     if (v.lname !== lastLay || !keep.lay) {
       view.querySelectorAll('[data-keep] .chip.on').forEach(function (c) { var row = c.parentNode; row.scrollLeft = Math.max(0, c.offsetLeft - row.offsetLeft - (row.clientWidth - c.offsetWidth) / 2); });
