@@ -139,7 +139,7 @@ var App = (function () {
       });
     });
     var extra = '';
-    if (v.pick === "cpu") extra = '<div class="chips" role="group" aria-label="Nivå"><span class="lbl inl">Nivå</span>' + each(v.diffs, function (d) { return '<button type="button" class="' + d.cls + '" aria-pressed="' + d.on + '"' + on(d.pick) + '>' + esc(d.name) + '</button>'; }) + '</div><p class="fine">' + esc(v.diffSay) + '</p>';
+    if (v.pick === "cpu") extra = '<div class="chips lvl" role="group" aria-label="Nivå"><span class="lbl inl">Nivå</span>' + each(v.diffs, function (d) { return '<button type="button" class="' + d.cls + '" aria-pressed="' + d.on + '"' + on(d.pick) + '>' + esc(d.name) + '</button>'; }) + '</div><p class="fine">' + esc(v.diffSay) + '</p>';
     else if (v.pick === "code") extra = '<div class="coderow"><input id="code" class="inp" type="text" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="ABC123" aria-label="Kode" value="' + esc(v.codeIn) + '" data-input="onCode"></div><p class="fine">' + esc(v.pickSay) + '</p>';
     else if (v.pick === "friend") extra = '<p class="fine">' + esc(v.pickSay) + '</p><div class="chips"><button type="button" class="chip"' + on(v.goInvite) + '>' + IC.share + 'Inviter med kode</button><button type="button" class="chip"' + on(v.goFind) + '>' + IC.search + 'Finn spiller</button></div>';
     else extra = '<p class="fine">' + esc(v.pickSay) + '</p>';
@@ -151,16 +151,12 @@ var App = (function () {
         '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button></span></div>' +
       '<div class="scroll">' +
       (v.homeMsg ? '<div class="note">' + esc(v.homeMsg) + '</div>' : '') +
-      (v.noAccount ? '<div class="card acc"><span class="ct">Spill mot andre</span><span class="cs">Velg et brukernavn, så kan venner finne deg og dere kan spille mot hverandre.</span><button type="button" class="pill solid"' + on(v.makeAccount) + '>Velg brukernavn</button></div>' : '') +
-      (!v.noAccount && v.inviteCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closeInviteCard) + '>' + IC.close + '</button><span class="ct">WordBelow er morsommere med venner!</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.inviteNow) + '>Inviter</button><button type="button" class="pill"' + on(v.closeInviteCard) + '>Lukk</button></div></div>' : '') +
-      (v.pushCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closePushCard) + '>' + IC.close + '</button><span class="ct">Varsler</span><span class="cs">' + esc(v.pushCardSay) + '</span><div class="cbtns">' + (v.pushCardOn ? '<button type="button" class="pill solid"' + on(v.pushCardOn) + '>Slå på varsler</button>' : '') + '<button type="button" class="pill"' + on(v.closePushCard) + '>Ikke nå</button></div></div>' : '') +
-      '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="dtop"><span class="dk">Dagens brett</span><span class="dstreak">' + IC.fire + esc(v.daily.streakSay) + '</span></div>' +
-        '<div class="dmain"><span class="dn">' + esc(v.daily.name) + '</span><span class="dl">' + esc(v.daily.line) + '</span></div>' +
-        '<div class="cbtns">' + (v.daily.done ? '<button type="button" class="pill solid"' + on(v.daily.share) + '>Del resultatet</button><button type="button" class="pill"' + on(v.daily.play) + '>Se brettet</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill dagens brett</button>') + '</div></div>' +
+      '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="dtxt"><span class="dk">Dagens brett · ' + IC.fire + esc(v.daily.streakSay) + '</span>' +
+        '<span class="dn">' + esc(v.daily.name) + '<small>' + esc(v.daily.line) + '</small></span></div>' +
+        (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Se</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div>' +
       (v.offers.length ? '<h2 class="sec">Utfordringer</h2><div class="group">' + each(v.offers, function (o) {
         return '<div class="opt offer"><span class="av">' + esc(o.initial) + '</span><span class="ot"><span class="t">' + esc(o.who) + '</span><span class="s">' + esc(o.line) + '</span></span><button type="button" class="pill small"' + on(o.no) + '>Avslå</button><button type="button" class="act green go"' + on(o.yes) + '>Godta</button></div>';
       }) + '</div>' : '') +
-      (games ? '<h2 class="sec">Dine spill' + (v.myTurns ? '<span class="secr">' + esc(v.myTurns) + '</span>' : '') + '</h2><div class="gamesrow">' + games + '</div>' : '') +
       '<div class="ngpanel"><h2 class="sec">Nytt spill</h2>' +
         (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
         '<div class="segs" role="group" aria-label="Hvor">' + each(v.tabs, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + '</button>'; }) + '</div>' +
@@ -177,6 +173,10 @@ var App = (function () {
           '<div class="chips ownrow">' + (v.isOwn ? '<button type="button" class="chip"' + on(v.renameBoard) + '>Gi nytt navn</button><button type="button" class="chip"' + on(v.editBoard) + '>Endre brettet</button><button type="button" class="chip"' + on(v.shareBoard) + '>Del</button><button type="button" class="chip' + (v.delAsk ? ' danger' : '') + '"' + on(v.deleteBoard) + '>' + (v.delAsk ? 'Slett – sikker?' : 'Slett') + '</button>' : '') + (v.canMake ? '<button type="button" class="chip"' + on(v.makeBoard) + '>' + IC.plus + 'Lag eget brett</button>' : '') + '</div>' +
         '</div>' : '') +
       '</div>' +
+      (games ? '<h2 class="sec gsec">Dine spill' + (v.myTurns ? '<span class="secr">' + esc(v.myTurns) + '</span>' : '') + '</h2><div class="gamesrow">' + games + '</div>' : '') +
+      (v.noAccount ? '<div class="card acc"><span class="ct">Spill mot andre</span><span class="cs">Velg et brukernavn, så kan venner finne deg og dere kan spille mot hverandre.</span><button type="button" class="pill solid"' + on(v.makeAccount) + '>Velg brukernavn</button></div>' : '') +
+      (!v.noAccount && v.inviteCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closeInviteCard) + '>' + IC.close + '</button><span class="ct">WordBelow er morsommere med venner!</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.inviteNow) + '>Inviter</button><button type="button" class="pill"' + on(v.closeInviteCard) + '>Lukk</button></div></div>' : '') +
+      (v.pushCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closePushCard) + '>' + IC.close + '</button><span class="ct">Varsler</span><span class="cs">' + esc(v.pushCardSay) + '</span><div class="cbtns">' + (v.pushCardOn ? '<button type="button" class="pill solid"' + on(v.pushCardOn) + '>Slå på varsler</button>' : '') + '<button type="button" class="pill"' + on(v.closePushCard) + '>Ikke nå</button></div></div>' : '') +
       '<span class="foot">Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
       '</div>' +
       '<div class="homebottom"><button type="button" class="bigbtn"' + on(v.go) + '>' + IC.play + '<span>' + esc(v.goLabel) + '</span></button></div>' +
