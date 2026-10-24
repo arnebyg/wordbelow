@@ -400,3 +400,6 @@ html.light .react,html.light .cmsg{background:rgba(60,45,20,.08)}html.light .cms
 .home .pvboard{transform:scale(.74)}
 .home .ngpanel .chips.lvl + p.fine{display:none}
 body.typing{position:static}
+/* Word links, the sheet header's buttons */
+.wlink{color:inherit;text-decoration:underline;text-decoration-color:rgba(242,196,107,.7);text-underline-offset:3px}
+.hbtns{display:flex;align-items:center;gap:6px}

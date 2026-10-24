@@ -89,7 +89,7 @@ var App = (function () {
     '</div>' +
   '</div>') +
   (v.dailySay ? '<p class="fine dsay">' + esc(v.dailySay) + '</p>' : '') +
-  (v.missed && v.missed.length ? '<div class="missed"><h2 class="sec">Ord du kunne lagt</h2>' + each(v.missed, function (m) { return '<div class="mrow"><span>' + esc(m.played) + '</span><span class="arr">→</span><b>' + esc(m.best) + '</b></div>'; }) + '<button type="button" class="pill small"' + on(v.openHist) + '>Se alle trekk</button></div>' : '') +
+  (v.missed && v.missed.length ? '<div class="missed"><h2 class="sec">Ord du kunne lagt</h2>' + each(v.missed, function (m) { return '<div class="mrow"><span>' + esc(m.played) + '</span><span class="arr">→</span>' + (m.url ? '<a class="wlink" href="' + esc(m.url) + '" target="_blank" rel="noopener"><b>' + esc(m.best) + '</b></a>' : '<b>' + esc(m.best) + '</b>') + '</div>'; }) + '<button type="button" class="pill small"' + on(v.openHist) + '>Se alle trekk</button></div>' : '') +
   '<div class="actions">' +
     (v.share ? '<button type="button" class="act green"' + on(v.share) + '>Del</button>' : '') +
     '<button type="button" class="act grey wide"' + on(v.toPicker) + '>' + esc(v.pickerLabel) + '</button>' +
@@ -211,19 +211,29 @@ var App = (function () {
   function histView(v) {
     return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Trekkhistorikk"><div class="helpsheet">' +
       '<div class="helphead"><b>Trekkhistorikk</b><button type="button" class="x" aria-label="Lukk"' + on(v.closeHist) + '>' + IC.close + '</button></div>' +
-      '<div class="scroll helpbody">' + (v.histRows.length ? '<div class="group statg">' + each(v.histRows, function (r) {
-        return '<div class="srow hrow"><span><b>' + esc(r.who) + '</b> ' + esc(r.what) + (r.best ? '<small>' + esc(r.best) + '</small>' : '') + '</span><b>' + esc(r.pts) + '</b></div>';
+      '<div class="scroll helpbody">' + (v.histRows.some(function (r) { return r.url; }) ? '<p class="fine">Trykk på et ord for å se hva det betyr i ordbokene.no.</p>' : '') + (v.histRows.length ? '<div class="group statg">' + each(v.histRows, function (r) {
+        return '<div class="srow hrow"><span><b>' + esc(r.who) + '</b> ' + (r.url ? '<a class="wlink" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.what) + '</a>' : esc(r.what)) + (r.best ? '<small>' + esc(r.best) + '</small>' : '') + '</span><b>' + esc(r.pts) + '</b></div>';
       }) + '</div>' : '<p>Ingen trekk ennå.</p>') + '</div></div></div>';
   }
   // Reactions and short messages with the other player.
   function chatView(v) {
-    var body = !v.chatOn ? '<p>' + (v.chatWhy === "mine" ? 'Du har slått av reaksjoner og chat i innstillingene.' : v.chatWhy === "opp" ? esc(v.opp) + ' har slått av reaksjoner og chat.' : 'Chatten er ikke tilgjengelig i dette spillet.') + '</p>' :
+    var body = !v.chatOn ? '<p>' + (v.chatWhy === "mine" ? 'Du har slått av reaksjoner og chat i innstillingene.' : v.chatWhy === "blocked" ? 'Chatten er stengt fordi en av dere har blokkert den andre.' : v.chatWhy === "opp" ? esc(v.opp) + ' har slått av reaksjoner og chat.' : 'Chatten er ikke tilgjengelig i dette spillet.') + '</p>' :
       '<div class="reacts">' + each(v.reactions, function (r) { return '<button type="button" class="react"' + on(r.send) + '>' + r.r + '</button>'; }) + '</div>' +
       '<div class="cmsgs">' + (v.chatList.length ? each(v.chatList, function (c) { return '<div class="' + c.cls + '">' + esc(c.text) + '</div>'; }) : '<p class="fine">Ingen meldinger ennå. Send en reaksjon eller skriv noe kort.</p>') + '</div>' +
       '<div class="crow"><input id="chatin" class="inp" type="text" maxlength="140" autocomplete="off" placeholder="Skriv en kort melding" value="' + esc(v.chatIn) + '" data-input="onChatIn"><button type="button" class="act green"' + on(v.sendChatIn) + '>Send</button></div>';
     return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Reaksjoner og chat"><div class="helpsheet">' +
-      '<div class="helphead"><b>' + esc(v.opp || 'Chat') + '</b><button type="button" class="x" aria-label="Lukk"' + on(v.closeChat) + '>' + IC.close + '</button></div>' +
+      '<div class="helphead"><b>' + esc(v.opp || 'Chat') + '</b><span class="hbtns">' + (v.openOppPlayer ? '<button type="button" class="pill small"' + on(v.openOppPlayer) + '>Blokker eller rapporter</button>' : '') + '<button type="button" class="x" aria-label="Lukk"' + on(v.closeChat) + '>' + IC.close + '</button></span></div>' +
       '<div class="scroll helpbody">' + body + '</div></div></div>';
+  }
+  function playerView(v) {
+    var p = v.player;
+    var body = p.step === "report" ? '<p>Hva gjelder det? Rapporten går til den som driver WordBelow' + (v.isOnline ? ', sammen med chatten i dette spillet' : '') + '.</p><div class="group">' +
+        each(v.reasons, function (r) { return '<button type="button" class="opt"' + on(r.send) + '><span class="ot"><span class="t">' + esc(r.r) + '</span></span><span class="chev">' + IC.chev + '</span></button>'; }) + '</div>' :
+      '<div class="group"><button type="button" class="opt"' + on(v.playerBlock) + '><span class="ot"><span class="t">' + (v.playerBlocked ? 'Opphev blokkering' : 'Blokker ' + esc(p.name)) + '</span><span class="s">' + (v.playerBlocked ? 'Dere kan utfordre hverandre og chatte igjen.' : 'Ingen utfordringer, ingen chat, og dere havner ikke sammen tilfeldig. Spill som er i gang, fortsetter.') + '</span></span></button>' +
+      '<button type="button" class="opt"' + on(v.playerReport) + '><span class="ot"><span class="t">Rapporter ' + esc(p.name) + '</span><span class="s">For eksempel stygt brukernavn, stygge meldinger eller juks.</span></span><span class="chev">' + IC.chev + '</span></button></div>';
+    return '<div class="helpov" role="dialog" aria-modal="true" aria-label="' + esc(p.name) + '"><div class="helpsheet">' +
+      '<div class="helphead"><b>' + esc(p.name) + '</b><button type="button" class="x" aria-label="Lukk"' + on(v.closePlayer) + '>' + IC.close + '</button></div>' +
+      '<div class="scroll helpbody">' + (p.msg ? '<div class="note">' + esc(p.msg) + '</div>' : '') + body + '</div></div></div>';
   }
   function premiumView(v) {
     var li = function (t, s) { return '<div class="opt"><span class="tileic">' + IC.gem + '</span><span class="ot"><span class="t">' + t + '</span><span class="s">' + s + '</span></span></div>'; };
@@ -292,6 +302,7 @@ var App = (function () {
         return '<button type="button" class="radio" role="radio" aria-checked="' + t.on + '"' + on(t.pick) + '><span class="dot' + (t.on ? ' on' : '') + '"></span><span>' + esc(t.name) + '</span></button>';
       }) + '</div>' +
       '<h2 class="sec">Mot andre</h2><div class="group"><div class="opt"><span class="ot"><span class="t">Reaksjoner og chat</span><span class="s">' + (v.chatPref ? 'På: send 👏 😮 😅 og korte meldinger i spill mot andre.' : 'Av: du ser ingen meldinger, og ingen kan sende deg noen.') + '</span></span><button type="button" class="pill small"' + on(v.toggleChat) + '>' + (v.chatPref ? 'Slå av' : 'Slå på') + '</button></div></div>' +
+      (v.blockedList.length ? '<h2 class="sec">Blokkerte spillere</h2><div class="group">' + each(v.blockedList, function (u) { return '<div class="opt"><span class="ot"><span class="t">' + esc(u.name) + '</span></span><button type="button" class="pill small"' + on(u.unblock) + '>Opphev</button></div>'; }) + '</div>' : '') +
       '<h2 class="sec">Spilltype</h2><div class="group" role="radiogroup" aria-label="Spilltype">' + each(v.kinds, function (k) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t">' + esc(k.name) + '</span><span class="s">' + esc(k.say) + '</span></span></button>';
       }) + '</div>' +
@@ -362,7 +373,7 @@ var App = (function () {
     H = [];
     var v = comp.renderVals();
     var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
-    var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "");
+    var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "");
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
     // Keep where each scrolling list was when the same screen is drawn again (a swipe on the board picker

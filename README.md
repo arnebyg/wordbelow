@@ -118,3 +118,13 @@ som ellers vises med tallene skjult.
   bestemmer spilltypen, så spill mot andre virker uten noe ekstra. Maskinen, hint og trekkhistorikk virker i alle tre.
 - **Reaksjoner og chat** i spill mot andre: 👏 😮 😅 😂 🔥 🙈 og korte meldinger (140 tegn), lagret på serveren.
   Kan slås av under Innstillinger › Mot andre; da er det av for begge i spillene dine, og ingen kan sende deg noe.
+
+## Ordforklaring, trekkstyrke, blokkering og rapporter
+
+- **Ordforklaring:** ord i trekkhistorikken og «Ord du kunne lagt» lenker til ordbokene.no (`DICT_URL` øverst i
+  `public/logic.js` hvis adressen må endres).
+- **Trekkstyrke:** etter hvert av dine egne ord står det hvor stor andel det ga av beste mulige trekk.
+- **Blokker og rapporter:** fra chatten i et spill mot andre. Blokkering stenger utfordringer, chat og tilfeldig
+  parring mellom de to, og skjuler dem i søk; oppheves under Innstillinger › Blokkerte spillere. Rapporter lagres
+  med chatten i spillet. Les dem med en hemmelig nøkkel:
+  `npx wrangler secret put ADMIN_KEY`, så `curl -H "x-admin-key: <nøkkelen>" https://<din-worker>/api/admin/reports`.

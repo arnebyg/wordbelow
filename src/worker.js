@@ -49,6 +49,8 @@ export class Hub extends DurableObject {
     try { this.sql.exec("ALTER TABLE games ADD COLUMN rated INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE users ADD COLUMN rating REAL NOT NULL DEFAULT 1200"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE users ADD COLUMN chat INTEGER NOT NULL DEFAULT 1"); } catch (e) { /* already there */ }
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS blocks (uid TEXT NOT NULL, bid TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (uid, bid));
+      CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT NOT NULL, about TEXT NOT NULL, gid TEXT, reason TEXT NOT NULL, note TEXT, at INTEGER NOT NULL);`);
     this.sql.exec("CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, gid TEXT NOT NULL, uid TEXT NOT NULL, at INTEGER NOT NULL, text TEXT NOT NULL); CREATE INDEX IF NOT EXISTS chat_gid ON chat (gid, id);");
     this.sql.exec(`CREATE TABLE IF NOT EXISTS daily (date TEXT NOT NULL, uid TEXT NOT NULL, score INTEGER NOT NULL, words INTEGER NOT NULL, best TEXT, left INTEGER NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (date, uid));
       CREATE TABLE IF NOT EXISTS boards (code TEXT PRIMARY KEY, owner TEXT NOT NULL, name TEXT NOT NULL, cells TEXT NOT NULL, created INTEGER NOT NULL);`);
@@ -76,6 +78,8 @@ export class Hub extends DurableObject {
     const b = this.one("SELECT code, name, cells FROM boards WHERE code = ?", layout.slice(1));
     return b ? { code: b.code, name: b.name, cells: b.cells } : null;
   }
+  // Blocking: either player having blocked the other keeps them apart (no challenges, no random match, no chat).
+  blocked(a, b) { return !!(a && b && this.one("SELECT 1 AS x FROM blocks WHERE (uid = ? AND bid = ?) OR (uid = ? AND bid = ?)", a, b, b, a)); }
   // Push messages
   async vapid() {
     const row = this.one("SELECT v FROM kv WHERE k = 'vapid'");
@@ -166,6 +170,11 @@ export class Hub extends DurableObject {
       return json({ id, name, token });
     }
 
+    if (path === "/admin/reports" && m === "GET") {
+      if (!this.env.ADMIN_KEY || request.headers.get("x-admin-key") !== this.env.ADMIN_KEY) return err(403, "Ingen tilgang.");
+      const rows = this.all("SELECT r.*, a.name AS reporter, b.name AS about_name FROM reports r LEFT JOIN users a ON a.id = r.uid LEFT JOIN users b ON b.id = r.about ORDER BY r.at DESC LIMIT 200");
+      return json({ reports: rows.map((r) => Object.assign(r, { chat: r.gid ? this.all("SELECT uid, at, text FROM chat WHERE gid = ? ORDER BY id", r.gid) : [] })) });
+    }
     const bm = path.match(/^\/boards\/([a-z0-9]{6})$/);
     if (bm && m === "GET") {
       const b = this.one("SELECT * FROM boards WHERE code = ?", bm[1]);
@@ -198,8 +207,27 @@ export class Hub extends DurableObject {
     }
 
     if (path === "/me" && m === "GET") {
-      const friends = this.all("SELECT u.id, u.name FROM friends f JOIN users u ON u.id = f.fid WHERE f.uid = ? ORDER BY u.name COLLATE NOCASE", me.id);
-      return json({ id: me.id, name: me.name, friends });
+      const friends = this.all("SELECT u.id, u.name FROM friends f JOIN users u ON u.id = f.fid WHERE f.uid = ? AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.uid = ? AND b.bid = u.id) ORDER BY u.name COLLATE NOCASE", me.id, me.id);
+      const blocked = this.all("SELECT u.id, u.name FROM blocks b JOIN users u ON u.id = b.bid WHERE b.uid = ? ORDER BY b.at DESC", me.id);
+      return json({ id: me.id, name: me.name, friends, blocked });
+    }
+    if (path === "/block" && m === "POST") {
+      const o = this.one("SELECT id FROM users WHERE id = ?", String(body.id || ""));
+      if (!o || o.id === me.id) return err(404, "Fant ikke spilleren.");
+      this.sql.exec("INSERT OR IGNORE INTO blocks (uid, bid, at) VALUES (?, ?, ?)", me.id, o.id, Date.now());
+      // Open challenges and waiting invitations between the two go away.
+      this.sql.exec("DELETE FROM games WHERE status = 'offer' AND ((p0 = ? AND p1 = ?) OR (p0 = ? AND p1 = ?))", me.id, o.id, o.id, me.id);
+      return json({ ok: true });
+    }
+    if (path.startsWith("/block/") && m === "DELETE") { this.sql.exec("DELETE FROM blocks WHERE uid = ? AND bid = ?", me.id, path.slice(7)); return json({ ok: true }); }
+    // Reports are kept for whoever runs the server to read (/admin/reports with the ADMIN_KEY secret).
+    if (path === "/report" && m === "POST") {
+      const o = this.one("SELECT id FROM users WHERE id = ?", String(body.id || ""));
+      if (!o || o.id === me.id) return err(404, "Fant ikke spilleren.");
+      const reason = String(body.reason || "").slice(0, 40);
+      if (!reason) return err(400, "Velg en grunn.");
+      this.sql.exec("INSERT INTO reports (uid, about, gid, reason, note, at) VALUES (?, ?, ?, ?, ?, ?)", me.id, o.id, body.gid ? String(body.gid).slice(0, 20) : null, reason, String(body.note || "").slice(0, 300), Date.now());
+      return json({ ok: true });
     }
     // Shared boards: the cells as the editor writes them ("2c.2r.layer"), up to 100 tiles.
     if (path === "/boards" && m === "POST") {
@@ -244,7 +272,7 @@ export class Hub extends DurableObject {
     if (path === "/users" && m === "GET") {
       const q = (url.searchParams.get("q") || "").trim();
       if (q.length < 2) return json({ users: [] });
-      const users = this.all("SELECT id, name FROM users WHERE name LIKE ? AND id != ? ORDER BY name COLLATE NOCASE LIMIT 20", q.replace(/[%_]/g, "") + "%", me.id);
+      const users = this.all("SELECT id, name FROM users u WHERE name LIKE ? AND id != ? AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.uid = ? AND b.bid = u.id) OR (b.uid = u.id AND b.bid = ?)) ORDER BY name COLLATE NOCASE LIMIT 20", q.replace(/[%_]/g, "") + "%", me.id, me.id, me.id);
       return json({ users });
     }
     if (path === "/friends" && m === "POST") {
@@ -266,6 +294,7 @@ export class Hub extends DurableObject {
       if (body.to) {
         const o = this.one("SELECT id FROM users WHERE id = ?", String(body.to));
         if (!o || o.id === me.id) return err(404, "Fant ikke spilleren.");
+        if (this.blocked(me.id, o.id)) return err(403, "Du kan ikke utfordre denne spilleren.");
         this.sql.exec("INSERT OR IGNORE INTO friends (uid, fid) VALUES (?, ?)", me.id, o.id);
         // A challenge to a named player waits until they accept it.
         const ng = this.newGame(me.id, o.id, "direct", body, "offer");
@@ -273,7 +302,7 @@ export class Hub extends DurableObject {
         return json({ game: this.summary(ng, me.id) });
       }
       if (body.random) {
-        const w = this.one("SELECT * FROM games WHERE status = 'waiting' AND kind = 'random' AND p0 != ? ORDER BY created LIMIT 1", me.id);
+        const w = this.one("SELECT * FROM games g WHERE status = 'waiting' AND kind = 'random' AND p0 != ? AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.uid = g.p0 AND b.bid = ?) OR (b.uid = ? AND b.bid = g.p0)) ORDER BY created LIMIT 1", me.id, me.id, me.id);
         if (w) {
           this.sql.exec("UPDATE games SET p1 = ?, status = 'active', updated = ? WHERE id = ?", me.id, Date.now(), w.id);
           this.notify(w.p0, "Din tur", me.name + " ble med i det tilfeldige spillet ditt.", w.id);
@@ -290,6 +319,7 @@ export class Hub extends DurableObject {
       const g = this.one("SELECT * FROM games WHERE code = ? AND status = 'waiting'", c);
       if (!g) return err(404, "Fant ingen åpen invitasjon med den koden.");
       if (g.p0 === me.id) return err(400, "Det er din egen invitasjon. Send koden til den du vil spille mot.");
+      if (this.blocked(me.id, g.p0)) return err(403, "Du kan ikke bli med i dette spillet.");
       this.sql.exec("UPDATE games SET p1 = ?, status = 'active', updated = ? WHERE id = ?", me.id, Date.now(), g.id);
       this.sql.exec("INSERT OR IGNORE INTO friends (uid, fid) VALUES (?, ?)", me.id, g.p0);
       this.sql.exec("INSERT OR IGNORE INTO friends (uid, fid) VALUES (?, ?)", g.p0, me.id);
@@ -304,11 +334,11 @@ export class Hub extends DurableObject {
       const g = this.one("SELECT * FROM games WHERE id = ?", gm[1]);
       if (!g || (g.p0 !== me.id && g.p1 !== me.id)) return err(404, "Fant ikke spillet.");
       const you = g.p0 === me.id ? 0 : 1;
-      const oppId = you === 0 ? g.p1 : g.p0, mineOn = (this.one("SELECT chat FROM users WHERE id = ?", me.id) || {}).chat !== 0, oppOn = !oppId || (this.one("SELECT chat FROM users WHERE id = ?", oppId) || {}).chat !== 0;
+      const oppId = you === 0 ? g.p1 : g.p0, isBlocked = this.blocked(me.id, oppId), mineOn = (this.one("SELECT chat FROM users WHERE id = ?", me.id) || {}).chat !== 0 && !isBlocked, oppOn = !oppId || (this.one("SELECT chat FROM users WHERE id = ?", oppId) || {}).chat !== 0;
       const chat = () => mineOn && oppOn ? this.all("SELECT id, uid, at, text FROM chat WHERE gid = ? ORDER BY id DESC LIMIT 60", g.id).reverse().map((c) => ({ id: c.id, me: c.uid === me.id, at: c.at, text: c.text })) : [];
-      if (!gm[2] && m === "GET") return json({ game: this.summary(g, me.id), state: g.state ? JSON.parse(g.state) : null, chat: chat(), chatOn: mineOn && oppOn, chatWhy: !mineOn ? "mine" : !oppOn ? "opp" : null });
+      if (!gm[2] && m === "GET") return json({ game: this.summary(g, me.id), state: g.state ? JSON.parse(g.state) : null, chat: chat(), chatOn: mineOn && oppOn, chatWhy: isBlocked ? "blocked" : !mineOn ? "mine" : !oppOn ? "opp" : null, blocked: isBlocked });
       if (gm[2] === "/chat" && m === "POST") {
-        if (!mineOn || !oppOn) return err(409, !mineOn ? "Du har slått av reaksjoner og chat." : "Motspilleren har slått av reaksjoner og chat.");
+        if (!mineOn || !oppOn) return err(409, isBlocked ? "Chatten er stengt mellom dere." : !mineOn ? "Du har slått av reaksjoner og chat." : "Motspilleren har slått av reaksjoner og chat.");
         const text = String(body.text || "").replace(/\s+/g, " ").trim().slice(0, 140);
         if (!text) return err(400, "Tom melding.");
         if ((this.one("SELECT COUNT(*) AS n FROM chat WHERE gid = ? AND uid = ? AND at > ?", g.id, me.id, Date.now() - 60e3) || {}).n >= 12) return err(429, "Litt for mange meldinger. Vent et øyeblikk.");

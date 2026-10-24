@@ -365,6 +365,10 @@ seasonLoad();
 // st.P holds both players and is brought up to date at the end of every turn.
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
 var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1", CHAT_KEY = "ordspill/chat/v1";
+// Word meanings: Bokmålsordboka and Nynorskordboka at ordbokene.no (Språkrådet and the University of Bergen).
+var DICT_URL = "https://ordbokene.no/nob/bm,nn/";
+function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase()); }
+var REPORT_REASONS = ["Stygt brukernavn", "Stygge meldinger", "Juks", "Noe annet"];
 var REACTIONS = ["👏", "😮", "😅", "😂", "🔥", "🙈"];
 var API = "/api";
 var BG_KEY = "ordspill/bakgrunn/v1";
@@ -509,6 +513,7 @@ class Component extends DCLogic {
     this.setState({ board: all });
   }
   // Account and the server
+  openSettings() { this.setState({ phase: "settings" }); this.loadBlocked(); }
   openStats() {
     var self = this;
     this.setState({ phase: "stats", srvStats: null });
@@ -670,6 +675,23 @@ class Component extends DCLogic {
       self.setState({ chatIn: "" });
     }, function (e) { self.setState({ chatPop: e.message }); });
   }
+  // Block and report another player.
+  openPlayer(id, name) { this.setState({ player: { id: id, name: name, step: "menu", msg: "" }, chatOpen: false }); }
+  block(on) {
+    var self = this, p = this.state.player;
+    api(on ? "/block" : "/block/" + p.id, on ? { method: "POST", body: { id: p.id } } : { method: "DELETE" }).then(function () {
+      var bl = (self.state.blocked || []).filter(function (x) { return x.id !== p.id; }); if (on) bl.unshift({ id: p.id, name: p.name });
+      self.setState({ blocked: bl, player: Object.assign({}, p, { msg: on ? p.name + " er blokkert. Dere kan ikke utfordre hverandre eller chatte, og havner ikke sammen tilfeldig." : "Blokkeringen er opphevet." }) });
+      if (self.state.online) self.loadOnline(self.state.online.id, false);
+    }, function (e) { self.setState({ player: Object.assign({}, p, { msg: e.message }) }); });
+  }
+  report(reason) {
+    var self = this, p = this.state.player;
+    api("/report", { method: "POST", body: { id: p.id, reason: reason, gid: this.state.online ? this.state.online.id : null } }).then(function () {
+      self.setState({ player: Object.assign({}, p, { step: "menu", msg: "Takk. Rapporten om " + p.name + " er sendt" + (self.state.online ? ", med chatten i dette spillet" : "") + "." }) });
+    }, function (e) { self.setState({ player: Object.assign({}, p, { msg: e.message }) }); });
+  }
+  loadBlocked() { var self = this; if (this.state.account) api("/me").then(function (d) { self.setState({ blocked: d.blocked || [] }); }, function () {}); }
   setChatPref(on) {
     lsSet(CHAT_KEY, on); this.setState({ chatPref: on });
     if (this.state.account) api("/me/chat", { method: "POST", body: { on: on } }).catch(function () {});
@@ -928,11 +950,13 @@ class Component extends DCLogic {
     var ev = this.evaluate(s2.sel), gone = Object.assign({}, s2.gone), usedP = [];
     // For your own words, the best word there was, so the history and the result can show what you missed.
     var top = human ? this.candidates(9, 80)[0] : null, missed = top && top.pts > ev.total && top.w !== w2 ? { w: top.w, pts: top.pts } : null;
-    var entry = { p: this.duel() ? s2.turn : 0, k: "w", w: w2, pts: ev.total, best: missed };
+    // How good the move was: its points as a share of the best move there was.
+    var pct = top ? Math.min(100, Math.round(100 * ev.total / Math.max(top.pts, ev.total, 1))) : null;
+    var entry = { p: this.duel() ? s2.turn : 0, k: "w", w: w2, pts: ev.total, best: missed, pct: pct };
     s2.sel.forEach(function (id) { if (id === "eq") return; if (id[0] === "p") usedP.push(+id.slice(1)); else gone[id] = true; });
     var pocket = s2.pocket.filter(function (_, i) { return usedP.indexOf(i) < 0; });
     var who = this.duel() ? (this.online() ? (s2.online.you === s2.turn ? (s2.account ? s2.account.name : "Du") : s2.online.oppName) : this.names()[s2.turn]) + " la " : "";
-    this.setState({ log: (s2.log || []).concat([entry]), gone: gone, sel: [], pocket: pocket, confirm: null, passes: 0, score: s2.score + ev.total, words: s2.words.concat([{ w: w2, pts: ev.total }]), pop: "+" + ev.total, msg: who + "«" + w2 + "» +" + ev.total + ": " + ev.parts.join(" · "), tone: "good" });
+    this.setState({ log: (s2.log || []).concat([entry]), gone: gone, sel: [], pocket: pocket, confirm: null, passes: 0, score: s2.score + ev.total, words: s2.words.concat([{ w: w2, pts: ev.total }]), pop: "+" + ev.total, msg: who + "«" + w2 + "» +" + ev.total + ": " + ev.parts.join(" · ") + (pct === null ? "" : pct >= 100 ? " · Beste trekk!" : " · " + pct + " % av beste trekk"), tone: "good" });
     this.timers.push(setTimeout(function () { self.setState({ pop: null }); }, 1200));
     if (ev.cleared) { if (this.online()) this.finishGame(); else this.timers.push(setTimeout(function () { self.finishGame(); }, 1300)); }
     else this.endTurn(this.online() ? 0 : 1300);
@@ -1150,7 +1174,8 @@ class Component extends DCLogic {
       histRows: (st.log || []).slice().reverse().map(function (e) {
         var who = duel ? nm[e.p] : "Du";
         return { who: who, what: e.k === "w" ? "«" + e.w + "»" : e.k === "p" ? e.w + " i lommen" : "sto over", pts: e.k === "w" ? "+" + e.pts : "",
-          best: e.best ? "Beste mulige: «" + e.best.w + "» +" + e.best.pts : "" };
+          url: e.k === "w" && kindOf(S.L) === "ord" ? dictUrl(e.w) : null,
+          best: (e.pct !== undefined && e.pct !== null ? (e.pct >= 100 ? "Beste trekk" : e.pct + " % av beste") + (e.best ? " · " : "") : "") + (e.best ? "beste mulige «" + e.best.w + "» +" + e.best.pts : "") };
       }),
       chatBtn: online && st.chatPref, chatUnread: !!(st.chat && st.chat.top > st.chat.lastSeen),
       openChat: function () { self.setState({ chatOpen: true, chatPop: null, chat: st.chat ? Object.assign({}, st.chat, { lastSeen: st.chat.top }) : st.chat }); },
@@ -1161,6 +1186,13 @@ class Component extends DCLogic {
       reactions: REACTIONS.map(function (r) { return { r: r, send: function () { self.sendChat(r); } }; }),
       chatIn: st.chatIn, onChatIn: function (e) { self.state.chatIn = e.target.value; },
       sendChatIn: function () { self.sendChat(self.state.chatIn); },
+      player: st.player || null,
+      closePlayer: function () { self.setState({ player: null }); },
+      playerBlocked: !!(st.player && (st.blocked || []).some(function (x) { return x.id === st.player.id; })),
+      playerBlock: function () { self.block(!(st.blocked || []).some(function (x) { return x.id === st.player.id; })); },
+      playerReport: function () { self.setState({ player: Object.assign({}, st.player, { step: "report", msg: "" }) }); },
+      reasons: REPORT_REASONS.map(function (r) { return { r: r, send: function () { self.report(r); } }; }),
+      openOppPlayer: online && st.online.oppId ? function () { self.openPlayer(st.online.oppId, st.online.oppName); } : null,
       help: !!st.help, openHelp: function () { self.setState({ help: true }); }, closeHelp: function () { self.setState({ help: false }); }
     };
     v.goHome = function () { self.goHome(); };
@@ -1212,7 +1244,7 @@ class Component extends DCLogic {
       v.pushCard = st.account && st.pushCard && (st.push === "off" || st.push === "install") && gs.length > 0;
       v.pushCardSay = st.push === "install" ? "Vil du ha beskjed når det er din tur? På iPhone må appen først legges til på Hjem-skjermen: trykk Del i Safari og «Legg til på Hjem-skjerm»." : "Få beskjed når det er din tur. Du har 72 timer på hvert trekk.";
       v.pushCardOn = st.push === "off" ? function () { self.pushOn(); } : null;
-      v.openSettings = function () { self.setState({ phase: "settings" }); };
+      v.openSettings = function () { self.openSettings(); };
       v.openStats = function () { self.openStats(); };
       v.makeAccount = function () { self.setState({ phase: "account", after: null, acctMsg: "" }); };
       v.closePushCard = function () { lsSet(PUSH_CARD_KEY, true); self.setState({ pushCard: false }); };
@@ -1340,6 +1372,7 @@ class Component extends DCLogic {
         lightNow ? "De mørke bakgrunnene vises i mørkt tema. Nå er lyst tema på, så du ser dem ikke før du velger Mørkt tema (eller telefonen går over til mørkt)." :
         "De mørke bakgrunnene vises i mørkt tema; Sand er lys.";
       v.chatPref = st.chatPref;
+      v.blockedList = (st.blocked || []).map(function (u) { return { name: u.name, unblock: function () { self.state.player = { id: u.id, name: u.name, step: "menu", msg: "" }; self.block(false); } }; });
       v.toggleChat = function () { self.setChatPref(!st.chatPref); };
       var curKind = kindOf(S.L);
       v.kinds = KINDS.map(function (k) { return { name: k.name, say: k.say, on: k.id === curKind, pick: function () { if (k.id !== curKind) self.setKind(k.id); } }; });
@@ -1521,7 +1554,7 @@ class Component extends DCLogic {
       var meIdx = online ? st.online.you : 0;
       v.missed = (st.log || []).filter(function (e) { return e.k === "w" && e.best && (!duel || e.p === meIdx); })
         .sort(function (a, b) { return (b.best.pts - b.pts) - (a.best.pts - a.pts); }).slice(0, 3)
-        .map(function (e) { return { played: "«" + e.w + "» +" + e.pts, best: "«" + e.best.w + "» +" + e.best.pts }; });
+        .map(function (e) { return { played: "«" + e.w + "» +" + e.pts, best: "«" + e.best.w + "» +" + e.best.pts, url: kindOf(S.L) === "ord" ? dictUrl(e.best.w) : null }; });
       if (rec.duel) {
         var r = rec.res, win = r[0].score === r[1].score ? -1 : r[0].score > r[1].score ? 0 : 1;
         if (rec.resigned !== undefined) win = 1 - rec.resigned;
