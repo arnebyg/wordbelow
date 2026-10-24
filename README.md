@@ -128,3 +128,42 @@ som ellers vises med tallene skjult.
   parring mellom de to, og skjuler dem i søk; oppheves under Innstillinger › Blokkerte spillere. Rapporter lagres
   med chatten i spillet. Les dem med en hemmelig nøkkel:
   `npx wrangler secret put ADMIN_KEY`, så `curl -H "x-admin-key: <nøkkelen>" https://<din-worker>/api/admin/reports`.
+
+## Språk
+
+**Språk i appen** (Innstillinger) styrer tekstene: norsk eller engelsk. Telefonens språk velger første gang
+(norsk for nb/nn/no, ellers engelsk). Tekstene skrives fortsatt på norsk i koden; `public/i18n.js` oversetter hver
+skjerm når den tegnes, med katalogen `public/i18n/en.json` (norsk tekst → engelsk). En tekst som står hel i
+katalogen byttes hel; en tekst satt sammen av biter («» + ord + «» står ikke i ordlista.) får hver kjent bit byttet,
+lengste først og bare i ordkanter. Navn, chat og ord står i elementer med `translate="no"` og røres ikke.
+Serveren oversetter varslene med samme katalog (`src/i18n.js`) etter språket telefonen meldte seg på med.
+
+Ny tekst i appen: legg den norske teksten og den engelske inn i `public/i18n/en.json`. Med engelsk på samler
+`I18N.missing` i konsollen tekster som ser ut til å mangle. Et nytt språk: lag `public/i18n/<kode>.json`,
+legg koden i `UI_LANGS` i `public/i18n.js` og `src/i18n.js`, og filen i `FILES` i `public/sw.js`.
+
+**Språk i spillet** (Innstillinger) styrer bokstavene og ordlista i nye spill med bokstaver. Hvert språk har sin
+egen pose, poeng og vokalandel (`LANGS` øverst i `public/logic.js`):
+
+| | Ordliste | Pose | Vokaler |
+|---|---|---|---|
+| Norsk | NSF-ordlista 2026 (`words/nsf-2026.txt`) | Scrabble-posen med seks konsonanter byttet mot vokaler | 40 % |
+| Nederlandsk | OpenTaal 2.20.23, BSD / CC BY 3.0 (`words/nl.txt`, 296 451 ord) | den nederlandske Scrabble-posen, 102 brikker | 38 % |
+| Finsk | Kotus, Nykysuomen sanalista, CC BY 4.0 (`words/fi.txt`) | den finske Scrabble-posen, 100 brikker | 46 % |
+
+Et spill mot andre spilles i språket den som startet det valgte (lagret per spill på serveren), og tilfeldig
+motspiller finnes bare blant dem som søker i samme språk. Dagens brett er alltid norsk. Topplistene er per språk.
+
+**Finsk** vises i innstillingene når `public/words/fi.txt` finnes. Kotus-lista kan ikke lastes ned herfra, så:
+
+```
+# last ned https://kaino.kotus.fi/lataa/nykysuomensanalista2024.txt (eller den eldre XML-fila)
+python3 tools/kotus.py ~/Downloads/nykysuomensanalista2024.txt
+```
+
+Skriptet beholder ord på 2–15 bokstaver skrevet med a–z, ä og ö. Kotus-lista har bare grunnformer (som finsk
+Scrabble). Den nederlandske lista er OpenTaals `wordlist.txt` med bare små bokstaver a–z, 2–15 tegn (ingen
+egennavn, forkortelser eller ord med aksenter).
+
+Poengene og posene for nederlandsk og finsk er de vanlige Scrabble-settene slik jeg kjenner dem; sjekk dem mot et
+fysisk sett før lansering.

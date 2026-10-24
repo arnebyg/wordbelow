@@ -11,6 +11,7 @@
 // for both, and every request checks too. Phones that allow it get a push message when it is their turn.
 import { DurableObject } from "cloudflare:workers";
 import { makeVapid, sendPush } from "./push.js";
+import { tr, UI_LANGS } from "./i18n.js";
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 const err = (status, message) => json({ error: message }, status);
@@ -18,6 +19,8 @@ const rid = (n) => { const a = new Uint8Array(n); crypto.getRandomValues(a); ret
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const code = () => { const a = new Uint8Array(6); crypto.getRandomValues(a); return Array.from(a, (b) => CODE_CHARS[b % CODE_CHARS.length]).join(""); };
 const NAME_RE = /^[A-Za-z0-9ÆØÅæøå_.-]{3,16}$/;
+const LANGS = ["no", "nl", "fi"];
+const langOf = (body) => LANGS.includes(body && body.lang) ? body.lang : "no";
 const MOVE_LIMIT = 72 * 3600e3, REMIND_BEFORE = 12 * 3600e3;
 
 export default {
@@ -49,6 +52,10 @@ export class Hub extends DurableObject {
     try { this.sql.exec("ALTER TABLE games ADD COLUMN rated INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE users ADD COLUMN rating REAL NOT NULL DEFAULT 1200"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE users ADD COLUMN chat INTEGER NOT NULL DEFAULT 1"); } catch (e) { /* already there */ }
+    // The language a game's letters and word list are in (no, nl, fi); both players play the one it was started in.
+    try { this.sql.exec("ALTER TABLE games ADD COLUMN lang TEXT NOT NULL DEFAULT 'no'"); } catch (e) { /* already there */ }
+    // The language the app on that phone is shown in; its push messages come in the same.
+    try { this.sql.exec("ALTER TABLE subs ADD COLUMN lang TEXT NOT NULL DEFAULT 'no'"); } catch (e) { /* already there */ }
     this.sql.exec(`CREATE TABLE IF NOT EXISTS blocks (uid TEXT NOT NULL, bid TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (uid, bid));
       CREATE TABLE IF NOT EXISTS reports (id INTEGER PRIMARY KEY AUTOINCREMENT, uid TEXT NOT NULL, about TEXT NOT NULL, gid TEXT, reason TEXT NOT NULL, note TEXT, at INTEGER NOT NULL);`);
     this.sql.exec("CREATE TABLE IF NOT EXISTS chat (id INTEGER PRIMARY KEY AUTOINCREMENT, gid TEXT NOT NULL, uid TEXT NOT NULL, at INTEGER NOT NULL, text TEXT NOT NULL); CREATE INDEX IF NOT EXISTS chat_gid ON chat (gid, id);");
@@ -67,7 +74,7 @@ export class Hub extends DurableObject {
   summary(g, me) {
     const you = g.p0 === me ? 0 : 1, oppId = you === 0 ? g.p1 : g.p0, st = g.state ? JSON.parse(g.state) : null;
     return { id: g.id, you, opp: oppId ? { id: oppId, name: this.nameOf(oppId) } : null, status: g.status, kind: g.kind, code: g.code,
-      layout: g.layout, seed: g.seed, turn: g.turn, ver: g.ver, myTurn: g.status === "active" && g.turn === you,
+      layout: g.layout, seed: g.seed, lang: g.lang || "no", turn: g.turn, ver: g.ver, myTurn: g.status === "active" && g.turn === you,
       scores: st && st.P ? st.P.map((p) => p.score) : [0, 0], last: st ? st.last || "" : "", result: st ? st.result || null : null, updated: g.updated,
       deadline: g.status === "active" ? g.updated + this.limit : null,
       incoming: g.status === "offer" && g.p1 === me, board: this.boardOf(g.layout) };
@@ -88,7 +95,8 @@ export class Hub extends DurableObject {
     this.sql.exec("INSERT OR IGNORE INTO kv (k, v) VALUES ('vapid', ?)", JSON.stringify(v));
     return JSON.parse(this.one("SELECT v FROM kv WHERE k = 'vapid'").v);
   }
-  notify(uid, title, body, game) {
+  // A chat message (raw) goes as it was written; everything else in the language of each phone.
+  notify(uid, title, body, game, raw) {
     const subs = uid ? this.all("SELECT * FROM subs WHERE uid = ?", uid) : [];
     if (!subs.length) return;
     const origin = (this.one("SELECT v FROM kv WHERE k = 'origin'") || {}).v || "https://wordbelow.app";
@@ -96,7 +104,8 @@ export class Hub extends DurableObject {
       const vapid = await this.vapid();
       for (const sub of subs) {
         try {
-          const status = await sendPush(vapid, sub, origin, { title, body, game: game || null });
+          const l = raw ? null : sub.lang;
+          const status = await sendPush(vapid, sub, origin, { title: raw ? title : tr(l, title), body: raw ? body : tr(l, body), game: game || null });
           if (status === 404 || status === 410) this.sql.exec("DELETE FROM subs WHERE endpoint = ?", sub.endpoint);
         } catch (e) { /* the next message tries again */ }
       }
@@ -151,9 +160,9 @@ export class Hub extends DurableObject {
   newGame(p0, p1, kind, body, status0) {
     const now = Date.now(), id = rid(8), seed = Math.floor(Math.random() * 1e9);
     const layout = typeof body.layout === "string" && /^[a-z0-9]{2,20}$/.test(body.layout) ? body.layout : "lokket";
-    const status = status0 || (p1 ? "active" : "waiting"), c = kind === "invite" ? code() : null;
-    this.sql.exec("INSERT INTO games (id, p0, p1, layout, seed, status, kind, code, turn, ver, state, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, ?, ?)",
-      id, p0, p1 || null, layout, seed, status, kind, c, now, now);
+    const status = status0 || (p1 ? "active" : "waiting"), c = kind === "invite" ? code() : null, lang = langOf(body);
+    this.sql.exec("INSERT INTO games (id, p0, p1, layout, seed, lang, status, kind, code, turn, ver, state, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, ?, ?)",
+      id, p0, p1 || null, layout, seed, lang, status, kind, c, now, now);
     return this.one("SELECT * FROM games WHERE id = ?", id);
   }
   async fetch(request) {
@@ -194,7 +203,7 @@ export class Hub extends DurableObject {
     if (path === "/push/subscribe" && m === "POST") {
       const ep = String(body.endpoint || ""), k = body.keys || {};
       if (!/^https:\/\//.test(ep) || !k.p256dh || !k.auth) return err(400, "Mangler abonnement.");
-      this.sql.exec("INSERT OR REPLACE INTO subs (endpoint, uid, p256dh, auth, created) VALUES (?, ?, ?, ?, ?)", ep, me.id, String(k.p256dh), String(k.auth), Date.now());
+      this.sql.exec("INSERT OR REPLACE INTO subs (endpoint, uid, p256dh, auth, created, lang) VALUES (?, ?, ?, ?, ?, ?)", ep, me.id, String(k.p256dh), String(k.auth), Date.now(), UI_LANGS.includes(body.lang) ? body.lang : "no");
       return json({ ok: true });
     }
     if (path === "/push/unsubscribe" && m === "POST") {
@@ -302,13 +311,13 @@ export class Hub extends DurableObject {
         return json({ game: this.summary(ng, me.id) });
       }
       if (body.random) {
-        const w = this.one("SELECT * FROM games g WHERE status = 'waiting' AND kind = 'random' AND p0 != ? AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.uid = g.p0 AND b.bid = ?) OR (b.uid = ? AND b.bid = g.p0)) ORDER BY created LIMIT 1", me.id, me.id, me.id);
+        const w = this.one("SELECT * FROM games g WHERE status = 'waiting' AND kind = 'random' AND lang = ? AND p0 != ? AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.uid = g.p0 AND b.bid = ?) OR (b.uid = ? AND b.bid = g.p0)) ORDER BY created LIMIT 1", langOf(body), me.id, me.id, me.id);
         if (w) {
           this.sql.exec("UPDATE games SET p1 = ?, status = 'active', updated = ? WHERE id = ?", me.id, Date.now(), w.id);
           this.notify(w.p0, "Din tur", me.name + " ble med i det tilfeldige spillet ditt.", w.id);
           return json({ game: this.summary(this.one("SELECT * FROM games WHERE id = ?", w.id), me.id), matched: true });
         }
-        const mine = this.one("SELECT * FROM games WHERE status = 'waiting' AND kind = 'random' AND p0 = ?", me.id);
+        const mine = this.one("SELECT * FROM games WHERE status = 'waiting' AND kind = 'random' AND lang = ? AND p0 = ?", langOf(body), me.id);
         return json({ game: this.summary(mine || this.newGame(me.id, null, "random", body), me.id), matched: false });
       }
       if (body.invite) return json({ game: this.summary(this.newGame(me.id, null, "invite", body), me.id) });
@@ -343,7 +352,7 @@ export class Hub extends DurableObject {
         if (!text) return err(400, "Tom melding.");
         if ((this.one("SELECT COUNT(*) AS n FROM chat WHERE gid = ? AND uid = ? AND at > ?", g.id, me.id, Date.now() - 60e3) || {}).n >= 12) return err(429, "Litt for mange meldinger. Vent et øyeblikk.");
         this.sql.exec("INSERT INTO chat (gid, uid, at, text) VALUES (?, ?, ?, ?)", g.id, me.id, Date.now(), text);
-        if (oppId && text.length > 2) this.notify(oppId, me.name, text, g.id);
+        if (oppId && text.length > 2) this.notify(oppId, me.name, text, g.id, true);
         return json({ chat: chat() });
       }
       if (gm[2] === "/move" && m === "POST") {

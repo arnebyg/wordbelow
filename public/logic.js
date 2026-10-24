@@ -1,46 +1,93 @@
-var PTS = { A:1,B:4,C:10,D:1,E:1,F:2,G:2,H:3,I:1,J:4,K:2,L:1,M:2,N:1,O:2,P:4,R:1,S:1,T:1,U:4,V:4,W:8,Y:6,Æ:6,Ø:5,Å:4,"*":0 };
 // The full-screen ad after each move is paused while the app is being developed; set to true to turn it on.
 var AD_FULL_ON = false;
-var LEN_BONUS = 5, JOKER_EAGER = 8, RARE = "ÆYWC", VOW = "AEIOUYÆØÅ", ALPHABET = "ABCDEFGHIJKLMNOPRSTUVWYÆØÅ";
-// The Norwegian Scrabble set with six consonants swapped for vowels: 100 tiles, two of them blank (jokers).
-// One fewer N, R, S, T, D, K; one more A, I, O, U and two more E. That is 40 vowels of 98 letters, near the
-// 39 % vowels in the 3–5-letter words of NSF-ordlista; Scrabble's own 34 left far more tiles stuck in simulation.
-var BAG = "AAAAAAAABBBCDDDDEEEEEEEEEEEFFFFGGGGHHHIIIIIIJJKKKLLLLLMMMNNNNNOOOOOPPRRRRRSSSSSTTTTTUUUUVVVWYÆØØÅÅ**";
-// A board with fewer tiles draws from the same bag in the same shares: 40 % vowels, 2 % jokers, the rest
-// consonants, each picked at random from the bag's own, so their mix follows the bag too.
+var LEN_BONUS = 5, JOKER_EAGER = 8;
+// The game languages. Each has its own tiles, points, vowels and word list; useLang() puts one in the globals
+// below (PTS, BAG, VOW, RARE, ALPHABET, WORDS, DICT, SEARCH) so the engine reads them as before.
+// Norwegian: the Norwegian Scrabble set with six consonants swapped for vowels: 100 tiles, two of them blank
+// (jokers). One fewer N, R, S, T, D, K; one more A, I, O, U and two more E. That is 40 vowels of 98 letters,
+// near the 39 % vowels in the 3–5-letter words of NSF-ordlista; Scrabble's own 34 left far more tiles stuck.
+// Dutch: the Dutch Scrabble set, 102 tiles, 38 vowels of 100 letters (38 % in the 3–5-letter words of OpenTaal).
+// Finnish: the Finnish Scrabble set, 100 tiles, 45 vowels of 98 letters; Finnish words are vowel-rich.
+var LANGS = {
+  no: { name: "Norsk", list: "NSF-ordlista 2026", credit: "NSF-ordlista 2026, Norsk Scrabbleforbund", url: "words/nsf-2026.txt", re: /^[A-ZÆØÅ]+$/, vshare: 0.4,
+    dict: "https://ordbokene.no/nob/bm,nn/", vow: "AEIOUYÆØÅ", alphabet: "ABCDEFGHIJKLMNOPRSTUVWYÆØÅ",
+    pts: { A:1,B:4,C:10,D:1,E:1,F:2,G:2,H:3,I:1,J:4,K:2,L:1,M:2,N:1,O:2,P:4,R:1,S:1,T:1,U:4,V:4,W:8,Y:6,Æ:6,Ø:5,Å:4 },
+    bag: "AAAAAAAABBBCDDDDEEEEEEEEEEEFFFFGGGGHHHIIIIIIJJKKKLLLLLMMMNNNNNOOOOOPPRRRRRSSSSSTTTTTUUUUVVVWYÆØØÅÅ**",
+    words: "AL AN AT DA DE DU EN ER ET HA HO JA MA NA NE NU OG OM PÅ SE SI SÅ TA TE TO UT VI ÅS ALT ARM ART AKE AKT ANE BAD BAK BAR BEN BIL BOK BOR BRA BRO DAG DAL DAM DEG DEL DEN DET DRA DUE DYR EGG EIK ELG ELV ENG ERT FAR FAT FEM FIN FOT FRA FRI " +
+      "GAL GIR GOD GRO GUL HAN HAR HAT HEI HEL HER HUN HUS ILD INN KAN KAR KNE KOM KOR KUL LAG LAK LAM LAV LEK LIK LIM LIN LOV LUE LØK MAT MED MEG MEL MEN MOR MOT " +
+      "NAV NED NEI NOE NOK ORD ORM OSS OST OVN PAR PEN RAD RAK RAM RAN RAS REN RIS ROS ROT RUG RØD RØR SAG SAK SAL SEG SEI SEN SER SIN SKO SOL SOM SUR TAK TAU TID TIL TOG TOM TRE TRO TUR " +
+      "BAKE BAKT BALL BERG BEST BLAD BORD BRØD DEIG DELE ELTE ENDE FISK FOLK FORM GATE GRAN GULL HAGE HANE HARE HEST HUND KAKE KALD KANT KART KAST KATT KORN KORT LAND LANG LEKE LITE " +
+      "MARK MELK MINE NATT NAVN OVER RING ROSE SALT SAND SANG SENG SIDE SKOG SMAK SNAR STED STEG STOL STOR TALE TANN TING TORN UNGE VANN VARM VENN VIND BAKER BAKST STEIN STEKE" },
+  nl: { name: "Nederlands", list: "OpenTaal 2.20", credit: "OpenTaal 2.20, opentaal.org (BSD / CC BY 3.0)", url: "words/nl.txt", re: /^[A-Z]+$/,
+    dict: "https://woordenlijst.org/zoeken/?q=", vow: "AEIOUY", alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    pts: { A:1,B:3,C:5,D:2,E:1,F:4,G:3,H:4,I:1,J:4,K:3,L:3,M:3,N:1,O:1,P:3,Q:10,R:2,S:2,T:2,U:4,V:4,W:5,X:8,Y:8,Z:4 },
+    bag: "AAAAAABBCCDDDDDEEEEEEEEEEEEEEEEEEFFGGGHHIIIIJJKKKLLLMMMNNNNNNNNNNOOOOOOPPQRRRRRSSSSSTTTTTUUUVVWWXYZZ**",
+    words: "AL AN EN IN IS JA OP TE TO UW WE ZO BAD BAL BED BEN BOS DAG DAK DAL DAT DEN DIE DIT DUN EEN GAS GAT HAN HET HIJ HOK HUN JAS KAM KAN KAT KOM LAM LAND MAN MAT MEN NET NOG OOM PAD PAN PEN POT RAT ROT ROOS SAP TAK TOP VAN VIS ZON BOOM BOEK DEUR HUIS KAAS MELK PAARD STOEL TAFEL WATER" },
+  fi: { name: "Suomi", list: "Kotus, nykysuomen sanalista", credit: "Nykysuomen sanalista, Kotus (CC BY 4.0)", url: "words/fi.txt", re: /^[A-ZÄÖ]+$/,
+    dict: "https://www.kielitoimistonsanakirja.fi/#/", vow: "AEIOUYÄÖ", alphabet: "ABCDEFGHIJKLMNOPRSTUVYÄÖ",
+    pts: { A:1,I:1,N:1,T:1,E:1,S:1,K:2,L:2,O:2,Ä:2,U:3,M:3,H:4,J:4,P:4,R:4,V:4,Y:4,D:7,Ö:7,B:8,F:8,G:8,C:10 },
+    bag: "AAAAAAAAAABCDEEEEEEEEFGHHIIIIIIIIIIJJKKKKKLLLLLMMMNNNNNNNNNOOOOOPPRRSSSSSSSTTTTTTTTTUUUUVVYYÄÄÄÄÄÖ**",
+    words: "AI EI JA ON SE ME TE NE KUU MAA SUU TIE YÖ PUU KALA KISSA KOIRA LEIPÄ MAITO METSÄ SAUNA TALO VESI AURINKO JÄRVI KIRJA OMENA PÖYTÄ TUOLI" }
+};
+var LANG_KEY = "ordspill/spillsprak/v1", LANG = null;
+var PTS, BAG, VOW, RARE, ALPHABET, WORDS, WORDSET, DICT = null, SEARCH = null, DICT_URL;
+// Rare letters (6 points or more) give the rare-letter bonus: Æ Y W C in Norwegian.
+function useLang(c) {
+  if (!LANGS[c]) c = "no";
+  if (c === LANG) return;
+  var L = LANGS[c]; LANG = c;
+  PTS = Object.assign({ "*": 0 }, L.pts); BAG = L.bag; VOW = L.vow; ALPHABET = L.alphabet; DICT_URL = L.dict;
+  RARE = Object.keys(L.pts).filter(function (k) { return L.pts[k] >= 6; }).join("");
+  if (!L.vshare) { var b = Array.from(L.bag).filter(function (x) { return x !== "*"; }); L.vshare = b.filter(function (x) { return L.vow.indexOf(x) >= 0; }).length / b.length; }
+  if (!L.small) { L.small = L.words.split(" "); L.smallSet = new Set(L.small); }
+  WORDS = L.small; WORDSET = L.smallSet; DICT = L.dictSet || null; SEARCH = L.search || null;
+}
+// The language new games are played in: the one chosen in settings, else the phone's own if the app has it.
+function langPref() {
+  var c = lsGet(LANG_KEY); if (LANGS[c]) return c;
+  var n = String((navigator.languages && navigator.languages[0]) || navigator.language || "").slice(0, 2).toLowerCase();
+  return n === "nl" ? "nl" : "no";
+}
+// A board with fewer tiles draws from the same bag in the same shares: the bag's vowel share, 2 % jokers, the
+// rest consonants, each picked at random from the bag's own, so their mix follows the bag too.
 function bagFor(n, R) {
   if (n === BAG.length) return Array.from(BAG);
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(R() * (i + 1)), x = a[i]; a[i] = a[j]; a[j] = x; } return a; }
-  var all = Array.from(BAG), nv = Math.round(n * 0.4), nj = Math.round(n * 0.02);
-  var vow = shuffle(all.filter(function (c) { return VOW.indexOf(c) >= 0; })).slice(0, nv);
-  var con = shuffle(all.filter(function (c) { return c !== "*" && VOW.indexOf(c) < 0; })).slice(0, n - nv - nj);
-  return vow.concat(con, all.filter(function (c) { return c === "*"; }).slice(0, nj));
+  // (a share bigger than the bag holds, as a 100-tile board in a 102-tile bag can ask, takes the bag round again)
+  var all = Array.from(BAG), sp = bagSplit(n);
+  var pick = function (f, k) { var a = all.filter(f), out = a; while (out.length < k) out = out.concat(a); return shuffle(out).slice(0, k); };
+  var vow = pick(function (c) { return VOW.indexOf(c) >= 0; }, sp.v);
+  var con = pick(function (c) { return c !== "*" && VOW.indexOf(c) < 0; }, sp.c);
+  var jok = all.filter(function (c) { return c === "*"; }); while (jok.length < sp.j) jok = jok.concat(["*"]);
+  return vow.concat(con, jok.slice(0, sp.j));
 }
-function bagSplit(n) { var v = Math.round(n * 0.4), j = Math.round(n * 0.02); return { v: v, j: j, c: n - v - j }; }
+useLang("no");
+function bagSplit(n) { var v = Math.round(n * LANGS[LANG].vshare), j = Math.round(n * 0.02); return { v: v, j: j, c: n - v - j }; }
 var NAME_KEY = "ordspill/navn/v1";
 var BOX_W = 360, BOX_H = 412, SCALE = 0.9;
 // The editor's surface, in the same units as the board: 400 × 458, columns 0–7 and rows 0–6 in half steps.
 var ED_W = BOX_W / SCALE, ED_H = BOX_H / SCALE, ED_X = 5, ED_Y = 32, ED_C = 7, ED_R = 6;
 
-var WORDS = ("AL AN AT DA DE DU EN ER ET HA HO JA MA NA NE NU OG OM PÅ SE SI SÅ TA TE TO UT VI ÅS ALT ARM ART AKE AKT ANE BAD BAK BAR BEN BIL BOK BOR BRA BRO DAG DAL DAM DEG DEL DEN DET DRA DUE DYR EGG EIK ELG ELV ENG ERT FAR FAT FEM FIN FOT FRA FRI " +
-  "GAL GIR GOD GRO GUL HAN HAR HAT HEI HEL HER HUN HUS ILD INN KAN KAR KNE KOM KOR KUL LAG LAK LAM LAV LEK LIK LIM LIN LOV LUE LØK MAT MED MEG MEL MEN MOR MOT " +
-  "NAV NED NEI NOE NOK ORD ORM OSS OST OVN PAR PEN RAD RAK RAM RAN RAS REN RIS ROS ROT RUG RØD RØR SAG SAK SAL SEG SEI SEN SER SIN SKO SOL SOM SUR TAK TAU TID TIL TOG TOM TRE TRO TUR " +
-  "BAKE BAKT BALL BERG BEST BLAD BORD BRØD DEIG DELE ELTE ENDE FISK FOLK FORM GATE GRAN GULL HAGE HANE HARE HEST HUND KAKE KALD KANT KART KAST KATT KORN KORT LAND LANG LEKE LITE " +
-  "MARK MELK MINE NATT NAVN OVER RING ROSE SALT SAND SANG SENG SIDE SKOG SMAK SNAR STED STEG STOL STOR TALE TANN TING TORN UNGE VANN VARM VENN VIND BAKER BAKST STEIN STEKE").split(" ");
-var WORDSET = new Set(WORDS);
-var NSF_URL = "words/nsf-2026.txt";
-var DICT = null, SEARCH = null;
-function loadDict(cb) {
-  fetch(NSF_URL).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (t) {
+// Each language's list is fetched once, when a game in it first needs it.
+function loadDict(cb, c) {
+  c = c || LANG; var L = LANGS[c];
+  if (L.dictSet) { cb(true); return; }
+  if (L.loading) { L.loading.push(cb); return; }
+  L.loading = [cb];
+  var done = function (ok) { var q = L.loading; L.loading = null; q.forEach(function (f) { f(ok); }); };
+  fetch(L.url).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (t) {
     var d = new Set(), s = [];
     t.split("\n").forEach(function (w) {
       w = w.trim(); if (!w) return;
       var u = w.toUpperCase(); d.add(u);
-      if (u.length <= 9 && /^[A-ZÆØÅ]+$/.test(u)) s.push(u);
+      if (u.length <= 9 && L.re.test(u)) s.push(u);
     });
-    DICT = d; SEARCH = s; cb(true);
-  }).catch(function () { cb(false); });
+    L.dictSet = d; L.search = s;
+    if (LANG === c) { DICT = d; SEARCH = s; }
+    done(true);
+  }).catch(function () { L.failed = true; done(false); });
 }
+function langTag(c) { return c && c !== "no" ? "-" + c : ""; }
 function isWord(w) { return DICT ? DICT.has(w) : WORDSET.has(w); }
 
 // The boards. Each layer is a run of columns [layer, first column, heights, centre row(s)];
@@ -366,7 +413,6 @@ seasonLoad();
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
 var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1", CHAT_KEY = "ordspill/chat/v1";
 // Word meanings: Bokmålsordboka and Nynorskordboka at ordbokene.no (Språkrådet and the University of Bergen).
-var DICT_URL = "https://ordbokene.no/nob/bm,nn/";
 function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase()); }
 var REPORT_REASONS = ["Stygt brukernavn", "Stygge meldinger", "Juks", "Noe annet"];
 var REACTIONS = ["👏", "😮", "😅", "😂", "🔥", "🙈"];
@@ -446,19 +492,24 @@ class Component extends DCLogic {
       search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" }, push: "unknown", pushMsg: "", pushCard: !lsGet(PUSH_CARD_KEY), premium: !!lsGet(PREMIUM_KEY), chatPref: lsGet(CHAT_KEY) !== false, chat: null, chatOpen: false, chatIn: "", chatPop: null };
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
-  fresh(id, msg, seed) {
-    var f = this.freshRaw(id, msg, seed); if (!msg) f.introMsg = f.msg; return f;
+  // A game is dealt in its own language: an online game in the one it was started in, Dagens brett in
+  // Norwegian, everything else in the language chosen in settings.
+  fresh(id, msg, seed, lang) {
+    var f = this.freshRaw(id, msg, seed, lang); if (!msg) f.introMsg = f.msg; return f;
   }
-  freshRaw(id, msg, seed) {
-    var S = layoutOf(id), g = genBoard(S, seed), duel = this.state && this.state.mode === "duel";
-    return { lay: S.L.id, seed: seed || 0, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], pop: null,
+  freshRaw(id, msg, seed, lang) {
+    useLang(lang || langPref());
+    var S = layoutOf(id), g = genBoard(S, seed), duel = this.state && this.state.mode === "duel", self = this, c = LANG;
+    if (kindOf(S.L) === "ord" && !DICT && !LANGS[c].failed) loadDict(function (ok) {
+      if (self.state && self.state.lang === c) self.setState(ok ? {} : { homeMsg: "Fant ikke ordlista for " + LANGS[c].name + ". Bruker en liten testliste." });
+    }, c);
+    return { lay: S.L.id, seed: seed || 0, lang: LANG, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], pop: null,
       turn: 0, passes: 0, busy: false, P: [{ score: 0, pocket: [], words: [] }, { score: 0, pocket: [], words: [] }], log: [], daily: null,
       phase: "play", played: null, submitted: false, confirm: null, introMsg: null,
       msg: msg || (duel ? this.turnSay(0) + " " : "") + S.L.name + ": " + S.L.sub + ". " + openSay(S.L).replace(/^./, function (x) { return x.toUpperCase(); }) + ".", tone: "info" };
   }
   componentDidMount() {
     var self = this;
-    if (!DICT) loadDict(function (ok) { if (!ok) self.setState({ homeMsg: "Fant ikke ordlista. Bruker en liten testliste." }); });
     this.connect();
     if (window.applyTheme) window.applyTheme(this.state.theme, this.state.bg);
     var join = (location.search.match(/[?&]join=([A-Za-z0-9]{4,10})/) || [])[1];
@@ -503,17 +554,22 @@ class Component extends DCLogic {
     var self = this;
     if (this.unsub) { this.unsub(); this.unsub = null; }
     if (!this.db) { this.localBoard(id); return; }
-    this.unsub = this.db.collection("klassiker/" + id + "-v40/scores").orderBy("score", "desc").limit(50).onSnapshot(function (snap) {
+    this.unsub = this.db.collection("klassiker/" + id + "-v40" + langTag(this.state.lang) + "/scores").orderBy("score", "desc").limit(50).onSnapshot(function (snap) {
       self.setState({ boardSrc: "db", board: snap.docs.map(function (d) { var x = d.data(); return { id: d.id, name: x.name, score: x.score, words: x.words, best: x.best }; }) });
     }, function () { self.setState({ boardSrc: "local" }); self.localBoard(id); });
   }
   localBoard(id) {
-    var all = lsGet("ordspill/toppliste/klassiker-v40-" + id) || [];
+    var all = lsGet("ordspill/toppliste/klassiker-v40-" + id + langTag(this.state.lang)) || [];
     all.sort(function (a, b) { return b.score - a.score; });
     this.setState({ board: all });
   }
   // Account and the server
-  openSettings() { this.setState({ phase: "settings" }); this.loadBlocked(); }
+  openSettings() {
+    var self = this;
+    this.setState({ phase: "settings" }); this.loadBlocked();
+    // Finnish shows up once its word list has been put in public/words (tools/kotus.py makes it).
+    if (LANGS.fi.avail === undefined) fetch(LANGS.fi.url, { method: "HEAD" }).then(function (r) { LANGS.fi.avail = r.ok; }, function () { LANGS.fi.avail = false; }).then(function () { self.setState({}); });
+  }
   openStats() {
     var self = this;
     this.setState({ phase: "stats", srvStats: null });
@@ -529,6 +585,10 @@ class Component extends DCLogic {
     lsSet("ordspill/klassiker/brett/v1", first.id);
     this.setState(Object.assign(this.fresh(first.id), { phase: this.state.phase, help: false }));
   }
+  setGameLang(c) {
+    lsSet(LANG_KEY, c);
+    this.setState(Object.assign(this.fresh(this.state.lay), { phase: this.state.phase, help: false }));
+  }
   setPremium(on) { lsSet(PREMIUM_KEY, on); this.setState({ premium: on, adFull: null, premMsg: on ? "Premium er på for denne telefonen." : "Premium er av." }); }
   // Push messages when it is your turn
   pushCheck() {
@@ -536,7 +596,7 @@ class Component extends DCLogic {
     if (can !== "ok") { this.setState({ push: can }); return; }
     navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
       self.setState({ push: sub ? "on" : "off" });
-      if (sub && self.state.account) api("/push/subscribe", { method: "POST", body: sub.toJSON() }).catch(function () {});
+      if (sub && self.state.account) api("/push/subscribe", { method: "POST", body: Object.assign(sub.toJSON(), { lang: UI }) }).catch(function () {});
     }).catch(function () { self.setState({ push: "off" }); });
   }
   pushOn() {
@@ -549,7 +609,7 @@ class Component extends DCLogic {
       return Promise.all([navigator.serviceWorker.ready, api("/push/key")]);
     }).then(function (r) {
       return r[0].pushManager.getSubscription().then(function (old) { return old || r[0].pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(r[1].key) }); });
-    }).then(function (sub) { return api("/push/subscribe", { method: "POST", body: sub.toJSON() }); }).then(function () {
+    }).then(function (sub) { return api("/push/subscribe", { method: "POST", body: Object.assign(sub.toJSON(), { lang: UI }) }); }).then(function () {
       lsSet(PUSH_CARD_KEY, true);
       self.setState({ push: "on", pushCard: false, pushMsg: "Varsler er på. Du skal ha fått et prøvevarsel nå." });
       return api("/push/test", { method: "POST" });
@@ -588,8 +648,8 @@ class Component extends DCLogic {
     this.ensureShared(function (L) {
       var link = location.origin + location.pathname + "?board=" + L.code, text = "Prøv brettet «" + L.name + "» i WordBelow: " + link;
       self.setState({ ngMsg: "Del lenken, så kan andre spille «" + L.name + "», også mot deg: " + link });
-      if (navigator.share) navigator.share({ title: "WordBelow · " + L.name, text: text }).catch(function () {});
-      else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { self.setState({ ngMsg: "Lenken er kopiert: " + link }); }, function () {});
+      if (navigator.share) navigator.share({ title: tr("WordBelow · " + L.name), text: tr(text) }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ ngMsg: "Lenken er kopiert: " + link }); }, function () {});
     });
   }
   importBoard(code) {
@@ -651,7 +711,7 @@ class Component extends DCLogic {
   startWith(u, rematch) {
     var self = this;
     this.ensureShared(function () {
-      api("/games", { method: "POST", body: { to: u.id, layout: self.state.lay, rematch: !!rematch } }).then(function (d) {
+      api("/games", { method: "POST", body: { to: u.id, layout: self.state.lay, lang: self.state.lang, rematch: !!rematch } }).then(function (d) {
         self.goHome();
         self.setState({ homeMsg: (rematch ? "Revansjen" : "Utfordringen") + " er sendt til " + (d.game.opp ? d.game.opp.name : u.name || "motspilleren") + ". Spillet starter når " + (d.game.opp ? d.game.opp.name : "de") + " godtar." });
       }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
@@ -707,7 +767,7 @@ class Component extends DCLogic {
     var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.random(); }); return; }
     if (this.needAccount("random")) return;
     this.setState({ ngMsg: "Leter etter en motspiller …" });
-    api("/games", { method: "POST", body: { random: true, layout: this.state.lay } }).then(function (d) {
+    api("/games", { method: "POST", body: { random: true, layout: this.state.lay, lang: this.state.lang } }).then(function (d) {
       if (d.matched) self.openOnline(d.game.id);
       else { self.setState({ phase: "home", ngMsg: "", homeMsg: "Du står i kø for en tilfeldig motspiller. Spillet starter når noen andre også velger Tilfeldig." }); self.refreshGames(); }
     }, function (e) { self.setState({ ngMsg: e.message }); });
@@ -716,20 +776,20 @@ class Component extends DCLogic {
     var self = this;
     var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.invite(); }); return; }
     if (this.needAccount("invite")) return;
-    api("/games", { method: "POST", body: { invite: true, layout: this.state.lay } }).then(function (d) {
+    api("/games", { method: "POST", body: { invite: true, layout: this.state.lay, lang: this.state.lang } }).then(function (d) {
       var c = d.game.code, link = location.origin + location.pathname + "?join=" + c;
       var text = "Bli med på WordBelow mot " + self.state.account.name + ". Åpne " + link + " – eller velg Kode på startsiden i appen og skriv " + c + ".";
       self.setState({ phase: "home", homeMsg: "Invitasjonen har koden " + c + ". Den ligger under «Venter på motspiller» til noen blir med." });
       self.refreshGames();
-      if (navigator.share) navigator.share({ title: "WordBelow", text: text }).catch(function () {});
-      else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { self.setState({ homeMsg: "Invitasjonen er kopiert. Koden er " + c + "." }); }, function () {});
+      if (navigator.share) navigator.share({ title: tr("WordBelow"), text: tr(text) }).catch(function () {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ homeMsg: "Invitasjonen er kopiert. Koden er " + c + "." }); }, function () {});
     }, function (e) { self.setState({ ngMsg: e.message }); });
   }
   shareCode(g) {
     var link = location.origin + location.pathname + "?join=" + g.code;
     var text = "Bli med på WordBelow. Åpne " + link + " – eller velg Kode på startsiden i appen og skriv " + g.code + ".";
-    if (navigator.share) navigator.share({ title: "WordBelow", text: text }).catch(function () {});
-    else if (navigator.clipboard) navigator.clipboard.writeText(text);
+    if (navigator.share) navigator.share({ title: tr("WordBelow"), text: tr(text) }).catch(function () {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(tr(text));
   }
   joinCode() {
     var self = this, c = (this.state.codeIn || "").trim();
@@ -754,7 +814,7 @@ class Component extends DCLogic {
       self.applyChat(id, d);
       if (quiet && st.online.ver === g.ver && st.online.status === g.status) return;
       if (g.board) sharedLayout(g.board.code, g.board.name, g.board.cells);
-      var base = self.fresh(g.layout, null, g.seed), P = s ? s.P : base.P, turn = g.turn;
+      var base = self.fresh(g.layout, null, g.seed, g.lang || "no"), P = s ? s.P : base.P, turn = g.turn;
       var o = { id: g.id, you: g.you, ver: g.ver, status: g.status, oppName: g.opp ? g.opp.name : "", oppId: g.opp ? g.opp.id : null, code: g.code, kind: g.kind };
       var next = Object.assign(base, { online: o, log: s && s.log ? s.log : [], gone: s ? s.gone : {}, jokerAs: s && s.jokerAs ? s.jokerAs : {}, P: P, turn: turn, passes: s ? s.passes : 0,
         score: P[turn].score, pocket: P[turn].pocket, words: P[turn].words, mode: "duel", opp: "online" });
@@ -816,7 +876,7 @@ class Component extends DCLogic {
     var D = dailyOf(dayKey()), st = this.state, played = dailyDone()[D.key];
     st.mode = "solo"; st.online = null;
     this.timers.forEach(clearTimeout); this.timers = [];
-    this.setState(Object.assign(this.fresh(D.lay, "Dagens brett: " + D.name + ". Alle spiller de samme bokstavene i dag." + (played ? " Du har spilt det i dag; bare det første forsøket teller." : ""), D.seed), { daily: D.key }));
+    this.setState(Object.assign(this.fresh(D.lay, "Dagens brett: " + D.name + ". Alle spiller de samme bokstavene i dag." + (played ? " Du har spilt det i dag; bare det første forsøket teller." : ""), D.seed, "no"), { daily: D.key }));
   }
   dailyFinish(rec) {
     var self = this, st = this.state, key = st.daily, all = dailyDone();
@@ -833,8 +893,8 @@ class Component extends DCLogic {
     var text = "WordBelow · Dagens brett " + (+d[2]) + "." + (+d[1]) + ". · " + D.name + "\n" + r.score + " poeng · " + (r.words || []).length + " ord · lengste " + longest + " bokstaver · " +
       (r.left ? r.left + " brikker igjen" : "brettet ryddet") + "\n" + shareGrid(r.words || []) + "\n" + location.origin + location.pathname;
     var self = this;
-    if (navigator.share) navigator.share({ text: text }).catch(function () {});
-    else if (navigator.clipboard) navigator.clipboard.writeText(text).then(function () { self.setState({ toastNote: "Resultatet er kopiert. Lim det inn der du vil dele det." }); }, function () {});
+    if (navigator.share) navigator.share({ text: tr(text) }).catch(function () {});
+    else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ toastNote: "Resultatet er kopiert. Lim det inn der du vil dele det." }); }, function () {});
   }
   start(mode, opp, diff) {
     var st = this.state;
@@ -940,6 +1000,7 @@ class Component extends DCLogic {
   playWord() {
     var self = this, s2 = this.state, w2 = this.word(s2.sel), human = this.humanMove();
     var kind = this.kind(), chars = s2.sel.map(function (id) { return self.chOf(id); });
+    if (kind === "ord" && !DICT && LANGS[LANG].loading) { this.setState({ msg: "Ordlista lastes fortsatt. Prøv igjen om et øyeblikk.", tone: "info" }); return false; }
     if (kind === "ord" && !isWord(w2)) { this.setState({ msg: "«" + w2 + "» står ikke i ordlista.", tone: "bad" }); return false; }
     if (kind === "tall" && tallCheck(chars) === null) { this.setState({ msg: chars.indexOf("=") < 0 ? "Et regnestykke trenger «=». Trykk «=»-knappen." : "«" + w2 + "» går ikke opp.", tone: "bad" }); return false; }
     if (kind === "sett") {
@@ -1055,10 +1116,10 @@ class Component extends DCLogic {
     if (mine && mine.score >= rec.score) { this.setState({ submitted: true, msg: "" }); return; }
     var ok = false;
     if (this.db && st.uid) {
-      try { await this.db.doc("klassiker/" + st.lay + "-v40/scores/" + st.uid).set(row); ok = true; } catch (e) { ok = false; }
+      try { await this.db.doc("klassiker/" + st.lay + "-v40" + langTag(st.lang) + "/scores/" + st.uid).set(row); ok = true; } catch (e) { ok = false; }
     }
     if (!ok) {
-      var key = "ordspill/toppliste/klassiker-v40-" + st.lay;
+      var key = "ordspill/toppliste/klassiker-v40-" + st.lay + langTag(st.lang);
       var all = (lsGet(key) || []).filter(function (r) { return r.id !== "me"; });
       all.push(Object.assign({ id: "me" }, row));
       lsSet(key, all);
@@ -1094,7 +1155,7 @@ class Component extends DCLogic {
   edSave(play) {
     var ed = this.state.ed, name = (ed.name || "").trim();
     // The phone's own text box when the field was left empty: it always works, also where the field did not.
-    if (!name && typeof window.prompt === "function") { name = (window.prompt("Navn på brettet", "") || "").trim().slice(0, 24); if (name) ed.name = name; }
+    if (!name && typeof window.prompt === "function") { name = (window.prompt(tr("Navn på brettet"), "") || "").trim().slice(0, 24); if (name) ed.name = name; }
     if (!name) { this.edSet({ needName: true, focusName: true }, "Gi brettet et navn før du lagrer det."); return; }
     if (LAYOUTS.some(function (L) { return L.id !== ed.id && L.name.toLowerCase() === name.toLowerCase(); })) { this.edSet({ needName: true, focusName: true }, "Det finnes alt et brett som heter «" + name + "». Velg et annet navn."); return; }
     if (ed.cells.length < OWN_MIN) { this.edSet({}, "Brettet trenger minst " + OWN_MIN + " brikker. Det har " + ed.cells.length + "."); return; }
@@ -1165,8 +1226,11 @@ class Component extends DCLogic {
     var v = {
       phase: st.phase, isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel, isOnline: online,
       lname: S.L.name,
+      credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
+      dictHost: DICT_URL.split("/")[2].replace(/^www\./, ""),
+      rareSay: Array.from(RARE).sort(function (a, b) { return PTS[a] - PTS[b]; }).join(", "),
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),
-      kicker: online ? "Spill · " + S.L.name : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name,
+      kicker: online ? "Spill · " + S.L.name + (kindOf(S.L) === "ord" && st.lang !== "no" ? " · " + LANGS[st.lang].name : "") : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name + (kindOf(S.L) === "ord" && st.lang !== "no" ? " · " + LANGS[st.lang].name : ""),
       score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
       ads: !st.premium, premium: !!st.premium, adFull: !st.premium && !!st.adFull, closeAd: function () { self.setState({ adFull: null }); },
       openPremium: function () { self.setState({ phase: "premium", premMsg: "", help: false }); },
@@ -1282,7 +1346,7 @@ class Component extends DCLogic {
       v.editBoard = function () { self.openEditor(SP.L.id); };
       v.shareBoard = function () { self.shareBoard(); };
       v.renameBoard = function () {
-        var nm = typeof window.prompt === "function" ? window.prompt("Nytt navn på «" + SP.L.name + "»", SP.L.name) : null;
+        var nm = typeof window.prompt === "function" ? window.prompt(tr("Nytt navn på «" + SP.L.name + "»"), SP.L.name) : null;
         if (nm === null) return;
         nm = nm.trim().slice(0, 24);
         if (!nm) return;
@@ -1321,7 +1385,7 @@ class Component extends DCLogic {
       v.ed = {
         name: ed.name, n: n, needName: !!ed.needName, focusName: !!ed.focusName, max: OWN_MAX, msg: ed.msg, isNew: !ed.id, del: ed.del,
         count: n + " av " + OWN_MAX + " brikker" + (n ? " · " + (top + 1) + " lag · " + openAtStart(ed.cells) + " åpne i starten" : ""),
-        mix: n ? sp.v + " vokaler, " + sp.c + " konsonanter" + (sp.j ? " og " + sp.j + (sp.j === 1 ? " joker" : " jokere") : "") + " – 40 % vokaler, som i spillet ellers." : "Trykk på flaten for å legge brikker. Trykk på en brikke for å ta den bort.",
+        mix: n ? sp.v + " vokaler, " + sp.c + " konsonanter" + (sp.j ? " og " + sp.j + (sp.j === 1 ? " joker" : " jokere") : "") + " – " + Math.round(LANGS[LANG].vshare * 100) + " % vokaler, som i spillet ellers." : "Trykk på flaten for å legge brikker. Trykk på en brikke for å ta den bort.",
         layers: [0, 1, 2, 3, 4].map(function (l) { var on = l === ed.layer; return { name: "Lag " + (l + 1), on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { self.edSet({ layer: l }); } }; }),
         box: "position:absolute;left:0;top:0;width:" + ED_W + "px;height:" + ED_H + "px;transform:scale(" + SCALE + ");transform-origin:0 0",
         tiles: ed.cells.slice().sort(function (a, b) { return (a.l * 1000 + a.r * 20 + a.c) - (b.l * 1000 + b.r * 20 + b.c); }).map(function (p) {
@@ -1375,6 +1439,12 @@ class Component extends DCLogic {
       v.blockedList = (st.blocked || []).map(function (u) { return { name: u.name, unblock: function () { self.state.player = { id: u.id, name: u.name, step: "menu", msg: "" }; self.block(false); } }; });
       v.toggleChat = function () { self.setChatPref(!st.chatPref); };
       var curKind = kindOf(S.L);
+      v.uiLangs = Object.keys(UI_LANGS).map(function (c) { return { name: UI_LANGS[c], on: c === UI, pick: function () { if (c !== UI) setUiLang(c); } }; });
+      var curLang = langPref();
+      v.langs = Object.keys(LANGS).filter(function (c) { return c !== "fi" || LANGS.fi.avail || curLang === "fi"; }).map(function (c) {
+        return { name: LANGS[c].name, say: "Ordliste: " + LANGS[c].list, on: c === curLang, pick: function () { if (c !== curLang) self.setGameLang(c); } };
+      });
+      v.fiMissing = !LANGS.fi.avail;
       v.kinds = KINDS.map(function (k) { return { name: k.name, say: k.say, on: k.id === curKind, pick: function () { if (k.id !== curKind) self.setKind(k.id); } }; });
       v.pushSay = this.pushSay(); v.pushMsg = st.pushMsg;
       v.pushOn = st.push === "off" && st.account ? function () { self.pushOn(); } : null;
@@ -1589,7 +1659,7 @@ class Component extends DCLogic {
       });
       v.boardEmpty = st.board.length === 0;
       v.boardSay = st.boardSrc === "db" ? "delt mellom alle som spiller" : st.boardSrc === "local" ? "bare denne telefonen" : "kobler til …";
-      v.again = function () { self.setState(self.fresh(self.state.lay, "Samme brett, nytt forsøk. Bare en ny personlig rekord sendes inn.")); };
+      v.again = function () { self.setState(self.fresh(self.state.lay, "Samme brett, nytt forsøk. Bare en ny personlig rekord sendes inn.", 0, self.state.lang)); };
       v.againLabel = "Spill igjen";
       if (st.daily) {
         var dt = st.dailyTop, dd2 = dailyDone(), streak2 = streakOf(dd2);

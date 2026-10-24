@@ -37,7 +37,7 @@ var App = (function () {
     '</div>' +
     (v.pop ? '<div class="pop" aria-hidden="true">' + esc(v.pop) + '</div>' : '') +
     (v.toast ? toastHtml(v) : '') +
-    (v.chatPop && !v.chatOpen ? '<div class="toast chatpop" role="status">' + esc(v.chatPop) + '</div>' : '') +
+    (v.chatPop && !v.chatOpen ? '<div class="toast chatpop" role="status" translate="no">' + esc(v.chatPop) + '</div>' : '') +
     (v.dots ? '<div class="bdots" aria-hidden="true">' + each(v.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' : '') +
     (v.picking ? '<div class="over" role="dialog" aria-label="Velg bokstav for jokeren">' +
       '<div class="overtop"><span>Hvilken bokstav er jokeren?</span><button type="button" class="small"' + on(v.cancelPick) + '>Avbryt</button></div>' +
@@ -77,7 +77,7 @@ var App = (function () {
     '<input id="nm" class="inp" type="text" maxlength="20" autocomplete="nickname" value="' + esc(v.nameVal) + '" data-input="onName">' +
     '<button type="button" class="act green"' + (v.submitOff ? ' disabled' : '') + on(v.submitScore) + '>Send inn</button></div></div>' : '') +
   (v.duelRows ? '<div class="lb"><div class="lblist">' + each(v.duelRows, function (r) {
-    return '<div class="' + r.cls + '"><span class="rk-n"></span><span class="who"><span class="nm">' + esc(r.name) + '</span><span class="det">' + esc(r.detail) + '</span></span><span class="sc">' + esc(r.score) + '</span></div>';
+    return '<div class="' + r.cls + '"><span class="rk-n"></span><span class="who"><span class="nm" translate="no">' + esc(r.name) + '</span><span class="det">' + esc(r.detail) + '</span></span><span class="sc">' + esc(r.score) + '</span></div>';
   }) + '</div></div>' :
   '<div class="lb">' +
     '<div class="lbhead"><h2>' + (v.isDaily ? 'Dagens liste' : 'Toppliste · ' + esc(v.lname)) + '</h2><span>' + esc(v.isDaily ? v.boardSay : 'bare denne telefonen') + '</span></div>' +
@@ -95,7 +95,7 @@ var App = (function () {
     '<button type="button" class="act grey wide"' + on(v.toPicker) + '>' + esc(v.pickerLabel) + '</button>' +
     '<button type="button" class="act gold grow"' + on(v.again) + '>' + esc(v.againLabel) + '</button>' +
   '</div>' +
-  '<span class="foot">Hvert brett har faste bokstaver. Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
+  '<span class="foot">Hvert brett har faste bokstaver. Ordliste: ' + esc(v.credit) + '.</span>' +
 '</div>';
   }
 
@@ -189,7 +189,7 @@ var App = (function () {
     return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Slik spiller du"><div class="helpsheet">' +
       '<div class="helphead"><b>Slik spiller du</b><button type="button" class="x" aria-label="Lukk"' + on(v.closeHelp) + '>' + IC.close + '</button></div>' +
       '<div class="scroll helpbody">' +
-      sec("Målet", '<p>Lag ord av brikkene som er åpne, og få flest poeng. Brikkene ligger i lag oppå hverandre, og når du tar bort de øverste, kommer nye bokstaver fram under. Alle ord i NSF-ordlista 2026 gjelder, uansett lengde.</p>') +
+      sec("Målet", '<p>Lag ord av brikkene som er åpne, og få flest poeng. Brikkene ligger i lag oppå hverandre, og når du tar bort de øverste, kommer nye bokstaver fram under. Alle ord i ' + esc(v.listName) + ' gjelder, uansett lengde.</p>') +
       sec("Åpne brikker", '<p>En brikke er åpen når ingen brikke ligger oppå den, og den er fri på minst én side, til venstre eller til høyre. Sperrede brikker er mørkere og kan ikke trykkes.</p>') +
       sec("Et trekk", '<p><b>Legg et ord:</b> trykk brikkene i den rekkefølgen ordet staves. Trykk en valgt brikke igjen for å ta den tilbake, og trykk «Send ord».</p>' +
         '<p><b>I lommen:</b> i stedet for et ord kan du legge én åpen brikke i lommen. Lommen tar to brikker, og du kan bruke dem i et senere ord. Et ord må alltid ha minst én brikke fra brettet. Det som ligger igjen i lommen til slutt, koster ingenting.</p>' +
@@ -197,13 +197,13 @@ var App = (function () {
         '<p><b>Joker:</b> det ligger to jokere i brettet. Trykk en åpen joker og velg hvilken bokstav den skal være. Den gir 0 poeng, men bonusene for ordet gjelder.</p>') +
       sec("Poeng for et ord", '<p>Poengene regnes i denne rekkefølgen:</p>' + rows([
         ["Bokstaver", "tallet på hver brikke"], ["Bokstavbonus 2×B / 3×B", "dobler eller tredobler den bokstaven"], ["Lag", "+1 for hvert lag brikken ligger over bunnen"],
-        ["Ordbonus 2×O / 3×O", "ganger bokstaver og lag"], ["Sjelden bokstav (Æ, Y, W, C)", "× 1,5"], ["Lengde", "+5 for hver bokstav over tre"],
+        ["Ordbonus 2×O / 3×O", "ganger bokstaver og lag"], ["Sjelden bokstav (" + esc(v.rareSay) + ")", "× 1,5"], ["Lengde", "+5 for hver bokstav over tre"],
         ["Åpner 4 nye brikker eller flere", "+5"], ["Rydder hele brettet", "+50"], ["Hint", "−5"]]) +
         '<p class="fine">Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Ligger brikkene til sammen 3 lag opp og ordet treffer 2×O, blir det (9 + 3) × 2 = 24, pluss 15 for seks bokstaver: 39 poeng.</p>') +
       sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen, lagene og bonusene virker som ellers.</p>' +
         '<p><b>Tall:</b> bygg et regnestykke som går opp, for eksempel 9 × 2 = 18. Sifre ved siden av hverandre blir ett tall, og det må være minst ett regnetegn. «=»-knappen er gratis og brukes én gang. Vanlig regnerekkefølge, og deling må gå opp. Poeng: siffer 1, + 1, − 2, × 3, ÷ 4, +5 per brikke over tre.</p>' +
         '<p><b>Sett:</b> hver brikke har form, farge og antall. Tre brikker er et sett når hver egenskap enten er lik på alle tre eller ulik på alle tre. Poeng: 3, +2 for hver egenskap som er ulik på alle.</p>') +
-      sec("Brettene", '<p><b>Stramme</b> brett har få åpne brikker hele spillet. <b>Åpner seg</b> starter med rundt 8–11 åpne og får flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: 40 % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
+      sec("Brettene", '<p><b>Stramme</b> brett har få åpne brikker hele spillet. <b>Åpner seg</b> starter med rundt 8–11 åpne og får flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: ' + v.vowPct + ' % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
       sec("Mot andre", '<p>Hver spiller har <b>72 timer</b> på et trekk. Går tiden ut, er spillet over og den andre vinner. Slå på varsler i innstillingene for å få beskjed når det er din tur. Ratingen starter på 1200 og går opp eller ned etter hvert spill mot en annen spiller.</p>') +
       '</div></div></div>';
   }
@@ -211,7 +211,7 @@ var App = (function () {
   function histView(v) {
     return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Trekkhistorikk"><div class="helpsheet">' +
       '<div class="helphead"><b>Trekkhistorikk</b><button type="button" class="x" aria-label="Lukk"' + on(v.closeHist) + '>' + IC.close + '</button></div>' +
-      '<div class="scroll helpbody">' + (v.histRows.some(function (r) { return r.url; }) ? '<p class="fine">Trykk på et ord for å se hva det betyr i ordbokene.no.</p>' : '') + (v.histRows.length ? '<div class="group statg">' + each(v.histRows, function (r) {
+      '<div class="scroll helpbody">' + (v.histRows.some(function (r) { return r.url; }) ? '<p class="fine">Trykk på et ord for å se hva det betyr i ' + esc(v.dictHost) + '.</p>' : '') + (v.histRows.length ? '<div class="group statg">' + each(v.histRows, function (r) {
         return '<div class="srow hrow"><span><b>' + esc(r.who) + '</b> ' + (r.url ? '<a class="wlink" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.what) + '</a>' : esc(r.what)) + (r.best ? '<small>' + esc(r.best) + '</small>' : '') + '</span><b>' + esc(r.pts) + '</b></div>';
       }) + '</div>' : '<p>Ingen trekk ennå.</p>') + '</div></div></div>';
   }
@@ -219,7 +219,7 @@ var App = (function () {
   function chatView(v) {
     var body = !v.chatOn ? '<p>' + (v.chatWhy === "mine" ? 'Du har slått av reaksjoner og chat i innstillingene.' : v.chatWhy === "blocked" ? 'Chatten er stengt fordi en av dere har blokkert den andre.' : v.chatWhy === "opp" ? esc(v.opp) + ' har slått av reaksjoner og chat.' : 'Chatten er ikke tilgjengelig i dette spillet.') + '</p>' :
       '<div class="reacts">' + each(v.reactions, function (r) { return '<button type="button" class="react"' + on(r.send) + '>' + r.r + '</button>'; }) + '</div>' +
-      '<div class="cmsgs">' + (v.chatList.length ? each(v.chatList, function (c) { return '<div class="' + c.cls + '">' + esc(c.text) + '</div>'; }) : '<p class="fine">Ingen meldinger ennå. Send en reaksjon eller skriv noe kort.</p>') + '</div>' +
+      '<div class="cmsgs">' + (v.chatList.length ? each(v.chatList, function (c) { return '<div class="' + c.cls + '" translate="no">' + esc(c.text) + '</div>'; }) : '<p class="fine">Ingen meldinger ennå. Send en reaksjon eller skriv noe kort.</p>') + '</div>' +
       '<div class="crow"><input id="chatin" class="inp" type="text" maxlength="140" autocomplete="off" placeholder="Skriv en kort melding" value="' + esc(v.chatIn) + '" data-input="onChatIn"><button type="button" class="act green"' + on(v.sendChatIn) + '>Send</button></div>';
     return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Reaksjoner og chat"><div class="helpsheet">' +
       '<div class="helphead"><b>' + esc(v.opp || 'Chat') + '</b><span class="hbtns">' + (v.openOppPlayer ? '<button type="button" class="pill small"' + on(v.openOppPlayer) + '>Blokker eller rapporter</button>' : '') + '<button type="button" class="x" aria-label="Lukk"' + on(v.closeChat) + '>' + IC.close + '</button></span></div>' +
@@ -267,7 +267,7 @@ var App = (function () {
         (e.remove ? '<button type="button" class="chip"' + on(e.remove) + '>Slett brettet</button>' : '') +
       '</div>' +
       '<div class="edbtns"><button type="button" class="act full"' + on(e.save) + '>Lagre</button><button type="button" class="act green full"' + on(e.play) + '>Lagre og spill</button></div>' +
-      '<p class="fine">Egne brett ligger på denne telefonen og kan spilles mot maskinen, på én telefon eller alene. Bokstavene trekkes med samme fordeling som ellers: 40 % vokaler, 2 % jokere.</p>' +
+      '<p class="fine">Egne brett ligger på denne telefonen og kan spilles mot maskinen, på én telefon eller alene. Bokstavene trekkes med samme fordeling som ellers: ' + v.vowPct + ' % vokaler, 2 % jokere.</p>' +
       '</div></div>';
   }
   function accountView(v) {
@@ -286,27 +286,34 @@ var App = (function () {
       '<input id="find" class="inp big" type="search" autocomplete="off" autocapitalize="none" placeholder="Søk etter brukernavn" value="' + esc(v.search) + '" data-input="onSearch">' +
       '<div data-region="found">' + (v.findMsg ? '<div class="note">' + esc(v.findMsg) + '</div>' : '') +
       '<div class="group">' + each(v.found, function (u) {
-        return '<div class="opt"><span class="av">' + esc(u.initial) + '</span><span class="ot"><span class="t">' + esc(u.name) + '</span></span><button type="button" class="pill small"' + on(u.add) + '>Legg til venn</button><button type="button" class="act green go"' + on(u.play) + '>Spill</button></div>';
+        return '<div class="opt"><span class="av">' + esc(u.initial) + '</span><span class="ot"><span class="t" translate="no">' + esc(u.name) + '</span></span><button type="button" class="pill small"' + on(u.add) + '>Legg til venn</button><button type="button" class="act green go"' + on(u.play) + '>Spill</button></div>';
       }) + '</div></div></div></div>';
   }
   function friendsView(v) {
     return '<div class="screen sub">' + head("Venner", v.back) + '<div class="scroll">' +
       (v.friendsMsg ? '<div class="note">' + esc(v.friendsMsg) + '</div>' : '') +
       '<div class="group">' + each(v.friendRows, function (u) {
-        return '<button type="button" class="opt"' + on(u.play) + '><span class="av">' + esc(u.initial) + '</span><span class="ot"><span class="t">' + esc(u.name) + '</span><span class="s">Start et spill</span></span><span class="chev">' + IC.chev + '</span></button>';
+        return '<button type="button" class="opt"' + on(u.play) + '><span class="av">' + esc(u.initial) + '</span><span class="ot"><span class="t" translate="no">' + esc(u.name) + '</span><span class="s">Start et spill</span></span><span class="chev">' + IC.chev + '</span></button>';
       }) + '</div></div></div>';
   }
   function settingsView(v) {
     return '<div class="screen sub">' + head("Innstillinger", v.back) + '<div class="scroll">' +
+      '<h2 class="sec">Språk i appen</h2><div class="group" role="radiogroup" aria-label="Språk i appen" translate="no">' + each(v.uiLangs, function (k) {
+        return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t">' + esc(k.name) + '</span></span></button>';
+      }) + '</div>' +
       '<h2 class="sec">Tema</h2><div class="group" role="radiogroup" aria-label="Tema">' + each(v.themes, function (t) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + t.on + '"' + on(t.pick) + '><span class="dot' + (t.on ? ' on' : '') + '"></span><span>' + esc(t.name) + '</span></button>';
       }) + '</div>' +
       '<h2 class="sec">Mot andre</h2><div class="group"><div class="opt"><span class="ot"><span class="t">Reaksjoner og chat</span><span class="s">' + (v.chatPref ? 'På: send 👏 😮 😅 og korte meldinger i spill mot andre.' : 'Av: du ser ingen meldinger, og ingen kan sende deg noen.') + '</span></span><button type="button" class="pill small"' + on(v.toggleChat) + '>' + (v.chatPref ? 'Slå av' : 'Slå på') + '</button></div></div>' +
-      (v.blockedList.length ? '<h2 class="sec">Blokkerte spillere</h2><div class="group">' + each(v.blockedList, function (u) { return '<div class="opt"><span class="ot"><span class="t">' + esc(u.name) + '</span></span><button type="button" class="pill small"' + on(u.unblock) + '>Opphev</button></div>'; }) + '</div>' : '') +
+      (v.blockedList.length ? '<h2 class="sec">Blokkerte spillere</h2><div class="group">' + each(v.blockedList, function (u) { return '<div class="opt"><span class="ot"><span class="t" translate="no">' + esc(u.name) + '</span></span><button type="button" class="pill small"' + on(u.unblock) + '>Opphev</button></div>'; }) + '</div>' : '') +
       '<h2 class="sec">Spilltype</h2><div class="group" role="radiogroup" aria-label="Spilltype">' + each(v.kinds, function (k) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t">' + esc(k.name) + '</span><span class="s">' + esc(k.say) + '</span></span></button>';
       }) + '</div>' +
       '<p class="fine">Tall og Sett har egne, mer åpne brett. Dagens brett er alltid med bokstaver.</p>' +
+      '<h2 class="sec">Språk i spillet</h2><div class="group" role="radiogroup" aria-label="Språk i spillet">' + each(v.langs, function (k) {
+        return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t">' + esc(k.name) + '</span><span class="s">' + esc(k.say) + '</span></span></button>';
+      }) + '</div>' +
+      '<p class="fine">Gjelder nye spill med bokstaver. Et spill mot andre spilles i språket den som startet det valgte. Dagens brett er på norsk.' + (v.fiMissing ? ' Finsk kommer når ordlista fra Kotus er lagt inn.' : '') + '</p>' +
       '<h2 class="sec">Bakgrunn</h2><div class="group" role="radiogroup" aria-label="Bakgrunn">' + each(v.bgs, function (b) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + b.on + '"' + on(b.pick) + '><span class="dot' + (b.on ? ' on' : '') + '"></span><span class="swatch" style="background:' + b.hex + '"></span><span>' + esc(b.name) + '</span></button>';
       }) + '</div>' +
@@ -374,6 +381,7 @@ var App = (function () {
     var v = comp.renderVals();
     var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
     var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "");
+    if (window.trHtml) html = trHtml(html);
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
     // Keep where each scrolling list was when the same screen is drawn again (a swipe on the board picker
@@ -553,7 +561,9 @@ window.addEventListener("DOMContentLoaded", function () {
   // The chosen theme and background before the first paint, so the screen does not flash the default green.
   var read = function (k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
   window.applyTheme(read("ordspill/tema/v1", "system"), read("ordspill/bakgrunn/v1", "filt"));
-  App.boot();
+  // In another language than Norwegian the catalogue comes first (from the phone's cache after the first time).
+  var go = function () { App.boot(); };
+  if (window.I18N && I18N.ready) I18N.ready.then(go, go); else go();
 });
 
 if ("serviceWorker" in navigator) {
