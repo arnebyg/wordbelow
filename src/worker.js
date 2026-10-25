@@ -54,6 +54,9 @@ export class Hub extends DurableObject {
     try { this.sql.exec("ALTER TABLE users ADD COLUMN chat INTEGER NOT NULL DEFAULT 1"); } catch (e) { /* already there */ }
     // The language a game's letters and word list are in (no, nl, fi); both players play the one it was started in.
     try { this.sql.exec("ALTER TABLE games ADD COLUMN lang TEXT NOT NULL DEFAULT 'no'"); } catch (e) { /* already there */ }
+    // A finished game a player has removed from their list (hid0 for p0, hid1 for p1); it still counts in the statistics.
+    try { this.sql.exec("ALTER TABLE games ADD COLUMN hid0 INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
+    try { this.sql.exec("ALTER TABLE games ADD COLUMN hid1 INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     // The language the app on that phone is shown in; its push messages come in the same.
     try { this.sql.exec("ALTER TABLE subs ADD COLUMN lang TEXT NOT NULL DEFAULT 'no'"); } catch (e) { /* already there */ }
     this.sql.exec(`CREATE TABLE IF NOT EXISTS blocks (uid TEXT NOT NULL, bid TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (uid, bid));
@@ -296,7 +299,7 @@ export class Hub extends DurableObject {
     }
 
     if (path === "/games" && m === "GET") {
-      const rows = this.all("SELECT * FROM games WHERE (p0 = ? OR p1 = ?) AND (status != 'done' OR updated > ?) ORDER BY updated DESC LIMIT 60", me.id, me.id, Date.now() - 14 * 864e5);
+      const rows = this.all("SELECT * FROM games WHERE ((p0 = ? AND hid0 = 0) OR (p1 = ? AND hid1 = 0)) AND (status != 'done' OR updated > ?) ORDER BY updated DESC LIMIT 60", me.id, me.id, Date.now() - 14 * 864e5);
       return json({ games: rows.map((g) => this.summary(g, me.id)) });
     }
     if (path === "/games" && m === "POST") {
@@ -338,7 +341,7 @@ export class Hub extends DurableObject {
 
     // Reactions and short messages in a game between two people; off for both when either has turned them off.
     if (path === "/me/chat" && m === "POST") { this.sql.exec("UPDATE users SET chat = ? WHERE id = ?", body.on ? 1 : 0, me.id); return json({ ok: true }); }
-    const gm = path.match(/^\/games\/([0-9a-f]{16})(\/move|\/resign|\/cancel|\/accept|\/decline|\/chat)?$/);
+    const gm = path.match(/^\/games\/([0-9a-f]{16})(\/move|\/resign|\/cancel|\/accept|\/decline|\/chat|\/hide)?$/);
     if (gm) {
       const g = this.one("SELECT * FROM games WHERE id = ?", gm[1]);
       if (!g || (g.p0 !== me.id && g.p1 !== me.id)) return err(404, "Fant ikke spillet.");
@@ -391,6 +394,11 @@ export class Hub extends DurableObject {
         if (g.status !== "offer" || g.p1 !== me.id) return err(409, "Utfordringen er ikke åpen lenger.");
         this.sql.exec("DELETE FROM games WHERE id = ?", g.id);
         this.notify(g.p0, me.name + " sa nei takk", me.name + " avslo utfordringen.", null);
+        return json({ ok: true });
+      }
+      if (gm[2] === "/hide" && m === "POST") {
+        if (g.status !== "done") return err(409, "Bare et ferdig spill kan fjernes fra lista.");
+        this.sql.exec("UPDATE games SET " + (you === 0 ? "hid0" : "hid1") + " = 1 WHERE id = ?", g.id);
         return json({ ok: true });
       }
       if (gm[2] === "/cancel" && m === "POST") {

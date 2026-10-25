@@ -798,6 +798,17 @@ class Component extends DCLogic {
     api("/join", { method: "POST", body: { code: c } }).then(function (d) { self.setState({ codeIn: "" }); self.openOnline(d.game.id); },
       function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
   }
+  resignFromList(g) {
+    var self = this;
+    if (this.state.cardAsk !== g.id) { this.setState({ cardAsk: g.id, homeMsg: "Trykk «Gi opp – sikker?» for å gi opp spillet mot " + (g.opp ? g.opp.name : "motspilleren") + ". Motspilleren vinner." }); return; }
+    this.setState({ cardAsk: null, homeMsg: "" });
+    api("/games/" + g.id + "/resign", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: e.message }); });
+  }
+  hideGame(g) {
+    var self = this;
+    this.setState({ games: (this.state.games || []).filter(function (x) { return x.id !== g.id; }) });
+    api("/games/" + g.id + "/hide", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: e.message }); self.refreshGames(); });
+  }
   cancelInvite(g) { var self = this; api("/games/" + g.id + "/cancel", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: e.message }); }); }
   // An online game: the board comes from its layout and seed, the rest from the state the phones store on the server.
   openOnline(id) {
@@ -1279,7 +1290,10 @@ class Component extends DCLogic {
           (L ? L.name : g.layout) + " · " + sc + (g.deadline ? " · " + (g.myTurn ? "du har " : "de har ") + left(g.deadline) : "") + (g.last ? " · " + g.last : "");
         return { id: g.id, initial: (who[0] || "?").toUpperCase(), who: who, line: line, when: ago(g.updated), cls: "game" + (g.myTurn ? " mine" : ""), mine: !!g.myTurn,
           open: function () { if (g.status === "waiting" && g.kind === "invite") self.shareCode(g); else self.openOnline(g.id); },
-          canCancel: g.status === "waiting" || g.status === "offer", cancel: function () { self.cancelInvite(g); } };
+          // Each card can be ended from the list: an invitation withdrawn, a game resigned (two taps), a finished one removed.
+          end: g.status === "waiting" || g.status === "offer" ? (g.incoming ? null : { label: "Trekk", go: function () { self.cancelInvite(g); } }) :
+            g.status === "active" ? { label: st.cardAsk === g.id ? "Gi opp – sikker?" : "Gi opp", warn: st.cardAsk === g.id, go: function () { self.resignFromList(g); } } :
+            { label: "Fjern", go: function () { self.hideGame(g); } } };
       };
       var D = dailyOf(dayKey()), dd = dailyDone(), today = dd[D.key], streak = streakOf(dd);
       v.daily = { name: D.name, done: !!today, score: today ? today.score : null, streak: streak,

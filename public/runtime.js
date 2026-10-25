@@ -135,7 +135,7 @@ var App = (function () {
       return each(sec.rows, function (r) {
         return '<div class="gcard' + (r.mine ? ' mine' : '') + '"><button type="button" class="gopen"' + on(r.open) + '><span class="gtop"><span class="av">' + esc(r.initial) + '</span><span class="badge' + (r.mine ? ' on' : '') + '">' + esc(sec.badge) + '</span></span>' +
           '<span class="gn">' + esc(r.who) + '</span><span class="gl">' + esc(r.line) + '</span><span class="gw">' + esc(r.when) + '</span></button>' +
-          (r.canCancel ? '<button type="button" class="gx"' + on(r.cancel) + '>Trekk</button>' : '') + '</div>';
+          (r.end ? '<button type="button" class="gx' + (r.end.warn ? ' warn' : '') + '"' + on(r.end.go) + '>' + esc(r.end.label) + '</button>' : '') + '</div>';
       });
     });
     var extra = '';
