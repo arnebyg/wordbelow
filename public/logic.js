@@ -1010,6 +1010,7 @@ class Component extends DCLogic {
   }
   bestWord() { return this.candidates()[0] || null; }
   // Moves. Each returns true when the move was made.
+  // A word laid says the word and its points once; alone, also how close it came to the best move there was.
   playWord() {
     var self = this, s2 = this.state, w2 = this.word(s2.sel), human = this.humanMove();
     var kind = this.kind(), chars = s2.sel.map(function (id) { return self.chOf(id); });
@@ -1030,8 +1031,7 @@ class Component extends DCLogic {
     s2.sel.forEach(function (id) { if (id === "eq") return; if (id[0] === "p") usedP.push(+id.slice(1)); else gone[id] = true; });
     var pocket = s2.pocket.filter(function (_, i) { return usedP.indexOf(i) < 0; });
     var who = this.duel() ? (this.online() ? (s2.online.you === s2.turn ? (s2.account ? s2.account.name : "Du") : s2.online.oppName) : this.names()[s2.turn]) + " la " : "";
-    this.setState({ log: (s2.log || []).concat([entry]), gone: gone, sel: [], pocket: pocket, confirm: null, passes: 0, score: s2.score + ev.total, words: s2.words.concat([{ w: w2, pts: ev.total }]), pop: "+" + ev.total, msg: who + "«" + w2 + "» +" + ev.total + ": " + ev.parts.join(" · ") + (pct === null ? "" : pct >= 100 ? " · Beste trekk!" : " · " + pct + " % av beste trekk"), tone: "good" });
-    this.timers.push(setTimeout(function () { self.setState({ pop: null }); }, 1200));
+    this.setState({ log: (s2.log || []).concat([entry]), gone: gone, sel: [], pocket: pocket, confirm: null, passes: 0, score: s2.score + ev.total, words: s2.words.concat([{ w: w2, pts: ev.total }]), msg: who + "«" + w2 + "» +" + ev.total + (this.duel() || pct === null ? "" : pct >= 100 ? " · Beste trekk!" : " · " + pct + " % av beste trekk"), tone: "good" });
     if (ev.cleared) { if (this.online()) this.finishGame(); else this.timers.push(setTimeout(function () { self.finishGame(); }, 1300)); }
     else this.endTurn(this.online() ? 0 : 1300);
     if (human) this.adAfterMove();
