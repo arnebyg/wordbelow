@@ -28,7 +28,6 @@
 <div class="mark"><span class="lw">word</span><span class="lb">below</span></div>
 <span class="spop" style="left:44px;top:96px">+12</span><span class="spop" style="right:40px;top:120px;animation-delay:.1s">+20</span>
 <span class="spark" style="background:#F2C46B;--dx:-150px;--dy:-190px"></span><span class="spark" style="background:#FBF6EA;--dx:140px;--dy:-210px"></span><span class="spark" style="background:#E8875A;--dx:-170px;--dy:60px"></span><span class="spark" style="background:#7FD1B8;--dx:165px;--dy:80px"></span><span class="spark" style="background:#F2C46B;--dx:40px;--dy:-240px"></span><span class="spark" style="background:#FBF6EA;--dx:-60px;--dy:220px"></span><span class="spark" style="background:#E8875A;--dx:110px;--dy:-120px"></span><span class="spark" style="background:#7FD1B8;--dx:-120px;--dy:-80px"></span>
-<div class="tag">Finn ordene som ligger under.</div>
 </div></div>
 <script>
 // Once per session; a tap ends it at once.
@@ -37,7 +36,7 @@
   try { seen = sessionStorage.getItem("wb-splash") === "1"; sessionStorage.setItem("wb-splash", "1"); } catch (e) {}
   if (seen || /[?&]nosplash/.test(location.search)) { el.remove(); return; }
   var done = function () { if (!el.parentNode) return; el.classList.add("out"); setTimeout(function () { el.remove(); }, 400); };
-  var t = setTimeout(done, matchMedia("(prefers-reduced-motion: reduce)").matches ? 900 : 3000);
+  var t = setTimeout(done, matchMedia("(prefers-reduced-motion: reduce)").matches ? 900 : 4000);
   el.addEventListener("pointerdown", function () { clearTimeout(t); done(); });
 })();
 </script>

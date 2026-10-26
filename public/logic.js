@@ -1345,7 +1345,7 @@ class Component extends DCLogic {
       // The six ways to start, as letter tiles (Meny-A). The machine's level shows under them when M is chosen.
       var TILE = { cpu: ["M", 3, "Lett til sterk"], random: ["T", 1, "Finn en motspiller"], solo: ["A", 1, "Toppliste per brett"],
         friend: ["V", 4, "Velg eller inviter"], local: ["E", 2, "Over bordet"], code: ["K", 5, "Bli med i et spill"] };
-      v.modes = ["cpu", "random", "solo", "friend", "local", "code"].map(function (id) {
+      v.modes = ["random", "friend", "solo", "cpu", "local", "code"].map(function (id) {
         var p = PICKS.filter(function (x) { return x.id === id; })[0], t = TILE[id];
         return { k: t[0], p: t[1], t: p.name, s: t[2], on: id === P.id ? "true" : "false", pick: function () { choose(id); } };
       });
