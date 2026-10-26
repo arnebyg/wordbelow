@@ -94,6 +94,8 @@ som ellers vises med tallene skjult.
   som nettapp kan det for eksempel være Stripe. Premium lagres foreløpig bare på telefonen
   (`ordspill/premium/v1`); med ekte betaling bør serveren bekrefte kjøpet og lagre det på kontoen.
 - **For testing** har Premium-siden en bryter som slår Premium av og på på denne telefonen.
+- **Senere (eieren, 26. oktober 2026):** mot maskinen og alene skal reklamen over hele skjermen komme hvert
+  5. trekk, ikke etter hvert trekk. Ikke bygd ennå; `adAfterMove()` i `public/logic.js` er stedet.
 
 ## Dagens brett, utfordringer, historikk, delte brett og sesongbrett
 
