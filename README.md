@@ -152,6 +152,13 @@ egen pose, poeng og vokalandel (`LANGS` øverst i `public/logic.js`):
 | Norsk | NSF-ordlista 2026 (`words/nsf-2026.txt`) | Scrabble-posen med seks konsonanter byttet mot vokaler | 40 % |
 | Nederlandsk | OpenTaal 2.20.23, BSD / CC BY 3.0 (`words/nl.txt`, 296 451 ord) | den nederlandske Scrabble-posen, 102 brikker | 38 % |
 | Finsk | Kotus, Nykysuomen sanalista, CC BY 4.0 (`words/fi.txt`) | den finske Scrabble-posen, 100 brikker | 46 % |
+| Engelsk | ENABLE, Alan Beale og M. Cooper, fri til allmenn bruk (`words/en.txt`, 172 823 ord, med bøyde former) | den engelske Scrabble-posen, 100 brikker | 45 % (Y regnet som vokal) |
+
+**Engelsk** bruker ENABLE fordi den er fri for alle, også kommersielt. Collins Scrabble Words og NASPA Word List
+er turneringslistene, men krever lisens (NWL er gratis bare under ca. 1 000 USD i årsinntekt; ellers avtales prisen).
+Posen er den vanlige engelske Scrabble-posen: simulert mot ENABLE (200 brett per form, en spiller med ord på 3–5
+bokstaver) ble rundt 5 % av brikkene liggende, mot 9–14 % for norsk, så den er ikke justert. ENABLE har noen
+støtende ord; de er ikke filtrert bort.
 
 Et spill mot andre spilles i språket den som startet det valgte (lagret per spill på serveren), og tilfeldig
 motspiller finnes bare blant dem som søker i samme språk. Dagens brett er alltid norsk. Topplistene er per språk.

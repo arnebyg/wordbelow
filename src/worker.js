@@ -19,7 +19,7 @@ const rid = (n) => { const a = new Uint8Array(n); crypto.getRandomValues(a); ret
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const code = () => { const a = new Uint8Array(6); crypto.getRandomValues(a); return Array.from(a, (b) => CODE_CHARS[b % CODE_CHARS.length]).join(""); };
 const NAME_RE = /^[A-Za-z0-9ÆØÅæøå_.-]{3,16}$/;
-const LANGS = ["no", "nl", "fi"];
+const LANGS = ["no", "nl", "fi", "en"];
 const langOf = (body) => LANGS.includes(body && body.lang) ? body.lang : "no";
 const MOVE_LIMIT = 72 * 3600e3, REMIND_BEFORE = 12 * 3600e3;
 
@@ -52,7 +52,7 @@ export class Hub extends DurableObject {
     try { this.sql.exec("ALTER TABLE games ADD COLUMN rated INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE users ADD COLUMN rating REAL NOT NULL DEFAULT 1200"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE users ADD COLUMN chat INTEGER NOT NULL DEFAULT 1"); } catch (e) { /* already there */ }
-    // The language a game's letters and word list are in (no, nl, fi); both players play the one it was started in.
+    // The language a game's letters and word list are in (no, nl, fi, en); both players play the one it was started in.
     try { this.sql.exec("ALTER TABLE games ADD COLUMN lang TEXT NOT NULL DEFAULT 'no'"); } catch (e) { /* already there */ }
     // A finished game a player has removed from their list (hid0 for p0, hid1 for p1); it still counts in the statistics.
     try { this.sql.exec("ALTER TABLE games ADD COLUMN hid0 INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }

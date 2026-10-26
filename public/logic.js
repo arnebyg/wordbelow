@@ -8,6 +8,8 @@ var LEN_BONUS = 5, JOKER_EAGER = 8;
 // near the 39 % vowels in the 3–5-letter words of NSF-ordlista; Scrabble's own 34 left far more tiles stuck.
 // Dutch: the Dutch Scrabble set, 102 tiles, 38 vowels of 100 letters (38 % in the 3–5-letter words of OpenTaal).
 // Finnish: the Finnish Scrabble set, 100 tiles, 45 vowels of 98 letters; Finnish words are vowel-rich.
+// English: ENABLE (public domain) and the English Scrabble set, 100 tiles, 44 vowels (Y counted) of 98 letters.
+// Simulated against ENABLE (200 boards per shape, a 3–5-letter player) it left about 5 % of the tiles, so it is used as it is.
 var LANGS = {
   no: { name: "Norsk", list: "NSF-ordlista 2026", credit: "NSF-ordlista 2026, Norsk Scrabbleforbund", url: "words/nsf-2026.txt", re: /^[A-ZÆØÅ]+$/, vshare: 0.4,
     dict: "https://ordbokene.no/nob/bm,nn/", vow: "AEIOUYÆØÅ", alphabet: "ABCDEFGHIJKLMNOPRSTUVWYÆØÅ",
@@ -27,7 +29,13 @@ var LANGS = {
     dict: "https://www.kielitoimistonsanakirja.fi/#/", vow: "AEIOUYÄÖ", alphabet: "ABCDEFGHIJKLMNOPRSTUVYÄÖ",
     pts: { A:1,I:1,N:1,T:1,E:1,S:1,K:2,L:2,O:2,Ä:2,U:3,M:3,H:4,J:4,P:4,R:4,V:4,Y:4,D:7,Ö:7,B:8,F:8,G:8,C:10 },
     bag: "AAAAAAAAAABCDEEEEEEEEFGHHIIIIIIIIIIJJKKKKKLLLLLMMMNNNNNNNNNOOOOOPPRRSSSSSSSTTTTTTTTTUUUUVVYYÄÄÄÄÄÖ**",
-    words: "AI EI JA ON SE ME TE NE KUU MAA SUU TIE YÖ PUU KALA KISSA KOIRA LEIPÄ MAITO METSÄ SAUNA TALO VESI AURINKO JÄRVI KIRJA OMENA PÖYTÄ TUOLI" }
+    words: "AI EI JA ON SE ME TE NE KUU MAA SUU TIE YÖ PUU KALA KISSA KOIRA LEIPÄ MAITO METSÄ SAUNA TALO VESI AURINKO JÄRVI KIRJA OMENA PÖYTÄ TUOLI" },
+  en: { name: "English", list: "ENABLE", credit: "ENABLE, Alan Beale and M. Cooper (public domain)", url: "words/en.txt", re: /^[A-Z]+$/,
+    dict: "https://www.merriam-webster.com/dictionary/", vow: "AEIOUY", alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    pts: { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10 },
+    bag: "AAAAAAAAABBCCDDDDEEEEEEEEEEEEFFGGGHHIIIIIIIIIJKLLLLMMNNNNNNOOOOOOOOPPQRRRRRRSSSSTTTTTTUUUUVVWWXYYZ**",
+    words: "AN AS AT BE BY DO GO HE IF IN IS IT ME MY NO OF ON OR SO TO UP US WE ACT AGE AND ANT ARM ART BAD BAG BAT BED BIG BOX BOY BUS CAT COW CUP DAY DOG EAR EAT EGG END EYE FAR FIX FLY FUN GAS HAT HOT ICE INK JAM KEY LEG LID MAP MUD NET NUT OAK OIL OWL PAN PEN PIG RAT RED SEA SUN TEA TOY VAN WEB " +
+      "BAKE BIRD BOAT BOOK CAKE CARD DOOR DUCK FISH FROG GAME GOLD HAND HOME KING LAMP LION MILK MOON NEST PARK RAIN ROAD ROSE SALT SAND SHIP SNOW STAR TREE WIND WORD BREAD STONE WATER" }
 };
 var LANG_KEY = "ordspill/spillsprak/v1", LANG = null;
 var PTS, BAG, VOW, RARE, ALPHABET, WORDS, WORDSET, DICT = null, SEARCH = null, DICT_URL;
@@ -46,7 +54,7 @@ function useLang(c) {
 function langPref() {
   var c = lsGet(LANG_KEY); if (LANGS[c]) return c;
   var n = String((navigator.languages && navigator.languages[0]) || navigator.language || "").slice(0, 2).toLowerCase();
-  return n === "nl" ? "nl" : "no";
+  return n === "nl" ? "nl" : n === "en" ? "en" : "no";
 }
 // A board with fewer tiles draws from the same bag in the same shares: the bag's vowel share, 2 % jokers, the
 // rest consonants, each picked at random from the bag's own, so their mix follows the bag too.
