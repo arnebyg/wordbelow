@@ -1,6 +1,8 @@
 // The full-screen ad after each move is paused while the app is being developed; set to true to turn it on.
 var AD_FULL_ON = false;
 var LEN_BONUS = 5, JOKER_EAGER = 8;
+// Alone, a game lasts 10 minutes from the first tap on a tile; when the time is up the game is handed in.
+var SOLO_MS = 10 * 60e3;
 // The game languages. Each has its own tiles, points, vowels and word list; useLang() puts one in the globals
 // below (PTS, BAG, VOW, RARE, ALPHABET, WORDS, DICT, SEARCH) so the engine reads them as before.
 // Norwegian: the Norwegian Scrabble set with six consonants swapped for vowels: 100 tiles, two of them blank
@@ -516,7 +518,7 @@ class Component extends DCLogic {
     if (kindOf(S.L) === "ord" && !DICT && !LANGS[c].failed) loadDict(function (ok) {
       if (self.state && self.state.lang === c) self.setState(ok ? {} : { homeMsg: "Fant ikke ordlista for " + LANGS[c].name + ". Bruker en liten testliste." });
     }, c);
-    return { lay: S.L.id, seed: seed || 0, lang: LANG, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], hint: false, pop: null,
+    return { lay: S.L.id, seed: seed || 0, lang: LANG, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], hint: false, soloT0: null, pop: null,
       turn: 0, passes: 0, busy: false, P: [{ score: 0, pocket: [], words: [] }, { score: 0, pocket: [], words: [] }], log: [], daily: null,
       phase: "play", played: null, submitted: false, confirm: null, introMsg: null,
       msg: msg || (duel ? this.turnSay(0) + " " : "") + S.L.name + ": " + S.L.sub + ". " + openSay(S.L).replace(/^./, function (x) { return x.toUpperCase(); }) + ".", tone: "info" };
@@ -535,10 +537,18 @@ class Component extends DCLogic {
     this.pushCheck();
     this.refreshGames();
     this.poll = setInterval(function () { self.tick(); }, 5000);
+    this.clock = setInterval(function () { self.soloTick(); }, 1000);
     document.addEventListener("visibilitychange", function () { if (!document.hidden) self.tick(true); });
   }
   componentWillUnmount() { this.timers.forEach(clearTimeout); clearInterval(this.poll); if (this.unsub) this.unsub(); }
   // Every 5 s while the app is open: the home screen every 20 s, and an online game where it is the other player's turn.
+  // Alone: the clock redraws each second and hands the game in when the 10 minutes are up.
+  soloLeft() { var st = this.state; return st.soloT0 ? Math.max(0, SOLO_MS - (Date.now() - st.soloT0)) : SOLO_MS; }
+  soloTick() {
+    var st = this.state;
+    if (st.phase !== "play" || this.duel() || !st.soloT0) return;
+    if (this.soloLeft() <= 0) { this.setState({ timeUp: true }); this.finishGame(); } else this.setState({});
+  }
   tick(now) {
     if (document.hidden) return;
     var st = this.state;
@@ -1123,7 +1133,7 @@ class Component extends DCLogic {
       return;
     }
     var pen = 0;
-    var rec = { lay: st.lay, score: st.score, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
+    var rec = { lay: st.lay, timeUp: !!st.timeUp, score: st.score, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
     addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 });
     this.setState({ phase: "done", played: rec, submitted: false });
     this.celebrate(left === 0 ? { kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" } : { kind: "cheer", score: rec.score });
@@ -1590,7 +1600,7 @@ class Component extends DCLogic {
             var s0 = self.state, s = s0.sel.slice(), j = s.indexOf(id);
             if (j >= 0) { s.splice(j, 1); var ja = Object.assign({}, s0.jokerAs); delete ja[id]; self.setState({ sel: s, jokerAs: ja }); }
             else if (jk) self.setState({ picking: id });
-            else { s.push(id); self.setState({ sel: s }); }
+            else { s.push(id); self.setState(!self.duel() && !s0.soloT0 ? { sel: s, soloT0: Date.now(), timeUp: false } : { sel: s }); }
           }
         };
       });
@@ -1602,7 +1612,9 @@ class Component extends DCLogic {
         v.stats = order.map(function (i) { return { k: nm[i] + (st.turn === i && (!online || st.online.status === "active") ? " · tur" : ""), v: sc[i], last: lastOf(i), cls: st.turn === i ? "stat mine" : "stat" }; })
           .concat([{ k: "Åpne · igjen", v: nFree + " · " + v.left, cls: "stat" }]);
       } else {
-        v.stats = [{ k: "Poeng", v: st.score, cls: "stat mine" }, { k: "Igjen av " + this.S().pos.length, v: v.left, cls: "stat" }, { k: "Åpne nå", v: nFree, cls: "stat" }];
+        var ms = this.soloLeft(), sec = Math.ceil(ms / 1000);
+        v.stats = [{ k: "Poeng", v: st.score, cls: "stat mine" }, { k: "Igjen av " + this.S().pos.length, v: v.left, cls: "stat" },
+          { k: "Tid", v: Math.floor(sec / 60) + ":" + ("0" + sec % 60).slice(-2), cls: "stat" + (st.soloT0 && ms < 60e3 ? " warn" : "") }];
       }
       if (online) {
         v.onlineBar = { board: "Brett: " + S.L.name + (st.online.status === "waiting" ? " · venter på motspiller" : ""), resign: function () { self.resign(); }, canResign: st.online.status === "active" };
@@ -1692,7 +1704,7 @@ class Component extends DCLogic {
         return v;
       }
       v.score = rec.score;
-      v.doneSub = (rec.pen ? "−" + rec.pen + " for " + rec.pocketLeft + " i lommen · " : "") + rec.words + " ord · " + (rec.left ? rec.left + " brikker ble liggende" : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
+      v.doneSub = (rec.timeUp ? "Tiden gikk ut · " : "") + (rec.pen ? "−" + rec.pen + " for " + rec.pocketLeft + " i lommen · " : "") + rec.words + " ord · " + (rec.left ? rec.left + " brikker ble liggende" : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
       v.askName = !st.submitted && !!st.played;
       v.nameVal = st.name; v.onName = function (e) { self.state.name = e.target.value; self.setState({}); };
       v.submitOff = !(st.name || "").trim();
