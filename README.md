@@ -144,6 +144,8 @@ Ny tekst i appen: legg den norske teksten og den engelske inn i `public/i18n/en.
 `I18N.missing` i konsollen tekster som ser ut til å mangle. Et nytt språk: lag `public/i18n/<kode>.json`,
 legg koden i `UI_LANGS` i `public/i18n.js` og `src/i18n.js`, og filen i `FILES` i `public/sw.js`.
 
+**Senere (eieren, 26. oktober 2026):** språk i appen og språk i spillet bør følge hverandre (for eksempel engelsk app → engelske ord). Ikke endret ennå; i dag velges de hver for seg i Innstillinger, og appen har bare norsk og engelsk tekst mens spillet har fire språk.
+
 **Språk i spillet** (Innstillinger) styrer bokstavene og ordlista i nye spill med bokstaver. Hvert språk har sin
 egen pose, poeng og vokalandel (`LANGS` øverst i `public/logic.js`):
 
