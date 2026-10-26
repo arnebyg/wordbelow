@@ -22,7 +22,7 @@ var App = (function () {
     '<button type="button" class="back" aria-label="Til menyen"' + on(v.toMenu) + '><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13 4l-7 7 7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>' +
     '<div class="title"><span class="t1">' + esc(v.kicker) + '</span><span class="t2">' + esc(v.lsub) + '</span></div>' +
     '<span class="topr">' + (v.chatBtn ? '<button type="button" class="qb chatb' + (v.chatUnread ? ' unread' : '') + '" aria-label="Reaksjoner og chat"' + on(v.openChat) + '>' + IC.chat + '</button>' : '') + '<button type="button" class="qb" aria-label="Trekkhistorikk"' + on(v.openHist) + '>' + IC.list + '</button><button type="button" class="qb" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
-    '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>Hint −5</button></span>' +
+    '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>' + esc(v.hintLabel || "Hint −5") + '</button></span>' +
   '</div>' +
   '<div class="stats">' +
     each(v.stats, function (x) { return '<div class="' + x.cls + '"><span class="k">' + esc(x.k) + '</span><span class="v">' + esc(x.v) + '</span>' + (x.last ? '<span class="lastmv">' + esc(x.last) + '</span>' : '') + '</div>'; }) +
@@ -70,7 +70,8 @@ var App = (function () {
 '<div class="screen done">' +
   '<div class="head">' +
     '<span class="kick">' + esc(v.kicker) + '</span>' +
-    '<h1>' + esc(v.score) + '</h1>' +
+    '<div class="scorewrap"><h1' + (v.cheerAge !== null && v.cheerAge >= 900 ? ' class="glow" style="animation-delay:-' + (v.cheerAge - 900) + 'ms"' : '') + '>' + esc(v.cheerShown !== null ? v.cheerShown : v.score) + '</h1>' +
+      (v.cheerAge !== null && v.cheerAge >= 900 ? [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return '<span class="cheer" aria-hidden="true" style="left:calc(50% - 5px + ' + ((i - 3.5) * 16) + 'px);--dx:' + ((i - 3.5) * 9) + 'px;animation-delay:' + ((i % 4) * 80 - (v.cheerAge - 900)) + 'ms"></span>'; }).join("") : '') + '</div>' +
     '<span class="sub">' + esc(v.doneSub) + '</span>' +
   '</div>' +
   (v.askName ? '<div class="namebox"><label for="nm">Navn på topplista</label><div class="namerow">' +
@@ -159,8 +160,7 @@ var App = (function () {
       }) + '</div>' : '') +
       '<div class="ngpanel"><h2 class="sec">Nytt spill</h2>' +
         (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
-        '<div class="segs" role="group" aria-label="Hvor">' + each(v.tabs, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + '</button>'; }) + '</div>' +
-        '<div class="chips" role="group" aria-label="Motspiller">' + each(v.picks, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + '</button>'; }) + '</div>' +
+        '<div class="mo-grid" role="radiogroup" aria-label="Hvordan vil du spille?">' + each(v.modes, function (m) { return '<button type="button" class="mo-tile" role="radio" aria-checked="' + m.on + '"' + on(m.pick) + '><span class="mo-p" aria-hidden="true">' + m.p + '</span><span class="mo-k" aria-hidden="true">' + m.k + '</span><span class="mo-t">' + esc(m.t) + '</span><span class="mo-s">' + esc(m.s) + '</span></button>'; }) + '</div>' +
         extra +
         (v.pick !== "code" ? '<div class="boardpick">' +
           '<div class="preview' + (v.preview.slide ? ' slide-' + v.preview.slide : '') + '" data-swipe="swipe">' +
@@ -182,6 +182,33 @@ var App = (function () {
       '</div>';
   }
   // The rules and the scoring, over whatever screen is open; closing it leaves the game as it was.
+  var WREATH = (function () {
+    var CX = 150, CY = 142, R = 104, A0 = 100, A1 = 256, N = 12, side = "";
+    function pt(deg, r) { var a = deg * Math.PI / 180; return [CX + r * Math.cos(a), CY + r * Math.sin(a)]; }
+    var s0 = pt(A0 - 4, R), s1 = pt(A1 + 4, R);
+    side += '<path d="M' + s0[0].toFixed(1) + " " + s0[1].toFixed(1) + " A" + R + " " + R + " 0 0 1 " + s1[0].toFixed(1) + " " + s1[1].toFixed(1) + '" fill="none" stroke="url(#wgoldD)" stroke-width="4" stroke-linecap="round"/>';
+    for (var i = 0; i < N; i++) {
+      var t = i / (N - 1), deg = A0 + t * (A1 - A0), p = pt(deg, R), rot = deg + 90 + (i % 2 === 0 ? -38 : 38);
+      side += '<g transform="translate(' + p[0].toFixed(1) + " " + p[1].toFixed(1) + ") rotate(" + rot.toFixed(1) + ") scale(" + (1 - t * 0.25).toFixed(2) + ')"><path d="M0,0 C7,-9 25,-9 34,0 C25,9 7,9 0,0Z" fill="url(#wgold)" stroke="#7A5208" stroke-width=".8"/><path d="M2,0 L30,0" stroke="#A9761A" stroke-width=".8"/></g>';
+      if (i === 2 || i === 5 || i === 8) { var q = pt(deg + 6, R - 13); side += '<circle transform="translate(' + q[0].toFixed(1) + " " + q[1].toFixed(1) + ')" r="4.2" fill="url(#wgold)" stroke="#7A5208" stroke-width=".8"/>'; }
+    }
+    return '<defs><linearGradient id="wgold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FCE7A6"/><stop offset=".45" stop-color="#E9B949"/><stop offset="1" stop-color="#A9761A"/></linearGradient>' +
+      '<linearGradient id="wgoldD" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E2AE3C"/><stop offset="1" stop-color="#8E5E14"/></linearGradient>' +
+      '<linearGradient id="wrg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FBE39A"/><stop offset="1" stop-color="#C08A1E"/></linearGradient></defs>' +
+      '<g class="wreath"><g>' + side + '</g><g transform="translate(300 0) scale(-1 1)">' + side + '</g>' +
+      '<path d="M150,252 L128,276 L136,262 L120,262 Z" fill="#B3261E"/><path d="M150,252 L172,276 L164,262 L180,262 Z" fill="#B3261E"/>' +
+      '<path d="M136,246 Q150,238 164,246 Q150,262 136,246Z" fill="#D8463C" stroke="#7E1913" stroke-width="1"/><circle cx="150" cy="248" r="5.5" fill="#E9B949" stroke="#7A5208" stroke-width="1"/></g>';
+  })();
+  function winView(v) {
+    var w = v.win, rain = "";
+    for (var j = 0; j < 14; j++) rain += '<svg class="drop" viewBox="0 0 30 16" style="left:' + (4 + (j * 37) % 92) + '%;animation-duration:' + (2600 + (j % 5) * 450) + 'ms;animation-delay:' + (Math.round((j * 0.23) % 1.8 * 1000) - w.age) + 'ms"><path d="M0,8 C6,0 22,0 30,8 C22,16 6,16 0,8Z" fill="url(#wrg)"/></svg>';
+    return '<div class="winov" role="dialog" aria-modal="true" aria-label="' + esc(w.head) + '" style="--age:' + w.age + 'ms"' + on(v.winClose) + '>' +
+      '<div class="rain" aria-hidden="true">' + rain + '</div>' +
+      '<div class="wbox"><svg width="300" height="280" viewBox="0 0 300 280" role="img" aria-label="Gylden laurbærkrans">' + WREATH + '</svg>' +
+      '<div class="wsc wtxt"><b>' + esc(w.score) + '</b><span>POENG</span></div></div>' +
+      '<h1 class="wtxt">' + esc(w.head) + '</h1><span class="wsub wtxt">' + esc(w.sub) + '</span>' +
+      '<button type="button" class="act gold wtxt"' + on(v.winClose) + '>Se resultatet</button></div>';
+  }
   function helpView(v) {
     var sec = function (t, body) { return '<h2 class="sec">' + t + '</h2>' + body; };
     var rows = function (list) { return '<div class="group statg">' + list.map(function (r) { return '<div class="srow"><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join("") + '</div>'; };
@@ -195,11 +222,11 @@ var App = (function () {
         '<p><b>Stå over:</b> står begge over etter hverandre, er spillet slutt. Det er også slutt når brettet er ryddet. Alene trykker du «Lever» når du er ferdig.</p>' +
         '<p><b>Joker:</b> det ligger to jokere i brettet. Trykk en åpen joker og velg hvilken bokstav den skal være. Den gir 0 poeng, men bonusene for ordet gjelder.</p>') +
       sec("Poeng for et ord", '<p>Poengene regnes i denne rekkefølgen:</p>' + rows([
-        ["Bokstaver", "tallet på hver brikke"], ["Bokstavbonus 2×B / 3×B", "dobler eller tredobler den bokstaven"], ["Lag", "+1 for hvert lag brikken ligger over bunnen"],
-        ["Ordbonus 2×O / 3×O", "ganger bokstaver og lag"], ["Sjelden bokstav (" + esc(v.rareSay) + ")", "× 1,5"], ["Lengde", "+5 for hver bokstav over tre"],
-        ["Åpner 4 nye brikker eller flere", "+5"], ["Rydder hele brettet", "+50"], ["Hint", "−5"]]) +
-        '<p class="fine">Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Ligger brikkene til sammen 3 lag opp og ordet treffer 2×O, blir det (9 + 3) × 2 = 24, pluss 15 for seks bokstaver: 39 poeng.</p>') +
-      sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen, lagene og bonusene virker som ellers.</p>' +
+        ["Bokstaver", "tallet på hver brikke"], ["Bokstavbonus 2×B / 3×B", "dobler eller tredobler den bokstaven"],
+        ["Ordbonus 2×O / 3×O", "ganger bokstavene"], ["Lengde", "+5 for hver bokstav over tre"],
+        ["Rydder hele brettet", "+50"], ["Hint", "−5, én gang per spill"]]) +
+        '<p class="fine">Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Treffer ordet 2×O, blir det 9 × 2 = 18, pluss 15 for seks bokstaver: 33 poeng.</p>') +
+      sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen og bonusene virker som ellers.</p>' +
         '<p><b>Tall:</b> bygg et regnestykke som går opp, for eksempel 9 × 2 = 18. Sifre ved siden av hverandre blir ett tall, og det må være minst ett regnetegn. «=»-knappen er gratis og brukes én gang. Vanlig regnerekkefølge, og deling må gå opp. Poeng: siffer 1, + 1, − 2, × 3, ÷ 4, +5 per brikke over tre.</p>' +
         '<p><b>Sett:</b> hver brikke har form, farge og antall. Tre brikker er et sett når hver egenskap enten er lik på alle tre eller ulik på alle tre. Poeng: 3, +2 for hver egenskap som er ulik på alle.</p>') +
       sec("Brettene", '<p><b>Stramme</b> brett har få åpne brikker hele spillet. <b>Åpner seg</b> starter med rundt 8–11 åpne og får flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: ' + v.vowPct + ' % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
@@ -380,7 +407,7 @@ var App = (function () {
     H = [];
     var v = comp.renderVals();
     var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
-    var html = (V[v.phase] || homeView)(v) + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "");
+    var html = (V[v.phase] || homeView)(v) + (v.phase === "done" && v.win ? winView(v) : "") + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "");
     if (window.trHtml) html = trHtml(html);
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }

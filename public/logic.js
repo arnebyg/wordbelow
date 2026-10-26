@@ -503,7 +503,7 @@ class Component extends DCLogic {
     if (kindOf(S.L) === "ord" && !DICT && !LANGS[c].failed) loadDict(function (ok) {
       if (self.state && self.state.lang === c) self.setState(ok ? {} : { homeMsg: "Fant ikke ordlista for " + LANGS[c].name + ". Bruker en liten testliste." });
     }, c);
-    return { lay: S.L.id, seed: seed || 0, lang: LANG, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], pop: null,
+    return { lay: S.L.id, seed: seed || 0, lang: LANG, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], hint: false, pop: null,
       turn: 0, passes: 0, busy: false, P: [{ score: 0, pocket: [], words: [] }, { score: 0, pocket: [], words: [] }], log: [], daily: null,
       phase: "play", played: null, submitted: false, confirm: null, introMsg: null,
       msg: msg || (duel ? this.turnSay(0) + " " : "") + S.L.name + ": " + S.L.sub + ". " + openSay(S.L).replace(/^./, function (x) { return x.toUpperCase(); }) + ".", tone: "info" };
@@ -828,7 +828,7 @@ class Component extends DCLogic {
       var base = self.fresh(g.layout, null, g.seed, g.lang || "no"), P = s ? s.P : base.P, turn = g.turn;
       var o = { id: g.id, you: g.you, ver: g.ver, status: g.status, oppName: g.opp ? g.opp.name : "", oppId: g.opp ? g.opp.id : null, code: g.code, kind: g.kind };
       var next = Object.assign(base, { online: o, log: s && s.log ? s.log : [], gone: s ? s.gone : {}, jokerAs: s && s.jokerAs ? s.jokerAs : {}, P: P, turn: turn, passes: s ? s.passes : 0,
-        score: P[turn].score, pocket: P[turn].pocket, words: P[turn].words, mode: "duel", opp: "online" });
+        score: P[turn].score, pocket: P[turn].pocket, words: P[turn].words, hint: !!P[turn].hint, mode: "duel", opp: "online" });
       if (g.status === "waiting") next.msg = g.kind === "invite" ? "Venter på at noen blir med. Koden er " + g.code + "." : "Venter på en tilfeldig motspiller.";
       else next.msg = (turn === g.you ? "Din tur. " : o.oppName + " sin tur. ") + (s && s.last ? s.last : "Nytt spill på " + base.lay.replace(/^./, function (x) { return x.toUpperCase(); }) + ".");
       if (g.status === "done" && s && s.result) {
@@ -923,32 +923,26 @@ class Component extends DCLogic {
   }
   started() { var st = this.state; return st.words.length > 0 || st.P[0].words.length > 0 || st.P[1].words.length > 0 || Object.keys(st.gone).length > 0; }
   evaluate(sel) {
-    var st = this.state, S = this.S(), parts = [], base = 0, layer = 0, wm = 1, rare = false, self = this, kind = this.kind();
+    var st = this.state, parts = [], base = 0, wm = 1, self = this, kind = this.kind();
     sel = sel.filter(function (id) { return id !== "eq"; });
     sel.forEach(function (id) {
-      if (id[0] === "p") { var pc = st.pocket[+id.slice(1)]; if (kind === "ord" && RARE.indexOf(pc) >= 0) rare = true; base += self.ptsOf(pc); return; }
+      if (id[0] === "p") { base += self.ptsOf(st.pocket[+id.slice(1)]); return; }
       var raw = st.letters[id], p = self.ptsOf(raw), b = st.bonus[id];
-      if (kind === "ord" && RARE.indexOf(raw) >= 0) rare = true;
       if (b && b.t === "B") p *= b.m;
       if (b && b.t === "O") wm *= b.m;
-      layer += S.map[id].l; base += p;
+      base += p;
     });
     // Sett: 3 for a set and 2 more for each property that differs on all three, instead of length.
     if (kind === "sett" && sel.length === 3) { var cs = sel.map(function (id) { return settCard(self.chOf(id)); });
       base += 2 * ["s", "c", "n"].filter(function (k) { return cs[0][k] !== cs[1][k]; }).length; }
     parts.push((kind === "tall" ? "brikker " : kind === "sett" ? "sett " : "bokstaver ") + base);
-    if (layer) parts.push("lag +" + layer);
-    var s = (base + layer) * wm;
+    var s = base * wm;
     if (wm > 1) parts.push("×" + wm + " ord");
-    if (rare) { s = Math.round(s * 1.5); parts.push("×1,5 sjelden"); }
     // Length is an addition, not a factor: +5 for each letter past three. As a factor (× letters − 2) it made one
     // long word worth 13 short ones and could decide a game alone (simulation, 21 October 2026).
     var lb = kind === "sett" ? 0 : LEN_BONUS * Math.max(0, sel.length - 3); if (lb) { s += lb; parts.push(sel.length + (kind === "tall" ? " brikker +" : " bokstaver +") + lb); }
     var before = this.live(), after = {};
     Object.keys(before).forEach(function (k) { if (sel.indexOf(k) < 0) after[k] = true; });
-    var opened = 0;
-    Object.keys(after).forEach(function (k) { if (freeIn(S, k, after) && !freeIn(S, k, before)) opened++; });
-    if (opened >= 4) { s += 5; parts.push("åpnet " + opened + " +5"); }
     var cleared = Object.keys(after).length === 0;
     if (cleared) { s += 50; parts.push("ryddet brettet +50"); }
     return { total: s, parts: parts, cleared: cleared };
@@ -1057,10 +1051,10 @@ class Component extends DCLogic {
   endTurn(delay) {
     if (!this.duel()) return;
     var self = this, st = this.state, P = st.P.slice(), t = st.turn, n = 1 - t;
-    P[t] = { score: st.score, pocket: st.pocket, words: st.words };
+    P[t] = { score: st.score, pocket: st.pocket, words: st.words, hint: !!st.hint };
     if (this.online()) {
       var last = st.msg;
-      this.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, sel: [], jokerAs: {}, picking: null, msg: this.turnSay(n) + " " + last, tone: "info" });
+      this.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, hint: !!P[n].hint, sel: [], jokerAs: {}, picking: null, msg: this.turnSay(n) + " " + last, tone: "info" });
       this.pushOnline({ P: P, gone: this.state.gone, passes: this.state.passes, last: last, log: this.state.log });
       return;
     }
@@ -1068,7 +1062,7 @@ class Component extends DCLogic {
     this.timers.push(setTimeout(function () {
       var s = self.state;
       if (s.phase !== "play") return;
-      self.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, sel: [], jokerAs: {}, picking: null, busy: false,
+      self.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, hint: !!P[n].hint, sel: [], jokerAs: {}, picking: null, busy: false,
         msg: self.turnSay(n) + " " + s.msg, tone: "info" });
       if (self.cpuTurn()) self.timers.push(setTimeout(function () { self.cpuMove(); }, 700));
     }, delay || 0));
@@ -1102,9 +1096,12 @@ class Component extends DCLogic {
     this.timers.forEach(clearTimeout); this.timers = [];
     var left = Object.keys(this.live()).length;
     if (this.duel()) {
-      var P = st.P.slice(); P[st.turn] = { score: st.score, pocket: st.pocket, words: st.words };
+      var P = st.P.slice(); P[st.turn] = { score: st.score, pocket: st.pocket, words: st.words, hint: !!st.hint };
       var res = this.resultOf(P), win = res[0].score === res[1].score ? -1 : res[0].score > res[1].score ? 0 : 1;
       this.setState({ phase: "done", P: P, played: { duel: true, res: res, left: left, lay: st.lay }, submitted: true, busy: false, sel: [] });
+      var me = this.online() ? st.online.you : st.opp === "cpu" ? 0 : win;
+      if (win >= 0 && win === me) this.celebrate({ kind: "win", score: res[win].score, head: st.opp === "local" ? this.names()[win] + " vant duellen" : "Du vant duellen",
+        sub: res[win].score + " mot " + res[1 - win].score + (this.online() ? " · mot " + st.online.oppName : st.opp === "cpu" ? " · mot maskinen" : "") });
       if (this.online()) {
         this.pushOnline({ P: P, gone: st.gone, passes: st.passes, last: st.msg, log: st.log, result: { res: res, left: left, winner: win } });
         this.statOnline({ id: st.online.id, you: st.online.you, layout: st.lay, opp: { name: st.online.oppName }, result: { res: res, winner: win }, scores: res.map(function (r) { return r.score; }) }, P[st.online.you].words || []);
@@ -1116,7 +1113,14 @@ class Component extends DCLogic {
     var rec = { lay: st.lay, score: st.score, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
     addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 });
     this.setState({ phase: "done", played: rec, submitted: false });
+    this.celebrate(left === 0 ? { kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" } : { kind: "cheer", score: rec.score });
     if (st.daily) this.dailyFinish(rec);
+  }
+  // Redraws during the cheer, so the score counts up and the sparks run; the view reads the age from celeb.at.
+  celebrate(c) {
+    var self = this;
+    this.setState({ celeb: Object.assign({ at: Date.now() }, c) });
+    if (c.kind === "cheer") for (var i = 1; i <= 24; i++) this.timers.push(setTimeout(function () { self.setState({}); }, i * 100));
   }
   async submit() {
     var st = this.state, rec = st.played, name = (st.name || "").trim();
@@ -1330,7 +1334,7 @@ class Component extends DCLogic {
         { id: "cpu", grp: "off", name: "Maskinen", go: "Spill mot maskinen", run: function () { self.start("duel", "cpu"); } },
         { id: "friend", grp: "on", name: "Venn", go: "Velg venn", say: "Velg blant vennene dine, eller send en invitasjon med kode. Dere spiller på brettet du velger her.", run: function () { self.openFriends(); } },
         { id: "random", grp: "on", name: "Tilfeldig", go: "Finn en motspiller", say: "Står noen alt og venter, spiller dere på brettet den personen valgte. Ellers blir det ditt.", run: function () { self.random(); } },
-        { id: "code", grp: "on", name: "Kode", go: "Bli med", say: "Skriv koden du har fått. Spillet bruker brettet den som inviterte valgte.", run: function () { self.joinCode(); } },
+        { id: "code", grp: "on", name: "Har kode", go: "Bli med", say: "Skriv koden du har fått. Spillet bruker brettet den som inviterte valgte.", run: function () { self.joinCode(); } },
         { id: "local", grp: "off", name: "Én telefon", go: "Start på én telefon", say: "Send telefonen over bordet etter hvert trekk.", run: function () { self.start("duel", "local"); } },
         { id: "solo", grp: "off", name: "Alene", go: "Spill alene", say: "Så mange poeng du kan, toppliste per brett.", run: function () { self.start("solo"); } }
       ];
@@ -1338,6 +1342,13 @@ class Component extends DCLogic {
       v.pick = P.id; v.pickSay = P.id === "cpu" ? null : P.say; v.goLabel = P.go; v.go = P.run;
       // Two tabs as in proposal C, each remembering its last pick.
       var choose = function (id) { var by = Object.assign({}, st.pickBy); PICKS.forEach(function (p) { if (p.id === id) by[p.grp] = id; }); lsSet(PICK_KEY, id); lsSet(PICK_BY_KEY, by); self.setState({ pick: id, pickBy: by, ngMsg: "" }); };
+      // The six ways to start, as letter tiles (Meny-A). The machine's level shows under them when M is chosen.
+      var TILE = { cpu: ["M", 3, "Lett til sterk"], random: ["T", 1, "Finn en motspiller"], solo: ["A", 1, "Toppliste per brett"],
+        friend: ["V", 4, "Velg eller inviter"], local: ["E", 2, "Over bordet"], code: ["K", 5, "Bli med i et spill"] };
+      v.modes = ["cpu", "random", "solo", "friend", "local", "code"].map(function (id) {
+        var p = PICKS.filter(function (x) { return x.id === id; })[0], t = TILE[id];
+        return { k: t[0], p: t[1], t: p.name, s: t[2], on: id === P.id ? "true" : "false", pick: function () { choose(id); } };
+      });
       v.tabs = [{ id: "on", name: "Mot andre" }, { id: "off", name: "Uten nett" }].map(function (T) { var on = T.id === P.grp; return { name: T.name, on: on ? "true" : "false", cls: "seg" + (on ? " on" : ""), pick: function () { if (!on) choose(st.pickBy[T.id] || (T.id === "on" ? "friend" : "cpu")); } }; });
       v.picks = PICKS.filter(function (p) { return p.grp === P.grp; }).map(function (p) { var on = p.id === P.id; return { name: p.name, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { choose(p.id); } }; });
       var bc = this.boardChips(null, false);
@@ -1622,11 +1633,12 @@ class Component extends DCLogic {
       v.sendOff = locked || st.sel.length < 1 || (kindOf(S.L) === "sett" && st.sel.length !== 3);
       v.sendLabel = this.cpuTurn() ? "Maskinens tur" : this.waitTurn() ? (st.online.status === "waiting" ? "Venter …" : st.online.oppName + " sin tur") : st.sel.length < 1 ? "Send ord" : "«" + w + "» · " + this.evaluate(st.sel).total + " p";
       v.send = function () { if (!locked) self.playWord(); };
-      v.hintOff = locked;
+      // One hint per game for each player.
+      v.hintOff = locked || !!st.hint; v.hintLabel = st.hint ? "Hint brukt" : "Hint −5";
       v.hint = function () {
-        if (locked) return;
+        if (locked || self.state.hint) return;
         var b = self.bestWord();
-        self.setState({ score: self.state.score - 5, tone: "info", msg: b ? "Hint −5: prøv «" + b.w + "» (" + b.pts + " p)" + (b.jokers ? ", med jokeren som " + Object.keys(b.ja).map(function (k) { return b.ja[k]; }).join(" og ") : "") : "Hint −5: ingen ord nå. Prøv " + (duel ? "lommen eller stå over." : "lommen, eller lever.") });
+        self.setState({ score: self.state.score - 5, hint: true, tone: "info", msg: b ? "Hint −5: prøv «" + b.w + "» (" + b.pts + " p)" + (b.jokers ? ", med jokeren som " + Object.keys(b.ja).map(function (k) { return b.ja[k]; }).join(" og ") : "") : "Hint −5: ingen ord nå. Prøv " + (duel ? "lommen eller stå over." : "lommen, eller lever.") });
       };
       v.finishLabel = duel ? "Stå over" : "Lever";
       v.finishOff = duel && locked;
@@ -1634,6 +1646,11 @@ class Component extends DCLogic {
     }
     if (st.phase === "done") {
       var rec = st.played || { score: st.score, words: st.words.length, left: 0, best: null };
+      var cb = st.celeb, cAge = cb ? Date.now() - cb.at : 1e9;
+      v.cheerAge = cb && cb.kind === "cheer" && cAge < 2400 ? cAge : null;
+      v.cheerShown = v.cheerAge !== null && cAge < 900 ? Math.round(cb.score * (1 - Math.pow(1 - cAge / 900, 3))) : null;
+      v.win = cb && cb.kind === "win" ? { head: cb.head, sub: cb.sub, score: cb.score, age: cAge } : null;
+      v.winClose = function () { self.setState({ celeb: null }); };
       // The words you could have done better with: the biggest gaps first.
       var meIdx = online ? st.online.you : 0;
       v.missed = (st.log || []).filter(function (e) { return e.k === "w" && e.best && (!duel || e.p === meIdx); })

@@ -404,3 +404,37 @@ body.typing{position:static}
 .wlink{color:inherit;text-decoration:underline;text-decoration-color:rgba(242,196,107,.7);text-underline-offset:3px}
 .hbtns{display:flex;align-items:center;gap:6px}
 .gx.warn{background:rgba(232,135,90,.9);color:#fff}
+
+/* New game as letter tiles (Meny-A): three to a row, the chosen one gold and lifted. */
+.mo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px;flex:none}
+.mo-tile{position:relative;min-height:88px;box-sizing:border-box;padding:9px 10px;border:0;border-radius:14px;background:#FBF6EA;color:#1C2626;font:inherit;text-align:left;display:flex;flex-direction:column;gap:2px;box-shadow:0 4px 0 #E3D3B2,0 7px 0 #C2702C;cursor:pointer;transition:transform .12s ease}
+.mo-tile .mo-k{font-size:28px;font-weight:800;line-height:1}
+.mo-tile .mo-p{position:absolute;right:9px;top:8px;font-size:12px;font-weight:800;color:#7A4513}
+.mo-tile .mo-t{font-size:15px;font-weight:800;line-height:1.1}
+.mo-tile .mo-s{font-size:12px;color:#4F5B58;line-height:1.2}
+.mo-tile[aria-checked="true"]{background:#FFE7A8;transform:translateY(-3px);box-shadow:0 4px 0 #E8C877,0 7px 0 #A9741E,0 0 0 3px #F2C46B}
+.mo-tile:focus-visible{outline:3px solid #7FC8F0;outline-offset:2px}
+/* The end of a game: the score counts up, glows and sends up a few gold sparks. */
+.done .scorewrap{position:relative;display:flex;justify-content:center}
+.done h1.glow{animation:scoreglow 1.4s ease-out 1 both}
+@keyframes scoreglow{0%{text-shadow:0 0 0 rgba(255,214,110,0);transform:scale(1)}35%{text-shadow:0 0 22px rgba(255,214,110,.85);transform:scale(1.08)}100%{text-shadow:0 0 0 rgba(255,214,110,0);transform:scale(1)}}
+.cheer{position:absolute;top:50%;width:10px;height:10px;margin-top:-5px;background:#F2C46B;border-radius:2px;pointer-events:none;animation:cheerup 1.3s ease-out both}
+@keyframes cheerup{0%{opacity:0;transform:translate(0,10px) rotate(45deg) scale(.4)}20%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-70px) rotate(225deg) scale(1)}}
+/* A cleared board or a won duel: a laurel wreath around the score, golden leaves drifting down. */
+.winov{position:absolute;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px 20px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 40%,rgba(255,236,170,.14),rgba(0,0,0,.35) 75%),#0E3B35;color:#F4EFE2;cursor:pointer}
+.winov .wbox{position:relative;width:300px;height:280px}
+.winov .wreath{transform-box:view-box;transform-origin:150px 142px;animation:wbloom 1.2s cubic-bezier(.2,1.1,.4,1) both,wglow 2.4s ease-in-out both;animation-delay:calc(0ms - var(--age)),calc(1200ms - var(--age))}
+.winov .wtxt{animation:wrise .5s ease-out both;animation-delay:calc(1100ms - var(--age))}
+.winov .wsc{position:absolute;left:0;right:0;top:96px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.winov .wsc b{font-size:54px;font-weight:800;line-height:1;color:#F2C46B;font-variant-numeric:tabular-nums}
+.winov .wsc span{font-size:14px;font-weight:700;color:#CFE0DA;letter-spacing:.06em}
+.winov h1{margin:0;font-size:30px;font-weight:800;text-align:center}
+.winov .wsub{font-size:16px;color:#CFE0DA;text-align:center}
+.winov .act{margin-top:22px;padding:0 26px;flex:none}
+.winov .rain{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.winov .drop{position:absolute;top:-40px;width:22px;height:12px;animation:wfall linear both}
+@keyframes wbloom{from{opacity:0;transform:scale(.55) rotate(-14deg)}to{opacity:1;transform:none}}
+@keyframes wglow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,214,110,0))}50%{filter:drop-shadow(0 0 14px rgba(255,214,110,.75))}}
+@keyframes wrise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes wfall{0%{opacity:0;transform:translateY(0) rotate(0)}10%{opacity:1}90%{opacity:1}100%{opacity:0;transform:translateY(880px) rotate(540deg)}}
+@media (prefers-reduced-motion:reduce){.mo-tile{transition:none}.done h1.glow,.winov .wreath,.winov .wtxt{animation:none}.cheer,.winov .rain{display:none}}
