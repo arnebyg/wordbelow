@@ -233,6 +233,7 @@ var App = (function () {
       sec("Alene", '<p>Du har <b>10 minutter</b>. Klokka starter når du trykker den første brikken, og spillet leveres når tiden er ute.</p>') +
       sec("Mot andre", '<p>Hver spiller har <b>72 timer</b> på et trekk. Går tiden ut, er spillet over og den andre vinner. Slå på varsler i innstillingene for å få beskjed når det er din tur. Ratingen starter på 1200 og går opp eller ned etter hvert spill mot en annen spiller.</p>') +
       sec("Ordlister", '<p>Ordene sjekkes mot én ordliste for hvert språk i spillet:</p>' + rows(v.credits.map(function (c) { return ['<span translate="no">' + esc(c.name) + '</span>', '<span translate="no">' + esc(c.credit) + '</span>']; }))) +
+      sec("Tilbakemelding", '<p>Fant du en feil, eller har du en idé? Skriv til <a class="wlink" href="mailto:feedback@wordbelow.app?subject=WordBelow" translate="no">feedback@wordbelow.app</a>.</p>') +
       '</div></div></div>';
   }
   // Every move in this game, newest first; your own words show the best word there was, when it scored more.
