@@ -95,7 +95,7 @@ var App = (function () {
     '<button type="button" class="act grey wide"' + on(v.toPicker) + '>' + esc(v.pickerLabel) + '</button>' +
     '<button type="button" class="act gold grow"' + on(v.again) + '>' + esc(v.againLabel) + '</button>' +
   '</div>' +
-  '<span class="foot">Hvert brett har faste bokstaver. Ordliste: ' + esc(v.credit) + '.</span>' +
+  '<span class="foot">Hvert brett har faste bokstaver.</span>' +
 '</div>';
   }
 
@@ -177,7 +177,6 @@ var App = (function () {
       (v.noAccount ? '<div class="card acc"><span class="ct">Spill mot andre</span><span class="cs">Velg et brukernavn, så kan venner finne deg og dere kan spille mot hverandre.</span><button type="button" class="pill solid"' + on(v.makeAccount) + '>Velg brukernavn</button></div>' : '') +
       (!v.noAccount && v.inviteCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closeInviteCard) + '>' + IC.close + '</button><span class="ct">WordBelow er morsommere med venner!</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.inviteNow) + '>Inviter</button><button type="button" class="pill"' + on(v.closeInviteCard) + '>Lukk</button></div></div>' : '') +
       (v.pushCard ? '<div class="card inv"><button type="button" class="x" aria-label="Lukk"' + on(v.closePushCard) + '>' + IC.close + '</button><span class="ct">Varsler</span><span class="cs">' + esc(v.pushCardSay) + '</span><div class="cbtns">' + (v.pushCardOn ? '<button type="button" class="pill solid"' + on(v.pushCardOn) + '>Slå på varsler</button>' : '') + '<button type="button" class="pill"' + on(v.closePushCard) + '>Ikke nå</button></div></div>' : '') +
-      '<span class="foot">Ordliste: NSF-ordlista 2026, Norsk Scrabbleforbund.</span>' +
       '</div>' +
       '<div class="homebottom"><button type="button" class="bigbtn"' + on(v.go) + '>' + IC.play + '<span>' + esc(v.goLabel) + '</span></button></div>' +
       '</div>';
@@ -205,6 +204,7 @@ var App = (function () {
         '<p><b>Sett:</b> hver brikke har form, farge og antall. Tre brikker er et sett når hver egenskap enten er lik på alle tre eller ulik på alle tre. Poeng: 3, +2 for hver egenskap som er ulik på alle.</p>') +
       sec("Brettene", '<p><b>Stramme</b> brett har få åpne brikker hele spillet. <b>Åpner seg</b> starter med rundt 8–11 åpne og får flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: ' + v.vowPct + ' % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
       sec("Mot andre", '<p>Hver spiller har <b>72 timer</b> på et trekk. Går tiden ut, er spillet over og den andre vinner. Slå på varsler i innstillingene for å få beskjed når det er din tur. Ratingen starter på 1200 og går opp eller ned etter hvert spill mot en annen spiller.</p>') +
+      sec("Ordlister", '<p>Ordene sjekkes mot én ordliste for hvert språk i spillet:</p>' + rows(v.credits.map(function (c) { return ['<span translate="no">' + esc(c.name) + '</span>', '<span translate="no">' + esc(c.credit) + '</span>']; }))) +
       '</div></div></div>';
   }
   // Every move in this game, newest first; your own words show the best word there was, when it scored more.

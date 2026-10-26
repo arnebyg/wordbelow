@@ -1237,7 +1237,7 @@ class Component extends DCLogic {
     var v = {
       phase: st.phase, isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel, isOnline: online,
       lname: S.L.name,
-      credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
+      credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, credits: Object.keys(LANGS).map(function (c) { return { name: LANGS[c].name, credit: LANGS[c].credit }; }), vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
       dictHost: DICT_URL.split("/")[2].replace(/^www\./, ""),
       rareSay: Array.from(RARE).sort(function (a, b) { return PTS[a] - PTS[b]; }).join(", "),
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),
