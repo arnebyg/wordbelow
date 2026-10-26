@@ -1365,9 +1365,9 @@ class Component extends DCLogic {
       v.pick = P.id; v.pickSay = P.id === "cpu" ? null : P.say; v.goLabel = P.go; v.go = P.run;
       // Two tabs as in proposal C, each remembering its last pick.
       var choose = function (id) { var by = Object.assign({}, st.pickBy); PICKS.forEach(function (p) { if (p.id === id) by[p.grp] = id; }); lsSet(PICK_KEY, id); lsSet(PICK_BY_KEY, by); self.setState({ pick: id, pickBy: by, ngMsg: "" }); };
-      // The six ways to start, as letter tiles (Meny-A). The machine's level shows under them when M is chosen.
-      var TILE = { cpu: ["M", 3, "Lett til sterk"], random: ["T", 1, "Finn en motspiller"], solo: ["A", 1, "Toppliste per brett"],
-        friend: ["V", 4, "Velg eller inviter"], local: ["E", 2, "Over bordet"], code: ["K", 5, "Bli med i et spill"] };
+      // The six ways to start, as letter tiles (Meny-A), each with its letter's value in the Norwegian bag. The machine's level shows under them when M is chosen.
+      var TILE = { cpu: ["M", 2, "Lett til sterk"], random: ["T", 1, "Finn en motspiller"], solo: ["A", 1, "Toppliste per brett"],
+        friend: ["V", 4, "Velg eller inviter"], local: ["E", 1, "Over bordet"], code: ["K", 2, "Bli med i et spill"] };
       v.modes = ["random", "friend", "solo", "cpu", "local", "code"].map(function (id) {
         var p = PICKS.filter(function (x) { return x.id === id; })[0], t = TILE[id];
         return { k: t[0], p: t[1], t: p.name, s: t[2], on: id === P.id ? "true" : "false", pick: function () { choose(id); } };
