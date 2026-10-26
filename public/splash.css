@@ -11,6 +11,7 @@
 @keyframes sp-drop{0%{transform:translateY(-640px) rotate(-14deg)}16.2%{transform:none}19.9%{transform:scale(1.06,.92)}23.6%,36.8%{transform:none;opacity:1}48%{transform:translate(var(--x),var(--y)) scale(.62);opacity:1}53%,100%{transform:translate(var(--x),var(--y)) scale(.5);opacity:0}}
 @keyframes sp-rise{0%,10.3%{transform:translateY(600px) rotate(10deg)}26.5%{transform:none}30.2%{transform:scale(1.06,.92)}33.9%,36.8%{transform:none;opacity:1}48%{transform:translate(var(--x),var(--y)) scale(.62);opacity:1}53%,100%{transform:translate(var(--x),var(--y)) scale(.5);opacity:0}}
 #splash .mark{position:absolute;left:0;right:0;top:146px;display:flex;flex-direction:column;align-items:center;line-height:.9;font-size:84px}
+#splash .mark .lw,#splash .mark .lb{display:block;flex:none;gap:0;min-height:auto;white-space:nowrap}
 #splash .mark .lw{font-weight:800;letter-spacing:-.02em;margin-right:.9em}
 #splash .mark .lb{font-weight:200;margin-left:.2em}
 #splash .mark i{display:inline-block;font-style:normal;animation:sp-ch 3.8s ease-out both}
