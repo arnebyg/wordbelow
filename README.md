@@ -170,8 +170,12 @@ motspiller finnes bare blant dem som søker i samme språk. Dagens brett er allt
 python3 tools/kotus.py ~/Downloads/nykysuomensanalista2024.txt
 ```
 
-Skriptet beholder ord på 2–15 bokstaver skrevet med a–z, ä og ö. Kotus-lista har bare grunnformer (som finsk
-Scrabble). Den nederlandske lista er OpenTaals `wordlist.txt` med bare små bokstaver a–z, 2–15 tegn (ingen
+Skriptet beholder ord på 2–15 bokstaver skrevet med a–z, ä og ö. Kotus-lista har bare grunnformer; skriptet
+legger til formene Mattels finske Scrabble-regler (2021) godtar: substantivenes nominativ flertall (koirat) og
+verbenes 4. infinitiv (tekeminen) – 1. infinitiv er grunnformen. Formene lages fra Kotus' egne bøyningstyper og
+graderingsbokstaver, så lista har bare Kotus' lisens (ikke GPL, som Voikko og Omorfi ville gitt). Sammensatte ord
+uten egen type bøyes etter den lengste siste delen som har en. Adjektiver, tallord og andre kasus er ikke med.
+2026-10-26: 92 476 grunnformer og 68 081 nye former, 160 557 ord. Den nederlandske lista er OpenTaals `wordlist.txt` med bare små bokstaver a–z, 2–15 tegn (ingen
 egennavn, forkortelser eller ord med aksenter).
 
 Poengene og posene for nederlandsk og finsk er de vanlige Scrabble-settene slik jeg kjenner dem; sjekk dem mot et
