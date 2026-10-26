@@ -1,6 +1,6 @@
 # WordBelow
 
-Ordspill med 100 brikker i lag. Du legger ord av brikkene som er åpne – ingen brikke oppå, og fri på minst én side – og hvert ord åpner nye brikker under. Tolv brett i to grupper: «Stramme» (få åpne hele veien) og «Åpner seg» (8–11 åpne i starten, 14–18 midtveis). Lommen tar to brikker.
+Ordspill med 100 brikker i lag. Du legger ord av brikkene som er åpne – ingen brikke oppå, og fri på minst én side – og hvert ord åpner nye brikker under. Åtte brett: seks med få åpne hele veien og to som åpner seg (8–11 åpne i starten, 14–18 midtveis). Hakket, Skåret, Sletta og Trappa ble tatt ut 26. oktober 2026; de ligger i `EXTRA`, så spill som alt bruker dem, åpner fortsatt. Lommen tar to brikker.
 
 Startsiden viser spillene dine mot andre (Din tur · Deres tur · Venter på motspiller · Ferdige), med innstillinger (tema: System, Mørkt, Lyst), statistikk og «Nytt spill». Under «Nytt spill»:
 

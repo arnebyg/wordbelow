@@ -152,6 +152,10 @@ function openPts(rows, cols1, rows1, tops) {
  ["sett", "parene", "Parene", "tre lag · 46 brikker", openPts(4, [0.5, 1.6, 2.7, 3.8, 4.9], 3, [[2.7, 1.25], [2.7, 2.25], [4.9, 1.75]])],
  ["sett", "rutenettet", "Rutenettet", "tre lag · 63 brikker", openPts(5, [0.5, 1.6, 2.7, 3.8, 4.9, 6.0], 4, [[1.6, 1.5], [2.7, 2.5], [3.8, 1.5], [4.9, 2.5]])]
 ].forEach(function (b) { LAYOUTS.push({ id: b[1], kind: b[0], grp: "open", name: b[2], asym: false, sub: b[3], pts: b[4] }); });
+// Boards taken out of the picker and the day's board (the owner, 26 October 2026). They stay in EXTRA, so a game,
+// a challenge or a leaderboard that already uses one still opens.
+var RETIRED = ["hakket", "skaret", "sletta", "trappa"], EXTRA = {};
+LAYOUTS = LAYOUTS.filter(function (L) { if (RETIRED.indexOf(L.id) < 0) return true; EXTRA[L.id] = L; return false; });
 // Tall: digits worth 1, operators by how hard they are to use. About one tile in five is an operator.
 var TALL_PTS = { "+": 1, "−": 2, "×": 3, "÷": 4 };
 function dealTall(S, R) {
@@ -273,7 +277,6 @@ function seasonLoad() {
   });
 }
 // Boards met in an online game or a shared link that are not on this phone's list.
-var EXTRA = {};
 function sharedLayout(code, name, cells) { var id = "b" + code; if (!LAYOUTS.some(function (L) { return L.id === id; })) EXTRA[id] = { id: id, grp: "own", name: name, asym: true, sub: cells.split(" ").length + " brikker · delt brett", cells: cells, code: code }; return id; }
 function ownLoad() { (lsGet(OWN_KEY) || []).forEach(function (L) { if (L && L.id && L.cells) LAYOUTS.push(ownLayout(L)); }); }
 function ownLayout(o) { return { id: o.id, grp: "own", name: o.name, asym: true, sub: o.cells.split(" ").length + " brikker · " + (o.by ? "fra " + o.by : "eget brett"), start: o.start, cells: o.cells, code: o.code || null, by: o.by || null }; }
@@ -457,9 +460,11 @@ function lsDate(t) { var d = new Date(t); return d.getDate() + "." + (d.getMonth
 // own boards (a season board every third day in its season); the letters come from the date.
 var DAILY_KEY = "ordspill/dagens/v1";
 function dayKey(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+// With four boards retired on 26 October 2026 the base list went from 12 to 8; the shift keeps that day's board.
+var DAILY_SHIFT = 4;
 function dailyOf(key) {
   var n = Math.round(Date.parse(key + "T12:00:00Z") / 864e5), base = LAYOUTS.filter(function (L) { return L.grp === "tight" || L.grp === "grow"; });
-  var season = LAYOUTS.filter(function (L) { return L.grp === "season"; }), L = season.length && n % 3 === 0 ? season[0] : base[n % base.length];
+  var season = LAYOUTS.filter(function (L) { return L.grp === "season"; }), L = season.length && n % 3 === 0 ? season[0] : base[(n + DAILY_SHIFT) % base.length];
   return { key: key, lay: L.id, name: L.name, seed: +key.replace(/-/g, "") };
 }
 function dailyDone() { return lsGet(DAILY_KEY) || {}; }
@@ -493,7 +498,7 @@ class Component extends DCLogic {
   constructor(p) {
     super(p);
     this.timers = [];
-    var id = lsGet("ordspill/klassiker/brett/v1") || LAYOUTS[0].id, m = lsGet(MODE_KEY) || {};
+    var id = lsGet("ordspill/klassiker/brett/v1"), id = id && RETIRED.indexOf(id) < 0 ? id : LAYOUTS[0].id, m = lsGet(MODE_KEY) || {};
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
       account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
