@@ -509,7 +509,7 @@
 "dager siden": "days ago",
 "de": "they",
 "de har": "they have",
-"det beste ordet den finner": "the best word it finds",
+"sterke ord, i snitt rundt 70 % av beste trekk": "strong words, about 70 % of the best move on average",
 "det ligger to jokere i brettet. Trykk en åpen joker og velg hvilken bokstav den skal være. Den gir 0 poeng, men bonusene for ordet gjelder.": "there are two jokers in the board. Tap an open joker and choose which letter it should be. It scores 0 points, but the word's bonuses apply.",
 "diagonal fra øvre venstre · fem lag": "diagonal from the upper left · five layers",
 "dobler eller tredobler den bokstaven": "doubles or triples that letter",
@@ -524,7 +524,7 @@
 "er lik på to, men ikke på den tredje.": "is the same on two but not on the third.",
 "er sendt": "has been sent",
 "er sendt til": "has been sent to",
-"et godt ord, ikke alltid det beste": "a good word, not always the best",
+"gode ord, i snitt rundt 60 % av beste trekk": "good words, about 60 % of the best move on average",
 "et hakk i det ene hjørnet": "a notch in one corner",
 "fargen": "the colour",
 "finn tre som passer sammen": "find three that go together",
@@ -693,5 +693,9 @@
 "10 minutter": "10 minutes",
 ". Klokka starter når du trykker den første brikken, og spillet leveres når tiden er ute.": ". The clock starts when you tap the first tile, and the game is handed in when the time is up.",
 "Tilbakemelding": "Feedback",
-"Fant du en feil, eller har du en idé? Skriv til ": "Found a bug, or have an idea? Write to "
+"Fant du en feil, eller har du en idé? Skriv til ": "Found a bug, or have an idea? Write to ",
+"Gratulerer, godt jobbet!": "Congratulations, well done!",
+"Du slo toppscoren på brettet (": "You beat the board's top score (",
+"Like toppscoren på brettet (": "Level with the board's top score (",
+"% av toppscoren på brettet (": "% of the board's top score ("
 }

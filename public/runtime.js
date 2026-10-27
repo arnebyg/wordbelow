@@ -72,6 +72,7 @@ var App = (function () {
     '<span class="kick">' + esc(v.kicker) + '</span>' +
     '<div class="scorewrap"><h1' + (v.cheerAge !== null && v.cheerAge >= 900 ? ' class="glow" style="animation-delay:-' + (v.cheerAge - 900) + 'ms"' : '') + '>' + esc(v.cheerShown !== null ? v.cheerShown : v.score) + '</h1>' +
       (v.cheerAge !== null && v.cheerAge >= 900 ? [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return '<span class="cheer" aria-hidden="true" style="left:calc(50% - 5px + ' + ((i - 3.5) * 16) + 'px);--dx:' + ((i - 3.5) * 9) + 'px;animation-delay:' + ((i % 4) * 80 - (v.cheerAge - 900)) + 'ms"></span>'; }).join("") : '') + '</div>' +
+    (v.praise ? '<span class="praise"' + (v.cheerAge !== null ? ' style="animation-delay:' + (900 - v.cheerAge) + 'ms"' : ' data-still="1"') + '><b>' + esc(v.praise.head) + '</b>' + (v.praise.line ? '<span>' + esc(v.praise.line) + '</span>' : '') + '</span>' : '') +
     '<span class="sub">' + esc(v.doneSub) + '</span>' +
   '</div>' +
   (v.askName ? '<div class="namebox"><label for="nm">Navn på topplista</label><div class="namerow">' +

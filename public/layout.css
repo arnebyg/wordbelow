@@ -417,6 +417,14 @@ body.typing{position:static}
 /* The end of a game: the score counts up, glows and sends up a few gold sparks. */
 .done .scorewrap{position:relative;display:flex;justify-content:center}
 .done h1.glow{animation:scoreglow 1.4s ease-out 1 both}
+/* Alone, a board not cleared: the praise comes in as the score finishes counting. */
+.done .praise{display:flex;flex-direction:column;align-items:center;gap:2px;margin:4px 0 2px;animation:praisein .6s cubic-bezier(.2,1.2,.4,1) both}
+.done .praise[data-still]{animation:none}
+.done .praise b{font-size:20px;font-weight:800;color:#F4EFE2}
+.done .praise span{font-size:15px;font-weight:700;color:#F2C46B}
+html.light .done .praise b{color:#1C2626}
+html.light .done .praise span{color:#8E5E14}
+@keyframes praisein{0%{opacity:0;transform:translateY(10px) scale(.9)}100%{opacity:1;transform:none}}
 @keyframes scoreglow{0%{text-shadow:0 0 0 rgba(255,214,110,0);transform:scale(1)}35%{text-shadow:0 0 22px rgba(255,214,110,.85);transform:scale(1.08)}100%{text-shadow:0 0 0 rgba(255,214,110,0);transform:scale(1)}}
 .cheer{position:absolute;top:50%;width:10px;height:10px;margin-top:-5px;background:#F2C46B;border-radius:2px;pointer-events:none;animation:cheerup 1.3s ease-out both}
 @keyframes cheerup{0%{opacity:0;transform:translate(0,10px) rotate(45deg) scale(.4)}20%{opacity:1}100%{opacity:0;transform:translate(var(--dx),-70px) rotate(225deg) scale(1)}}
@@ -437,7 +445,7 @@ body.typing{position:static}
 @keyframes wglow{0%,100%{filter:drop-shadow(0 0 0 rgba(255,214,110,0))}50%{filter:drop-shadow(0 0 14px rgba(255,214,110,.75))}}
 @keyframes wrise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes wfall{0%{opacity:0;transform:translateY(0) rotate(0)}10%{opacity:1}90%{opacity:1}100%{opacity:0;transform:translateY(880px) rotate(540deg)}}
-@media (prefers-reduced-motion:reduce){.mo-tile{transition:none}.done h1.glow,.winov .wreath,.winov .wtxt{animation:none}.cheer,.winov .rain{display:none}}
+@media (prefers-reduced-motion:reduce){.mo-tile{transition:none}.done h1.glow,.done .praise,.winov .wreath,.winov .wtxt{animation:none}.cheer,.winov .rain{display:none}}
 
 /* The solo clock in its last minute. */
 .stat.warn .v{color:#FFB59A}

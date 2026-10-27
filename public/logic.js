@@ -1,6 +1,8 @@
 // The full-screen ad after each move is paused while the app is being developed; set to true to turn it on.
 var AD_FULL_ON = false;
 var LEN_BONUS = 5, JOKER_EAGER = 8;
+// The share of the best word the machine aims for at each move: Middels about 58 % on average, Sterk about 70 %.
+var AIM = { middels: [0.42, 0.72], sterk: [0.54, 0.84] };
 // Alone, a game lasts 10 minutes from the first tap on a tile; when the time is up the game is handed in.
 var SOLO_MS = 10 * 60e3;
 // The game languages. Each has its own tiles, points, vowels and word list; useLang() puts one in the globals
@@ -423,7 +425,7 @@ seasonLoad();
 // A turn is a word, a tile into the pocket, or a pass; the game ends when the board is cleared or both pass in a row.
 // The active player's score, pocket and words live in st.score, st.pocket and st.words, as in solo;
 // st.P holds both players and is brought up to date at the end of every turn.
-var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "et godt ord, ikke alltid det beste" }, { id: "sterk", name: "Sterk", say: "det beste ordet den finner" }];
+var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "gode ord, i snitt rundt 60 % av beste trekk" }, { id: "sterk", name: "Sterk", say: "sterke ord, i snitt rundt 70 % av beste trekk" }];
 var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1", CHAT_KEY = "ordspill/chat/v1";
 // Word meanings: Bokmålsordboka and Nynorskordboka at ordbokene.no (Språkrådet and the University of Bergen).
 function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase()); }
@@ -1093,11 +1095,7 @@ class Component extends DCLogic {
   cpuMove() {
     var self = this, st = this.state;
     if (st.phase !== "play" || !this.cpuTurn()) return;
-    var pick = null;
-    var withJoker = function (c) { return c.filter(function (x) { return x.jokers; })[0] || null; };
-    if (st.diff === "lett") { var c = this.candidates(4, 40); pick = withJoker(c) || (c.length ? c[Math.floor(Math.random() * Math.min(c.length, 12))] : null); }
-    else if (st.diff === "middels") { var c2 = this.candidates(7, 60); pick = withJoker(c2.slice(0, 12)) || (c2.length ? c2[Math.floor(Math.random() * Math.min(c2.length, 6))] : null); }
-    else pick = this.bestWord();
+    var pick = this.cpuPick(st.diff);
     if (pick) {
       this.setState({ sel: pick.sel, jokerAs: Object.assign({}, st.jokerAs, pick.ja), busy: true, msg: "Maskinen legger «" + pick.w + "»" + (pick.jokers ? " med joker" : "") + " …", tone: "info" });
       this.timers.push(setTimeout(function () { self.setState({ busy: false }); if (!self.playWord()) self.pass(); }, 1100));
@@ -1113,6 +1111,14 @@ class Component extends DCLogic {
       return;
     }
     this.pass();
+  }
+  // The machine's word at each level, or null when it has none.
+  cpuPick(diff) {
+    var withJoker = function (c) { return c.filter(function (x) { return x.jokers; })[0] || null; };
+    if (diff === "lett") { var c = this.candidates(4, 40); return withJoker(c) || (c.length ? c[Math.floor(Math.random() * Math.min(c.length, 12))] : null); }
+    // Middels and Sterk aim each move at a share of the best word's points, drawn anew, and lay the word nearest it.
+    var c3 = this.candidates(), r = AIM[diff] || AIM.sterk, aim = c3.length ? c3[0].pts * (r[0] + Math.random() * (r[1] - r[0])) : 0;
+    return c3.reduce(function (b, x) { return !b || Math.abs(x.pts - aim) < Math.abs(b.pts - aim) ? x : b; }, null);
   }
   finishGame() {
     var st = this.state;
@@ -1138,6 +1144,13 @@ class Component extends DCLogic {
     this.setState({ phase: "done", played: rec, submitted: false });
     this.celebrate(left === 0 ? { kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" } : { kind: "cheer", score: rec.score });
     if (st.daily) this.dailyFinish(rec);
+  }
+  // Alone, when the board was not cleared: a word of praise, and the score against the best on the board's list.
+  praiseSay(score, board) {
+    var top = (board || []).reduce(function (m, r) { return Math.max(m, r.score || 0); }, 0);
+    var line = !top || score <= 0 ? "" : score > top ? "Du slo toppscoren på brettet (" + top + " p)." : score === top ? "Like toppscoren på brettet (" + top + " p)." :
+      Math.round(100 * score / top) + " % av toppscoren på brettet (" + top + " p).";
+    return { head: "Gratulerer, godt jobbet!", line: line };
   }
   // Redraws during the cheer, so the score counts up and the sparks run; the view reads the age from celeb.at.
   celebrate(c) {
@@ -1705,6 +1718,7 @@ class Component extends DCLogic {
       }
       v.score = rec.score;
       v.doneSub = (rec.timeUp ? "Tiden gikk ut · " : "") + (rec.pen ? "−" + rec.pen + " for " + rec.pocketLeft + " i lommen · " : "") + rec.words + " ord · " + (rec.left ? rec.left + " brikker ble liggende" : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
+      v.praise = rec.left ? this.praiseSay(rec.score, (st.daily ? (st.dailyTop ? st.dailyTop.top : []) : st.board)) : null;
       v.askName = !st.submitted && !!st.played;
       v.nameVal = st.name; v.onName = function (e) { self.state.name = e.target.value; self.setState({}); };
       v.submitOff = !(st.name || "").trim();
