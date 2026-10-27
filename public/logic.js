@@ -116,18 +116,30 @@ function isWord(w) { return DICT ? DICT.has(w) : WORDSET.has(w); }
 // by either of two tiles. That keeps the number of open tiles low all game.
 // "open" is the 10th–90th percentile of open tiles over 600 simulated games.
 var LAYOUTS = [
+  { id: "fjellet-2", grp: "tight", name: "Fjellet", asym: true, sub: "skjev topp mot høyre · fem lag", open: "6–13",
+    cells: "10.1.0 8.2.0 12.2.0 2.3.0 6.3.0 10.3.0 14.3.0 4.4.0 8.4.0 12.4.0 0.5.0 2.5.0 6.5.0 10.5.0 14.5.0 4.6.0 8.6.0 12.6.0 0.7.0 2.7.0 6.7.0 10.7.0 14.7.0 4.8.0 8.8.0 12.8.0 2.9.0 6.9.0 10.9.0 14.9.0 8.10.0 12.10.0 10.11.0 9.1.1 7.2.1 11.2.1 5.3.1 9.3.1 13.3.1 3.4.1 7.4.1 11.4.1 5.5.1 9.5.1 13.5.1 1.6.1 3.6.1 7.6.1 11.6.1 5.7.1 9.7.1 13.7.1 3.8.1 7.8.1 11.8.1 5.9.1 9.9.1 13.9.1 7.10.1 11.10.1 9.11.1 8.2.2 6.3.2 10.3.2 4.4.2 8.4.2 12.4.2 6.5.2 10.5.2 4.6.2 8.6.2 12.6.2 6.7.2 10.7.2 4.8.2 8.8.2 12.8.2 6.9.2 10.9.2 8.10.2 9.2.3 7.3.3 11.3.3 9.4.3 5.5.3 7.5.3 11.5.3 13.5.3 9.6.3 7.7.3 11.7.3 9.8.3 7.9.3 11.9.3 9.10.3 7.3.4 11.3.4 9.6.4 7.9.4 11.9.4" },
   { id: "fjellet", grp: "tight", name: "Fjellet", asym: true, sub: "skjev topp mot høyre · fem lag", open: "6–13",
     spec: [[0, 0, [2,4,3,4,5,6,5,4], 3], [1, 0.5, [1,3,4,5,6,5,4], 3], [2, 2, [3,4,5,4,3], 3], [3, 3.5, [4,5,4], 3], [4, 4, [3,4], 3]] },
+  { id: "skredet-2", grp: "tight", name: "Skredet", asym: true, sub: "lener seg mot høyre · fire lag", open: "5–12",
+    cells: "2.2.0 6.2.0 10.2.0 0.3.0 4.3.0 8.3.0 12.3.0 2.4.0 6.4.0 10.4.0 0.5.0 4.5.0 8.5.0 12.5.0 2.6.0 6.6.0 10.6.0 0.7.0 4.7.0 8.7.0 12.7.0 2.8.0 6.8.0 10.8.0 0.9.0 4.9.0 8.9.0 12.9.0 2.10.0 6.10.0 10.10.0 3.2.1 7.2.1 11.2.1 1.3.1 5.3.1 9.3.1 13.3.1 3.4.1 7.4.1 11.4.1 1.5.1 5.5.1 9.5.1 13.5.1 3.6.1 7.6.1 11.6.1 1.7.1 5.7.1 9.7.1 13.7.1 3.8.1 7.8.1 11.8.1 1.9.1 5.9.1 9.9.1 13.9.1 3.10.1 7.10.1 11.10.1 4.1.2 8.1.2 6.2.2 10.2.2 4.3.2 8.3.2 12.3.2 2.4.2 6.4.2 10.4.2 14.4.2 4.5.2 8.5.2 12.5.2 2.6.2 6.6.2 10.6.2 14.6.2 4.7.2 8.7.2 12.7.2 2.8.2 6.8.2 10.8.2 14.8.2 4.9.2 8.9.2 12.9.2 6.10.2 10.10.2 8.11.2 4.5.3 8.5.3 12.5.3 2.8.3 6.8.3 10.8.3 14.8.3" },
   { id: "skredet", grp: "tight", name: "Skredet", asym: true, sub: "lener seg mot høyre · fire lag", open: "5–12",
     spec: [[0, 0, [4,5,4,5,4,5,4], 3], [1, 0.5, [4,5,4,5,4,5,4], 3], [2, 1, [3,4,3,4,3,4,3], 3], [3, 2.5, [2,3,2,3,2,2], 3]] },
+  { id: "klofta-2", grp: "tight", name: "Kløfta", asym: true, sub: "to ulike topper med et søkk · fire lag", open: "6–13",
+    cells: "4.1.0 12.1.0 2.2.0 6.2.0 10.2.0 14.2.0 0.3.0 4.3.0 8.3.0 12.3.0 2.4.0 6.4.0 10.4.0 14.4.0 0.5.0 4.5.0 8.5.0 12.5.0 2.6.0 6.6.0 10.6.0 14.6.0 0.7.0 4.7.0 8.7.0 12.7.0 2.8.0 6.8.0 10.8.0 14.8.0 0.9.0 4.9.0 8.9.0 12.9.0 2.10.0 6.10.0 10.10.0 14.10.0 4.11.0 12.11.0 3.2.1 11.2.1 1.3.1 5.3.1 9.3.1 13.3.1 3.4.1 7.4.1 11.4.1 1.5.1 5.5.1 9.5.1 13.5.1 3.6.1 7.6.1 11.6.1 1.7.1 5.7.1 9.7.1 13.7.1 3.8.1 7.8.1 11.8.1 1.9.1 5.9.1 9.9.1 13.9.1 3.10.1 11.10.1 4.3.2 12.3.2 2.4.2 6.4.2 8.4.2 10.4.2 14.4.2 4.5.2 12.5.2 2.6.2 6.6.2 8.6.2 10.6.2 14.6.2 4.7.2 12.7.2 2.8.2 6.8.2 8.8.2 10.8.2 14.8.2 4.9.2 12.9.2 4.3.3 12.3.3 2.6.3 6.6.3 10.6.3 14.6.3 4.9.3 12.9.3" },
   { id: "klofta", grp: "tight", name: "Kløfta", asym: true, sub: "to ulike topper med et søkk · fire lag", open: "6–13",
     spec: [[0, 0, [4,5,6,5,4,5,6,5], 3], [1, 0.5, [4,5,4,3,4,5,4], 3], [2, 1, [3,4,3], 3], [2, 5, [3,4,3], 3], [3, 1.5, [2,3,2], 3], [3, 5.5, [2,2], 3]] },
+  { id: "trappen-2", grp: "tight", name: "Trappen", asym: true, sub: "diagonal fra øvre venstre · fem lag", open: "6–12",
+    cells: "0.0.0 2.1.0 0.2.0 4.2.0 2.3.0 6.3.0 0.4.0 4.4.0 8.4.0 2.5.0 6.5.0 10.5.0 0.6.0 4.6.0 8.6.0 12.6.0 2.7.0 6.7.0 10.7.0 14.7.0 4.8.0 8.8.0 12.8.0 6.9.0 10.9.0 14.9.0 8.10.0 12.10.0 10.11.0 14.11.0 12.12.0 14.13.0 1.1.1 3.2.1 1.3.1 5.3.1 3.4.1 7.4.1 1.5.1 5.5.1 9.5.1 3.6.1 7.6.1 11.6.1 1.7.1 5.7.1 9.7.1 13.7.1 3.8.1 7.8.1 11.8.1 5.9.1 9.9.1 13.9.1 7.10.1 11.10.1 9.11.1 13.11.1 11.12.1 13.13.1 2.3.2 4.4.2 2.5.2 6.5.2 4.6.2 8.6.2 2.7.2 6.7.2 10.7.2 4.8.2 8.8.2 12.8.2 6.9.2 10.9.2 8.10.2 12.10.2 10.11.2 12.12.2 3.4.3 5.5.3 9.5.3 3.6.3 7.6.3 11.6.3 5.7.3 9.7.3 3.8.3 7.8.3 11.8.3 5.9.3 9.9.3 7.10.3 11.10.3 9.11.3 11.12.3 5.5.4 3.8.4 7.8.4 11.8.4 9.11.4" },
   { id: "trappen", grp: "tight", name: "Trappen", asym: true, sub: "diagonal fra øvre venstre · fem lag", open: "5–12",
     spec: [[0, 0, [4,4,4,4,4,4,4,4], [1.5,2,2.5,3,3.5,4,4.5,5]], [1, 0.5, [4,4,4,4,4,4,4], [1.75,2.25,2.75,3.25,3.75,4.25,4.75]],
       [2, 1, [3,3,3,3,3,3], [2.5,3,3.5,4,4.5,5]], [3, 1.5, [3,3,3,3,3], [2.75,3.25,3.75,4.25,4.75]], [4, 2, [2,2,2,1], [3.5,4,4.5,5]]] },
+  { id: "bolgen-2", grp: "tight", name: "Bølgen", asym: true, sub: "stiger og faller · fire lag", open: "6–14",
+    cells: "14.-1.0 12.0.0 0.1.0 2.1.0 10.1.0 14.1.0 4.2.0 8.2.0 12.2.0 0.3.0 2.3.0 6.3.0 10.3.0 14.3.0 4.4.0 8.4.0 12.4.0 0.5.0 2.5.0 6.5.0 10.5.0 14.5.0 4.6.0 8.6.0 12.6.0 0.7.0 2.7.0 6.7.0 10.7.0 14.7.0 4.8.0 8.8.0 12.8.0 2.9.0 6.9.0 10.9.0 4.10.0 8.10.0 6.11.0 13.1.1 1.2.1 11.2.1 3.3.1 9.3.1 13.3.1 1.4.1 5.4.1 7.4.1 11.4.1 3.5.1 9.5.1 13.5.1 1.6.1 5.6.1 7.6.1 11.6.1 3.7.1 9.7.1 13.7.1 1.8.1 5.8.1 7.8.1 11.8.1 3.9.1 9.9.1 5.10.1 7.10.1 10.1.2 4.2.2 8.2.2 12.2.2 2.3.2 6.3.2 10.3.2 4.4.2 8.4.2 12.4.2 2.5.2 6.5.2 10.5.2 4.6.2 8.6.2 12.6.2 2.7.2 6.7.2 10.7.2 4.8.2 8.8.2 12.8.2 2.9.2 6.9.2 10.9.2 4.10.2 8.10.2 12.2.3 2.5.3 6.5.3 10.5.3 4.8.3 8.8.3" },
   { id: "bolgen", grp: "tight", name: "Bølgen", asym: true, sub: "stiger og faller · fire lag", open: "6–13",
     spec: [[0, 0, [4,5,5,5,5,5,5,5], [2,2.5,3,3.5,3,2.5,2,1.5]], [1, 0.5, [4,4,4,4,4,4,4], [2.25,2.75,3.25,3.25,2.75,2.25,1.75]],
       [2, 1, [3,3,3,3,3,3], [2.5,3,3.5,3,2.5,2]], [3, 1.5, [3,3,3,3,3], [2.75,3.25,3.25,2.75,2.25]]] },
+  { id: "bikuben-2", grp: "tight", name: "Bikuben", asym: false, sub: "symmetrisk, bred og flat · fire lag", open: "5–15",
+    cells: "2.1.0 6.1.0 10.1.0 14.1.0 0.2.0 4.2.0 8.2.0 12.2.0 2.3.0 6.3.0 10.3.0 14.3.0 0.4.0 4.4.0 8.4.0 12.4.0 2.5.0 6.5.0 10.5.0 14.5.0 0.6.0 4.6.0 8.6.0 12.6.0 2.7.0 6.7.0 10.7.0 14.7.0 0.8.0 4.8.0 8.8.0 12.8.0 2.9.0 6.9.0 10.9.0 14.9.0 3.1.1 7.1.1 11.1.1 1.2.1 5.2.1 9.2.1 13.2.1 3.3.1 7.3.1 11.3.1 1.4.1 5.4.1 9.4.1 13.4.1 3.5.1 7.5.1 11.5.1 1.6.1 5.6.1 9.6.1 13.6.1 3.7.1 7.7.1 11.7.1 1.8.1 5.8.1 9.8.1 13.8.1 3.9.1 7.9.1 11.9.1 6.1.2 10.1.2 4.2.2 8.2.2 12.2.2 2.3.2 6.3.2 10.3.2 4.4.2 8.4.2 12.4.2 2.5.2 6.5.2 10.5.2 4.6.2 8.6.2 12.6.2 2.7.2 6.7.2 10.7.2 4.8.2 8.8.2 12.8.2 6.9.2 4.2.3 8.2.3 12.2.3 2.5.3 6.5.3 10.5.3 4.8.3 8.8.3 12.8.3" },
   { id: "bikuben", grp: "tight", name: "Bikuben", asym: false, sub: "symmetrisk, bred og flat · fire lag", open: "5–14",
     spec: [[0, 0, [4,5,4,5,4,5,4,5], 2.5], [1, 0.5, [4,5,4,5,4,5,4], 2.5], [2, 1, [3,4,3,4,3,4], 2.5], [3, 1.5, [2,3,2,3,2], 2.5]] },
   // Boards that open up: a tight brick lid on top, plain rows under it, and a base of short rows
@@ -167,7 +179,13 @@ function openPts(rows, cols1, rows1, tops) {
 ].forEach(function (b) { LAYOUTS.push({ id: b[1], kind: b[0], grp: "open", name: b[2], asym: false, sub: b[3], pts: b[4] }); });
 // Boards taken out of the picker and the day's board (the owner, 26 October 2026). They stay in EXTRA, so a game,
 // a challenge or a leaderboard that already uses one still opens.
-var RETIRED = ["hakket", "skaret", "sletta", "trappa"], EXTRA = {};
+// The six fixed boards were rebuilt on 27 October 2026 with a spread-out top layer (no two tiles in it side by side or
+// one right under the other, so the open letters no longer stand in lines); what the top could not hold went one layer
+// down, so each keeps 100 tiles. The new ones have their own ids, so their leaderboards start afresh; the old ones are
+// retired but still built, so games under way on them can be played out. "open" moved with the simulated change
+// (40 games a board, a Middels player, old against new).
+var REBUILT = { fjellet: "fjellet-2", skredet: "skredet-2", klofta: "klofta-2", trappen: "trappen-2", bolgen: "bolgen-2", bikuben: "bikuben-2" };
+var RETIRED = ["hakket", "skaret", "sletta", "trappa"].concat(Object.keys(REBUILT)), EXTRA = {};
 LAYOUTS = LAYOUTS.filter(function (L) { if (RETIRED.indexOf(L.id) < 0) return true; EXTRA[L.id] = L; return false; });
 // Tall: digits worth 1, operators by how hard they are to use. About one tile in five is an operator.
 var TALL_PTS = { "+": 1, "−": 2, "×": 3, "÷": 4 };
@@ -511,7 +529,7 @@ class Component extends DCLogic {
   constructor(p) {
     super(p);
     this.timers = [];
-    var id = lsGet("ordspill/klassiker/brett/v1"), id = id && RETIRED.indexOf(id) < 0 ? id : LAYOUTS[0].id, m = lsGet(MODE_KEY) || {};
+    var id = lsGet("ordspill/klassiker/brett/v1"), id = REBUILT[id] || id, id = id && RETIRED.indexOf(id) < 0 ? id : LAYOUTS[0].id, m = lsGet(MODE_KEY) || {};
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
       account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
