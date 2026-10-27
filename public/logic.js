@@ -62,6 +62,18 @@ var LANGS = {
     bag: "AAAAAAAAAAAAABBBCCCCCCDDDEEEEEEEEEEEFFFGGHHIIIIIIIIIIIILLLLLMMMMMNNNNNNOOOOOOOOOOOOPPPQRRRRRRRSSSSSSSTTTTTTTUUUUUVVVZZ**",
     words: "DI DA IN CON SU PER TRA FRA IL LO LA GLI LE UN UNA ED MA SE NO SI TU IO NOI VOI LUI LEI QUA QUI ORA ORO ARTE ASSE BAR BRACCIO CANE CASA CENA CIELO COSA DONNA ERBA FAME FIORE FUOCO " +
       "GATTO GIORNO LATTE LETTO LIBRO LUNA MADRE MANO MARE MELA MESE NASO NEVE NOTTE OLIO ORSO PANE PASTA PESCE PIEDE PIZZA PORTA ROSSO SALE SEDIA SOLE STELLA STRADA TAVOLA TERRA TESTA TOPO UOMO UOVO UVA VENTO VERDE VINO VOCE FARINA FORNO LIEVITO ACQUA ALBERO AMICO" },
+  // Spanish: RLA-ES, the Hunspell dictionary LibreOffice ships (taken under MPL 1.1 of its GPL / LGPL / MPL choice),
+  // expanded by tools/rlaes.py, verb forms with the pronouns joined on (dámelo) included. As in Spanish Scrabble the accents
+  // are dropped (canción → CANCION) and Ñ is its own letter; the set's CH, LL and RR tiles are left out, so those are
+  // spelt with plain letters. The bag is the Spanish set with CH, LL, RR as one C, L and R, and one T, D, C and H swapped
+  // for E, A, O and I: 48 vowels of 98. Simulated alone (200 boards, a 3–5-letter player) it left 3.9 % of the tiles,
+  // against 6.1 % without the swap; more L and R (for calle and perro) left more, 9.5 %.
+  es: { name: "Español", list: "RLA-ES", credit: "RLA-ES, diccionario de LibreOffice (MPL 1.1)", url: "words/es.txt", re: /^[A-ZÑ]+$/,
+    dict: "https://es.wiktionary.org/w/index.php?search=", vow: "AEIOU", alphabet: "ABCDEFGHIJLMNÑOPQRSTUVXYZ",
+    pts: { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,L:1,M:3,N:1,Ñ:8,O:1,P:3,Q:5,R:1,S:1,T:1,U:1,V:4,X:8,Y:4,Z:10 },
+    bag: "AAAAAAAAAAAAABBCCCCDDDDEEEEEEEEEEEEEFGGHIIIIIIIJLLLLLMMNNNNNOOOOOOOOOOPPQRRRRRRSSSSSSTTTUUUUUVXYZÑ**",
+    words: "DE LA EL EN UN SE NO SI YA YO TU MI LO LE ES SU AL CON POR QUE MAS SAL SOL MAR PAN PIE LUZ VOZ DIA MES RIO OSO AGUA ARTE ARROZ CASA CAMA CARA " +
+      "CIELO COSA DEDO FLOR GATO HIJO HORA LECHE LIBRO LUNA MADRE MANO MESA MIEL NOCHE OJO PADRE PAPEL PERRO PESO PLATO PUERTA QUESO ROJO SILLA TARDE TIERRA TORTA UVA VACA VERDE VINO HARINA HORNO LEVADURA AZUCAR CALLE LLAMA" },
   en: { name: "English", list: "ENABLE", credit: "ENABLE, Alan Beale and M. Cooper (public domain)", url: "words/en.txt", re: /^[A-Z]+$/,
     dict: "https://www.merriam-webster.com/dictionary/", vow: "AEIOUY", alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     pts: { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10 },
@@ -86,7 +98,7 @@ function useLang(c) {
 function langPref() {
   var c = lsGet(LANG_KEY); if (LANGS[c]) return c;
   var n = String((navigator.languages && navigator.languages[0]) || navigator.language || "").slice(0, 2).toLowerCase();
-  return n === "nl" ? "nl" : n === "sv" ? "sv" : n === "fr" ? "fr" : n === "it" ? "it" : n === "en" ? "en" : "no";
+  return n === "nl" ? "nl" : n === "sv" ? "sv" : n === "fr" ? "fr" : n === "it" ? "it" : n === "es" ? "es" : n === "en" ? "en" : "no";
 }
 // A board with fewer tiles draws from the same bag in the same shares: the bag's vowel share, 2 % jokers, the
 // rest consonants, each picked at random from the bag's own, so their mix follows the bag too.
@@ -1324,7 +1336,7 @@ class Component extends DCLogic {
     var v = {
       phase: st.phase, isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel, isOnline: online,
       lname: S.L.name,
-      credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, finnish: (st.lang || "no") === "fi", french: (st.lang || "no") === "fr", italian: (st.lang || "no") === "it", credits: Object.keys(LANGS).map(function (c) { return { name: LANGS[c].name, credit: LANGS[c].credit }; }), vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
+      credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, finnish: (st.lang || "no") === "fi", french: (st.lang || "no") === "fr", italian: (st.lang || "no") === "it", spanish: (st.lang || "no") === "es", credits: Object.keys(LANGS).map(function (c) { return { name: LANGS[c].name, credit: LANGS[c].credit }; }), vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
       dictHost: DICT_URL.split("/")[2].replace(/^www\./, ""),
       rareSay: Array.from(RARE).sort(function (a, b) { return PTS[a] - PTS[b]; }).join(", "),
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),

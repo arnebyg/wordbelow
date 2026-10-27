@@ -157,6 +157,7 @@ egen pose, poeng og vokalandel (`LANGS` øverst i `public/logic.js`):
 | Svensk | SALDOs morfologi, Språkbanken Text, CC BY 4.0 (`words/sv.txt`, 707 692 ord, med bøyde former) | den svenske Scrabble-posen (Mattel 2002) med fire konsonanter byttet mot vokaler | 40 % |
 | Fransk | Grammalecte, Lexique des formes fléchies v7.7, MPL 2.0 (`words/fr.txt`, 409 709 ord, med bøyde former, uten aksenter) | den franske Scrabble-posen, 102 brikker | 45 % |
 | Italiensk | Morph-it! 0.48, Baroni og Zanchetta, CC BY-SA 2.0 (`words/it.txt`, 326 171 ord, med bøyde former, uten aksenter) | den italienske Scrabble-posen (120 brikker) med tre O og én A byttet mot R, S, T og N | 45 % |
+| Spansk | RLA-ES (LibreOffice), MPL 1.1 av valget GPL/LGPL/MPL (`words/es.txt`, 580 677 ord, med bøyde former og pronomenformer, uten aksenter) | den spanske Scrabble-posen med CH, LL, RR som C, L, R og én T, D, C og H byttet mot E, A, O og I | 49 % |
 | Engelsk | ENABLE, Alan Beale og M. Cooper, fri til allmenn bruk (`words/en.txt`, 172 823 ord, med bøyde former) | den engelske Scrabble-posen, 100 brikker | 45 % (Y regnet som vokal) |
 
 **Engelsk** bruker ENABLE fordi den er fri for alle, også kommersielt. Collins Scrabble Words og NASPA Word List
@@ -205,6 +206,22 @@ python3 tools/morphit.py ~/Downloads/current_version/morph-it_048.txt
 Posen er den italienske Scrabble-posen (120 brikker) med tre O og én A byttet mot R, S, T og N. Simulert alene
 (150 brett, en spiller med ord på 3–5 bokstaver) ble 5,6 % av brikkene liggende med posen som den selges – mest
 vokaler, særlig O – og 2,3 % med byttet.
+
+**Spansk** bruker RLA-ES, Hunspell-ordboka LibreOffice leverer (GPL 3+, LGPL 3+ eller MPL 1.1+ etter eget valg; vi
+bruker MPL 1.1, og `words/es.txt` ligger åpent under samme lisens). `tools/rlaes.py` utvider stammene med
+bøyningsreglene selv, uten Hunspell-verktøy. Verbformer med pronomen på slutten (dámelo, hablarte) er med. Som i
+spansk Scrabble er aksentene tatt bort (canción → CANCION), og Ñ er en egen bokstav. Spansk Scrabble har egne brikker
+for CH, LL og RR som ikke kan erstattes av to bokstaver; WordBelow har dem ikke, så de staves med vanlige bokstaver.
+Egennavn, forkortelser og ord med K eller W (som posen ikke har) er tatt ut.
+
+```bash
+# last ned es_ES.dic og es_ES.aff fra https://github.com/LibreOffice/dictionaries/tree/master/es
+python3 tools/rlaes.py ~/Downloads/es_ES.dic ~/Downloads/es_ES.aff
+```
+
+Posen er den spanske Scrabble-posen med CH, LL og RR som én C, L og R, og én T, D, C og H byttet mot E, A, O og I.
+Simulert alene (200 brett, en spiller med ord på 3–5 bokstaver) ble 6,1 % av brikkene liggende uten byttet og 3,9 %
+med; flere L og R ga 9,5 %.
 
 Et spill mot andre spilles i språket den som startet det valgte (lagret per spill på serveren), og tilfeldig
 motspiller finnes bare blant dem som søker i samme språk. Dagens brett er alltid norsk. Topplistene er per språk.

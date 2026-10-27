@@ -699,5 +699,6 @@
 "Like toppscoren på brettet (": "Level with the board's top score (",
 "% av toppscoren på brettet (": "% of the board's top score (",
 "På fransk teller ikke aksentene, som i fransk Scrabble: «été» legges som ETE, og «œuf» som OEUF.": "In French the accents do not count, as in French Scrabble: «été» is laid as ETE, and «œuf» as OEUF.",
-"På italiensk teller ikke aksentene, som i italiensk Scrabble: «città» legges som CITTA, og «perché» som PERCHE.": "In Italian the accents do not count, as in Italian Scrabble: «città» is laid as CITTA, and «perché» as PERCHE."
+"På italiensk teller ikke aksentene, som i italiensk Scrabble: «città» legges som CITTA, og «perché» som PERCHE.": "In Italian the accents do not count, as in Italian Scrabble: «città» is laid as CITTA, and «perché» as PERCHE.",
+"På spansk teller ikke aksentene, som i spansk Scrabble: «canción» legges som CANCION. Ñ er en egen bokstav. CH, LL og RR legges med vanlige bokstaver, og verbformer med pronomen på slutten («dámelo») gjelder.": "In Spanish the accents do not count, as in Spanish Scrabble: «canción» is laid as CANCION. Ñ is a letter of its own. CH, LL and RR are laid with plain letters, and verb forms with a pronoun on the end («dámelo») count."
 }
