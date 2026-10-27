@@ -52,6 +52,16 @@ var LANGS = {
     bag: "AAAAAAAAABBCCDDDEEEEEEEEEEEEEEEFFGGHHIIIIIIIIJKLLLLLMMMNNNNNNOOOOOOPPQRRRRRRSSSSSSTTTTTTUUUUUUVVWXYZ**",
     words: "DE LA LE UN IL ET EN OU SI NE TU JE ON AU DU MA SA TA MOI TOI EAU AMI ART BAS BEC BLE BOL BON CAS CLE COU CRU DOS ETE FEU FIL FIN FOU GAZ ILE JEU JUS LAC LIT LOI LUNE MAI MER MOT MUR NEZ NID NOM NUL " +
       "OIE OUI PAIN PAS PEU PIE PRE RAT RIZ ROI RUE SEL SOL SUR TAS THE TOIT VIN VUE BEAU BOIS CAFE CHAT CIEL DENT DOUX ECOLE FARINE FLEUR FORT GRAIN JOUR LAIT LIRE MAIN MAISON MIEL NOIR NUIT PAGE PEUR PLAT PORT POIRE REVE ROSE SABLE SOIR TABLE TEMPS TERRE VENT VILLE BOULANGER" },
+  // Italian: Morph-it! 0.48 (Baroni and Zanchetta, CC BY-SA 2.0), built by tools/morphit.py; as in Italian Scrabble the
+  // accents are dropped (città → CITTA). The bag is the Italian Scrabble set, 120 tiles, with three O and one A swapped for
+  // R, S, T and N: 53 vowels of 118. Simulated alone (150 boards, a 3–5-letter player) it left 2.3 % of the tiles against
+  // 5.6 % for the set as sold, where the vowels, O most of all, were the tiles left over.
+  it: { name: "Italiano", list: "Morph-it!", credit: "Morph-it!, Marco Baroni e Eros Zanchetta (CC BY-SA 2.0)", url: "words/it.txt", re: /^[A-Z]+$/,
+    dict: "https://it.wiktionary.org/w/index.php?search=", vow: "AEIOU", alphabet: "ABCDEFGHILMNOPQRSTUVZ",
+    pts: { A:1,B:5,C:2,D:5,E:1,F:5,G:8,H:8,I:1,L:3,M:3,N:3,O:1,P:5,Q:10,R:2,S:2,T:2,U:3,V:5,Z:8 },
+    bag: "AAAAAAAAAAAAABBBCCCCCCDDDEEEEEEEEEEEFFFGGHHIIIIIIIIIIIILLLLLMMMMMNNNNNNOOOOOOOOOOOOPPPQRRRRRRRSSSSSSSTTTTTTTUUUUUVVVZZ**",
+    words: "DI DA IN CON SU PER TRA FRA IL LO LA GLI LE UN UNA ED MA SE NO SI TU IO NOI VOI LUI LEI QUA QUI ORA ORO ARTE ASSE BAR BRACCIO CANE CASA CENA CIELO COSA DONNA ERBA FAME FIORE FUOCO " +
+      "GATTO GIORNO LATTE LETTO LIBRO LUNA MADRE MANO MARE MELA MESE NASO NEVE NOTTE OLIO ORSO PANE PASTA PESCE PIEDE PIZZA PORTA ROSSO SALE SEDIA SOLE STELLA STRADA TAVOLA TERRA TESTA TOPO UOMO UOVO UVA VENTO VERDE VINO VOCE FARINA FORNO LIEVITO ACQUA ALBERO AMICO" },
   en: { name: "English", list: "ENABLE", credit: "ENABLE, Alan Beale and M. Cooper (public domain)", url: "words/en.txt", re: /^[A-Z]+$/,
     dict: "https://www.merriam-webster.com/dictionary/", vow: "AEIOUY", alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     pts: { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10 },
@@ -76,7 +86,7 @@ function useLang(c) {
 function langPref() {
   var c = lsGet(LANG_KEY); if (LANGS[c]) return c;
   var n = String((navigator.languages && navigator.languages[0]) || navigator.language || "").slice(0, 2).toLowerCase();
-  return n === "nl" ? "nl" : n === "sv" ? "sv" : n === "fr" ? "fr" : n === "en" ? "en" : "no";
+  return n === "nl" ? "nl" : n === "sv" ? "sv" : n === "fr" ? "fr" : n === "it" ? "it" : n === "en" ? "en" : "no";
 }
 // A board with fewer tiles draws from the same bag in the same shares: the bag's vowel share, 2 % jokers, the
 // rest consonants, each picked at random from the bag's own, so their mix follows the bag too.
@@ -1314,7 +1324,7 @@ class Component extends DCLogic {
     var v = {
       phase: st.phase, isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel, isOnline: online,
       lname: S.L.name,
-      credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, finnish: (st.lang || "no") === "fi", french: (st.lang || "no") === "fr", credits: Object.keys(LANGS).map(function (c) { return { name: LANGS[c].name, credit: LANGS[c].credit }; }), vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
+      credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, finnish: (st.lang || "no") === "fi", french: (st.lang || "no") === "fr", italian: (st.lang || "no") === "it", credits: Object.keys(LANGS).map(function (c) { return { name: LANGS[c].name, credit: LANGS[c].credit }; }), vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
       dictHost: DICT_URL.split("/")[2].replace(/^www\./, ""),
       rareSay: Array.from(RARE).sort(function (a, b) { return PTS[a] - PTS[b]; }).join(", "),
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),

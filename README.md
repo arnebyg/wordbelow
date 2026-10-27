@@ -156,6 +156,7 @@ egen pose, poeng og vokalandel (`LANGS` øverst i `public/logic.js`):
 | Finsk | Kotus, Nykysuomen sanalista, CC BY 4.0 (`words/fi.txt`) | den finske Scrabble-posen, 100 brikker | 46 % |
 | Svensk | SALDOs morfologi, Språkbanken Text, CC BY 4.0 (`words/sv.txt`, 707 692 ord, med bøyde former) | den svenske Scrabble-posen (Mattel 2002) med fire konsonanter byttet mot vokaler | 40 % |
 | Fransk | Grammalecte, Lexique des formes fléchies v7.7, MPL 2.0 (`words/fr.txt`, 409 709 ord, med bøyde former, uten aksenter) | den franske Scrabble-posen, 102 brikker | 45 % |
+| Italiensk | Morph-it! 0.48, Baroni og Zanchetta, CC BY-SA 2.0 (`words/it.txt`, 326 171 ord, med bøyde former, uten aksenter) | den italienske Scrabble-posen (120 brikker) med tre O og én A byttet mot R, S, T og N | 45 % |
 | Engelsk | ENABLE, Alan Beale og M. Cooper, fri til allmenn bruk (`words/en.txt`, 172 823 ord, med bøyde former) | den engelske Scrabble-posen, 100 brikker | 45 % (Y regnet som vokal) |
 
 **Engelsk** bruker ENABLE fordi den er fri for alle, også kommersielt. Collins Scrabble Words og NASPA Word List
@@ -189,6 +190,21 @@ python3 tools/grammalecte.py ~/Downloads/lexique-grammalecte-fr-v7.7.txt
 
 Posen er den franske Scrabble-posen som den selges (102 brikker). Simulert alene (60 brett, en spiller med ord på
 3–5 bokstaver) ble 0,1 % av brikkene liggende, så den er ikke justert.
+
+**Italiensk** bruker Morph-it! 0.48 fra Universitetet i Bologna (Marco Baroni og Eros Zanchetta), lisensiert under
+CC BY-SA 2.0 (eller LGPL); `words/it.txt` er bygd fra den og ligger åpent under samme lisens. Som i italiensk Scrabble
+er aksentene tatt bort (città → CITTA). Egennavn, forkortelser, ord med stor forbokstav og de forkortede verbformene
+fra eldre og poetisk italiensk (mangiar, mangeran) er tatt ut, og ord med J, K, W, X eller Y (som posen ikke har).
+Lista er bygd fra et avismateriale (La Repubblica); 84 av 84 vanlige hverdagsord ble funnet.
+
+```bash
+# last ned https://docs.sslmit.unibo.it/lib/exe/fetch.php?media=resources:morph-it.tgz og pakk ut
+python3 tools/morphit.py ~/Downloads/current_version/morph-it_048.txt
+```
+
+Posen er den italienske Scrabble-posen (120 brikker) med tre O og én A byttet mot R, S, T og N. Simulert alene
+(150 brett, en spiller med ord på 3–5 bokstaver) ble 5,6 % av brikkene liggende med posen som den selges – mest
+vokaler, særlig O – og 2,3 % med byttet.
 
 Et spill mot andre spilles i språket den som startet det valgte (lagret per spill på serveren), og tilfeldig
 motspiller finnes bare blant dem som søker i samme språk. Dagens brett er alltid norsk. Topplistene er per språk.

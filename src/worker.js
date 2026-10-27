@@ -19,7 +19,7 @@ const rid = (n) => { const a = new Uint8Array(n); crypto.getRandomValues(a); ret
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const code = () => { const a = new Uint8Array(6); crypto.getRandomValues(a); return Array.from(a, (b) => CODE_CHARS[b % CODE_CHARS.length]).join(""); };
 const NAME_RE = /^[A-Za-z0-9ÆØÅæøå_.-]{3,16}$/;
-const LANGS = ["no", "nl", "fi", "sv", "fr", "en"];
+const LANGS = ["no", "nl", "fi", "sv", "fr", "it", "en"];
 const langOf = (body) => LANGS.includes(body && body.lang) ? body.lang : "no";
 const MOVE_LIMIT = 72 * 3600e3, REMIND_BEFORE = 12 * 3600e3;
 
