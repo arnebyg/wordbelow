@@ -43,6 +43,15 @@ var LANGS = {
     bag: "AAAAAAAAABBCDDDDDEEEEEEEEFFGGGHHIIIIIIJKKKLLLLLMMMNNNNNOOOOOOPPRRRRRRRSSSSSSSTTTTTTTUUUVVXYZÅÅÄÄÖÖ**",
     words: "AV DE DU EN ER ET HA JA MAN NI OM PÅ SE SÅ TA VI ÄR ÖL ARM BAD BAK BIL BOK BRA BRO DAG DAL DEG DEL DIG DÖR EGG FAR FEM FIN FOT FRÅN GÅR HAN HAR HON HUS KAN KO LAG LAM MAT MED MIG MOR " +
       "NU OST REN RIS ROS SOL SER SIN SKO SUR TAK TID TRE TÅG UNG UT BAKA BERG BLAD BORD BRÖD DEGEN FISK FOLK GATA HAND HUND KAKA KALL KATT KORN LAND LÅNG MJÖL NATT NAMN RING SALT SAND SÄNG SKOG SMAK STOL STOR TAND VARM VATTEN VÄN VIND BAGARE STEN" },
+  // French: Grammalecte's lexicon of inflected forms v7.7 (MPL 2.0), built by tools/grammalecte.py; as in French Scrabble the
+  // accents are dropped (été → ETE). The bag is the French Scrabble set as sold, 102 tiles: simulated alone (60 boards, a
+  // 3–5-letter player) it left 0.1 % of the tiles, with 45 % vowels in both the bag and the 3–5-letter words.
+  fr: { name: "Français", list: "Grammalecte", credit: "Lexique des formes fléchies, Grammalecte v7.7 (MPL 2.0)", url: "words/fr.txt", re: /^[A-Z]+$/,
+    dict: "https://fr.wiktionary.org/w/index.php?search=", vow: "AEIOUY", alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    pts: { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:10,L:1,M:2,N:1,O:1,P:3,Q:8,R:1,S:1,T:1,U:1,V:4,W:10,X:10,Y:10,Z:10 },
+    bag: "AAAAAAAAABBCCDDDEEEEEEEEEEEEEEEFFGGHHIIIIIIIIJKLLLLLMMMNNNNNNOOOOOOPPQRRRRRRSSSSSSTTTTTTUUUUUUVVWXYZ**",
+    words: "DE LA LE UN IL ET EN OU SI NE TU JE ON AU DU MA SA TA MOI TOI EAU AMI ART BAS BEC BLE BOL BON CAS CLE COU CRU DOS ETE FEU FIL FIN FOU GAZ ILE JEU JUS LAC LIT LOI LUNE MAI MER MOT MUR NEZ NID NOM NUL " +
+      "OIE OUI PAIN PAS PEU PIE PRE RAT RIZ ROI RUE SEL SOL SUR TAS THE TOIT VIN VUE BEAU BOIS CAFE CHAT CIEL DENT DOUX ECOLE FARINE FLEUR FORT GRAIN JOUR LAIT LIRE MAIN MAISON MIEL NOIR NUIT PAGE PEUR PLAT PORT POIRE REVE ROSE SABLE SOIR TABLE TEMPS TERRE VENT VILLE BOULANGER" },
   en: { name: "English", list: "ENABLE", credit: "ENABLE, Alan Beale and M. Cooper (public domain)", url: "words/en.txt", re: /^[A-Z]+$/,
     dict: "https://www.merriam-webster.com/dictionary/", vow: "AEIOUY", alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     pts: { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10 },
@@ -67,7 +76,7 @@ function useLang(c) {
 function langPref() {
   var c = lsGet(LANG_KEY); if (LANGS[c]) return c;
   var n = String((navigator.languages && navigator.languages[0]) || navigator.language || "").slice(0, 2).toLowerCase();
-  return n === "nl" ? "nl" : n === "sv" ? "sv" : n === "en" ? "en" : "no";
+  return n === "nl" ? "nl" : n === "sv" ? "sv" : n === "fr" ? "fr" : n === "en" ? "en" : "no";
 }
 // A board with fewer tiles draws from the same bag in the same shares: the bag's vowel share, 2 % jokers, the
 // rest consonants, each picked at random from the bag's own, so their mix follows the bag too.
@@ -1305,7 +1314,7 @@ class Component extends DCLogic {
     var v = {
       phase: st.phase, isPlay: st.phase === "play", isDone: st.phase === "done", isDuel: duel, isOnline: online,
       lname: S.L.name,
-      credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, finnish: (st.lang || "no") === "fi", credits: Object.keys(LANGS).map(function (c) { return { name: LANGS[c].name, credit: LANGS[c].credit }; }), vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
+      credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, finnish: (st.lang || "no") === "fi", french: (st.lang || "no") === "fr", credits: Object.keys(LANGS).map(function (c) { return { name: LANGS[c].name, credit: LANGS[c].credit }; }), vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
       dictHost: DICT_URL.split("/")[2].replace(/^www\./, ""),
       rareSay: Array.from(RARE).sort(function (a, b) { return PTS[a] - PTS[b]; }).join(", "),
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),

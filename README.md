@@ -155,6 +155,7 @@ egen pose, poeng og vokalandel (`LANGS` øverst i `public/logic.js`):
 | Nederlandsk | OpenTaal 2.20.23, BSD / CC BY 3.0 (`words/nl.txt`, 296 451 ord) | den nederlandske Scrabble-posen, 102 brikker | 38 % |
 | Finsk | Kotus, Nykysuomen sanalista, CC BY 4.0 (`words/fi.txt`) | den finske Scrabble-posen, 100 brikker | 46 % |
 | Svensk | SALDOs morfologi, Språkbanken Text, CC BY 4.0 (`words/sv.txt`, 707 692 ord, med bøyde former) | den svenske Scrabble-posen (Mattel 2002) med fire konsonanter byttet mot vokaler | 40 % |
+| Fransk | Grammalecte, Lexique des formes fléchies v7.7, MPL 2.0 (`words/fr.txt`, 409 709 ord, med bøyde former, uten aksenter) | den franske Scrabble-posen, 102 brikker | 45 % |
 | Engelsk | ENABLE, Alan Beale og M. Cooper, fri til allmenn bruk (`words/en.txt`, 172 823 ord, med bøyde former) | den engelske Scrabble-posen, 100 brikker | 45 % (Y regnet som vokal) |
 
 **Engelsk** bruker ENABLE fordi den er fri for alle, også kommersielt. Collins Scrabble Words og NASPA Word List
@@ -175,6 +176,19 @@ python3 tools/saldo.py ~/Downloads/saldom.xml
 Posen er Mattels svenske Scrabble-pose (2002, 100 brikker, C 8 og Z 10) med én R, S, T og N byttet mot A, E, I og O.
 Simulert alene (60 brett, en spiller med ord på 3–5 bokstaver) ble 9,5 % av brikkene liggende med posen som den
 selges, 3,5 % med fire byttet (6,7 % med to, 5,8 % med seks). Poengene er uendret.
+
+**Fransk** bruker Grammalectes liste over bøyde former (MPL 2.0; `words/fr.txt` er en endret kopi og ligger åpent
+under samme lisens). Som i fransk Scrabble er aksentene tatt bort (été → ETE, œuf → OEUF). Egennavn, fornavn,
+titler, romertall, forstavelser, endelser og former Grammalecte merker som feil er tatt ut. Begge rettskrivningene
+(klassisk og 1990-reformen) er med.
+
+```bash
+# last ned https://www.grammalecte.net/dic/lexique-grammalecte-fr-v7.7.zip og pakk ut
+python3 tools/grammalecte.py ~/Downloads/lexique-grammalecte-fr-v7.7.txt
+```
+
+Posen er den franske Scrabble-posen som den selges (102 brikker). Simulert alene (60 brett, en spiller med ord på
+3–5 bokstaver) ble 0,1 % av brikkene liggende, så den er ikke justert.
 
 Et spill mot andre spilles i språket den som startet det valgte (lagret per spill på serveren), og tilfeldig
 motspiller finnes bare blant dem som søker i samme språk. Dagens brett er alltid norsk. Topplistene er per språk.
