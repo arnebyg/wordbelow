@@ -218,6 +218,8 @@ function openPts(rows, cols1, rows1, tops) {
 var REBUILT = { fjellet: "fjellet-2", skredet: "skredet-2", klofta: "klofta-2", trappen: "trappen-2", bolgen: "bolgen-2", bikuben: "bikuben-2" };
 var RETIRED = ["hakket", "skaret", "sletta", "trappa"].concat(Object.keys(REBUILT)), EXTRA = {};
 LAYOUTS = LAYOUTS.filter(function (L) { if (RETIRED.indexOf(L.id) < 0) return true; EXTRA[L.id] = L; return false; });
+// The library for Dagens brett (daily-boards.js) is built like any board but kept out of LAYOUTS, so it is never picked.
+if (typeof DAILY_LIB !== "undefined") DAILY_LIB.forEach(function (b) { EXTRA[b.id] = { id: b.id, grp: "daily", name: b.name, asym: true, sub: b.sub, open: b.open, cells: b.cells }; });
 // Tall: digits worth 1, operators by how hard they are to use. About one tile in five is an operator.
 var TALL_PTS = { "+": 1, "−": 2, "×": 3, "÷": 4 };
 function dealTall(S, R) {
@@ -312,7 +314,7 @@ function tallAll(tiles, maxLen, limit) {
   });
   return found;
 }
-var GROUPS = [{ id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }, { id: "season", name: "Sesong", say: "bare i sesongen" }, { id: "open", name: "Åpne brett", say: "laget for tall og sett" }, { id: "own", name: "Egne brett", say: "brett du har laget" }];
+var GROUPS = [{ id: "daily", name: "Dagens brett", say: "bare som dagens brett" }, { id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }, { id: "season", name: "Sesong", say: "bare i sesongen" }, { id: "open", name: "Åpne brett", say: "laget for tall og sett" }, { id: "own", name: "Egne brett", say: "brett du har laget" }];
 // Boards the player has made in the editor: kept on this phone, played without the server.
 var OWN_KEY = "ordspill/egnebrett/v1", OWN_MAX = 100, OWN_MIN = 20;
 // Season boards: shown in the board list only in their season. Easter moves with the calendar (Meeus' rule).
@@ -456,7 +458,7 @@ function dealRamp(S, R) {
 // The same layout always deals the same letters; an online game adds its own seed so each game is new.
 function genBoard(S, seed) {
   var R = rng(strSeed("klassiker/" + S.L.id + (seed ? "/" + seed : "")));
-  var kind = kindOf(S.L), letters = kind === "tall" ? dealTall(S, R) : kind === "sett" ? dealSett(S, R) : S.L.grp === "tight" ? deal(S, R) : dealRamp(S, R), b = {};
+  var kind = kindOf(S.L), letters = kind === "tall" ? dealTall(S, R) : kind === "sett" ? dealSett(S, R) : S.L.grp === "tight" || S.L.grp === "daily" ? deal(S, R) : dealRamp(S, R), b = {};
   var on = function (l) { return S.pos.filter(function (p) { return p.l === l && letters[p.id] !== "*"; }); };
   var top = Math.max.apply(null, S.pos.map(function (p) { return p.l; }));
   function put(list, s) { list = list.filter(function (p) { return !b[p.id]; }); var p = list[Math.floor(R() * list.length)]; if (p) b[p.id] = { m: +s[0], t: s.slice(-1) }; }
@@ -518,8 +520,9 @@ function pushCan() {
 }
 function b64uBytes(s) { var b = atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
 function lsDate(t) { var d = new Date(t); return d.getDate() + "." + (d.getMonth() + 1) + "."; }
-// Today's board: the same board and letters for everyone each day. The board rotates through the app's
-// own boards (a season board every third day in its season); the letters come from the date.
+// Today's board: the same board and letters for everyone each day. From DAILY_FROM the board is the next one in the
+// library of DAILY_LIB, one a day in order; before that it rotated through the app's own boards. A season board still
+// takes every third day in its season. The letters come from the date.
 var DAILY_KEY = "ordspill/dagens/v1";
 function dayKey(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
 // With four boards retired on 26 October 2026 the base list went from 12 to 8; the shift keeps that day's board.
@@ -527,6 +530,10 @@ var DAILY_SHIFT = 4;
 function dailyOf(key) {
   var n = Math.round(Date.parse(key + "T12:00:00Z") / 864e5), base = LAYOUTS.filter(function (L) { return L.grp === "tight" || L.grp === "grow"; });
   var season = LAYOUTS.filter(function (L) { return L.grp === "season"; }), L = season.length && n % 3 === 0 ? season[0] : base[(n + DAILY_SHIFT) % base.length];
+  if (!(season.length && n % 3 === 0) && typeof DAILY_LIB !== "undefined" && key >= DAILY_FROM) {
+    var n0 = Math.round(Date.parse(DAILY_FROM + "T12:00:00Z") / 864e5);
+    L = EXTRA[DAILY_LIB[(n - n0) % DAILY_LIB.length].id];
+  }
   return { key: key, lay: L.id, name: L.name, seed: +key.replace(/-/g, "") };
 }
 function dailyDone() { return lsGet(DAILY_KEY) || {}; }
@@ -1643,8 +1650,8 @@ class Component extends DCLogic {
       var live = this.live(), nFree = 0;
       var kL = LAYOUTS.filter(function (L) { return kindOf(L) === kindOf(S.L); }), nL = kL.length, iL = 0; kL.forEach(function (L, k) { if (L.id === st.lay) iL = k; });
       v.boardBar = { name: S.L.name, group: GROUPS.filter(function (G) { return G.id === S.L.grp; })[0].name, n: (iL + 1) + " av " + nL,
-        show: !online && !this.started(), can: !online && !this.started() && !locked, prev: function () { self.cycleLay(-1, true); }, next: function () { self.cycleLay(1, true); } };
-      v.canSwipe = !online && !this.started();
+        show: !online && !this.started() && !st.daily, can: !online && !this.started() && !locked && !st.daily, prev: function () { self.cycleLay(-1, true); }, next: function () { self.cycleLay(1, true); } };
+      v.canSwipe = !online && !this.started() && !st.daily;
       v.swipe = function (dir) { self.cycleLay(dir, true); };
       v.dots = v.canSwipe ? this.dots() : null;
       v.slide = st.slide;
