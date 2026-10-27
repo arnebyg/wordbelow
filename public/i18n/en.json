@@ -691,7 +691,7 @@
 "Tid": "Time",
 "Du har": "You have",
 "10 minutter": "10 minutes",
-". Klokka starter når du trykker den første brikken, og spillet leveres når tiden er ute.": ". The clock starts when you tap the first tile, and the game is handed in when the time is up.",
+". Klokka starter når du trykker den første brikken, og spillet leveres når tiden er ute. Brikkene som ligger igjen på brettet når du leverer, trekkes fra: summen av tallene på dem. Det som ligger i lommen, koster ingenting.": ". The clock starts when you tap the first tile, and the game is handed in when the time is up. The tiles still on the board when you hand in are taken off: the sum of their numbers. What is in the pocket costs nothing.",
 "Tilbakemelding": "Feedback",
 "Fant du en feil, eller har du en idé? Skriv til ": "Found a bug, or have an idea? Write to ",
 "Gratulerer, godt jobbet!": "Congratulations, well done!",

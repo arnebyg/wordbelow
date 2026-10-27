@@ -72,7 +72,7 @@ var App = (function () {
     '<span class="kick">' + esc(v.kicker) + '</span>' +
     '<div class="scorewrap"><h1' + (v.cheerAge !== null && v.cheerAge >= 900 ? ' class="glow" style="animation-delay:-' + (v.cheerAge - 900) + 'ms"' : '') + '>' + esc(v.cheerShown !== null ? v.cheerShown : v.score) + '</h1>' +
       (v.cheerAge !== null && v.cheerAge >= 900 ? [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) { return '<span class="cheer" aria-hidden="true" style="left:calc(50% - 5px + ' + ((i - 3.5) * 16) + 'px);--dx:' + ((i - 3.5) * 9) + 'px;animation-delay:' + ((i % 4) * 80 - (v.cheerAge - 900)) + 'ms"></span>'; }).join("") : '') + '</div>' +
-    (v.praise ? '<span class="praise"' + (v.cheerAge !== null ? ' style="animation-delay:' + (900 - v.cheerAge) + 'ms"' : ' data-still="1"') + '><b>' + esc(v.praise.head) + '</b>' + (v.praise.line ? '<span>' + esc(v.praise.line) + '</span>' : '') + '</span>' : '') +
+    (v.praise ? '<span class="praise"' + (v.cheerAge !== null ? ' style="animation-delay:' + (900 - v.cheerAge) + 'ms"' : ' data-still="1"') + '>' + (v.praise.head ? '<b>' + esc(v.praise.head) + '</b>' : '') + (v.praise.line ? '<span>' + esc(v.praise.line) + '</span>' : '') + '</span>' : '') +
     '<span class="sub">' + esc(v.doneSub) + '</span>' +
   '</div>' +
   (v.askName ? '<div class="namebox"><label for="nm">Navn på topplista</label><div class="namerow">' +
@@ -231,7 +231,7 @@ var App = (function () {
         '<p><b>Tall:</b> bygg et regnestykke som går opp, for eksempel 9 × 2 = 18. Sifre ved siden av hverandre blir ett tall, og det må være minst ett regnetegn. «=»-knappen er gratis og brukes én gang. Vanlig regnerekkefølge, og deling må gå opp. Poeng: siffer 1, + 1, − 2, × 3, ÷ 4, +5 per brikke over tre.</p>' +
         '<p><b>Sett:</b> hver brikke har form, farge og antall. Tre brikker er et sett når hver egenskap enten er lik på alle tre eller ulik på alle tre. Poeng: 3, +2 for hver egenskap som er ulik på alle.</p>') +
       sec("Brettene", '<p>Brettene har ulike former: på noen er få brikker åpne hele spillet, på andre blir det flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: ' + v.vowPct + ' % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
-      sec("Alene", '<p>Du har <b>10 minutter</b>. Klokka starter når du trykker den første brikken, og spillet leveres når tiden er ute.</p>') +
+      sec("Alene", '<p>Du har <b>10 minutter</b>. Klokka starter når du trykker den første brikken, og spillet leveres når tiden er ute. Brikkene som ligger igjen på brettet når du leverer, trekkes fra: summen av tallene på dem. Det som ligger i lommen, koster ingenting.</p>') +
       sec("Mot andre", '<p>Hver spiller har <b>72 timer</b> på et trekk. Går tiden ut, er spillet over og den andre vinner. Slå på varsler i innstillingene for å få beskjed når det er din tur. Ratingen starter på 1200 og går opp eller ned etter hvert spill mot en annen spiller.</p>') +
       sec("Ordlister", '<p>Ordene sjekkes mot én ordliste for hvert språk i spillet:</p>' + rows(v.credits.map(function (c) { return ['<span translate="no">' + esc(c.name) + '</span>', '<span translate="no">' + esc(c.credit) + '</span>']; }))) +
       sec("Tilbakemelding", '<p>Fant du en feil, eller har du en idé? Skriv til <a class="wlink" href="mailto:feedback@wordbelow.app?subject=WordBelow" translate="no">feedback@wordbelow.app</a>.</p>') +

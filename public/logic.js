@@ -176,6 +176,13 @@ var LAYOUTS = [
   // Boards that open up: a tight brick lid on top, plain rows under it, and a base of short rows
   // where nearly every tile is an end. "start" and "peak" are the mean open tiles at the start and
   // in the most open fifth of 800 simulated games. Cells are "2c.2r.layer".
+  // Lokket and Bakken re-laid 27 October 2026: the lid's edge columns stood open in lines of four and five letters. The new lid
+  // (layers 2–3) keeps the 100 tiles and the layers below, and no two tiles open at the start touch. Over 120 simulated games
+  // (a 3–5-letter player): Lokket left 1.3 % of the tiles against 5.0 %, Bakken 0.7 % against 4.9 %.
+  { id: "lokket-2", grp: "grow", name: "Lokket", asym: true, sub: "tett lokk over åpne rader", start: 10, peak: 14,
+    cells: "0.0.0 2.0.0 6.0.0 8.0.0 12.0.0 14.0.0 0.2.0 2.2.0 6.2.0 8.2.0 12.2.0 14.2.0 0.4.0 2.4.0 6.4.0 8.4.0 12.4.0 14.4.0 0.6.0 2.6.0 6.6.0 8.6.0 12.6.0 14.6.0 0.8.0 2.8.0 6.8.0 8.8.0 12.8.0 14.8.0 0.10.0 2.10.0 6.10.0 8.10.0 12.10.0 14.10.0 1.1.1 3.1.1 5.1.1 7.1.1 9.1.1 11.1.1 13.1.1 1.3.1 3.3.1 5.3.1 7.3.1 9.3.1 11.3.1 13.3.1 1.5.1 3.5.1 5.5.1 7.5.1 9.5.1 11.5.1 13.5.1 1.7.1 3.7.1 5.7.1 7.7.1 9.7.1 11.7.1 13.7.1 1.9.1 3.9.1 5.9.1 7.9.1 9.9.1 11.9.1 13.9.1 12.2.2 2.5.2 6.5.2 4.8.2 8.8.2 12.8.2 6.5.3 0.8.2 12.6.2 6.7.2 10.7.2 13.3.3 2.2.2 10.4.2 12.4.2 4.4.2 14.7.2 12.10.2 4.2.2 2.0.2 6.2.2 2.7.2 8.4.2 10.0.2 1.1.3 5.0.2 8.2.2 6.9.2 2.9.2" },
+  { id: "bakken-2", grp: "grow", name: "Bakken", asym: true, sub: "heller mot høyre", start: 9, peak: 14,
+    cells: "0.0.0 2.0.0 4.0.0 6.0.0 10.0.0 12.0.0 14.0.0 0.2.0 2.2.0 4.2.0 6.2.0 10.2.0 12.2.0 14.2.0 0.4.0 2.4.0 4.4.0 6.4.0 10.4.0 12.4.0 0.6.0 2.6.0 4.6.0 6.6.0 10.6.0 12.6.0 0.8.0 2.8.0 4.8.0 6.8.0 10.8.0 0.10.0 2.10.0 4.10.0 6.10.0 10.10.0 1.1.1 3.1.1 5.1.1 7.1.1 9.1.1 11.1.1 13.1.1 1.3.1 3.3.1 5.3.1 7.3.1 9.3.1 11.3.1 13.3.1 1.5.1 3.5.1 5.5.1 7.5.1 9.5.1 11.5.1 13.5.1 1.7.1 3.7.1 5.7.1 7.7.1 9.7.1 11.7.1 13.7.1 1.9.1 3.9.1 5.9.1 7.9.1 9.9.1 11.9.1 6.1.2 4.2.2 8.2.2 12.2.2 2.3.2 10.3.2 8.4.2 6.5.2 10.5.2 4.6.2 12.6.2 2.7.2 10.7.2 8.8.2 1.4.3 3.8.3 14.3.2 14.7.2 2.9.2 2.0.2 6.7.2 6.3.2 12.9.2 10.0.2 6.9.2 0.5.2 10.9.2 4.9.2 5.3.3 0.8.2" },
   { id: "lokket", grp: "grow", name: "Lokket", asym: false, sub: "tett lokk over åpne rader", start: 11, peak: 16,
     cells: "0.0.0 2.0.0 6.0.0 8.0.0 12.0.0 14.0.0 0.2.0 2.2.0 6.2.0 8.2.0 12.2.0 14.2.0 0.4.0 2.4.0 6.4.0 8.4.0 12.4.0 14.4.0 0.6.0 2.6.0 6.6.0 8.6.0 12.6.0 14.6.0 0.8.0 2.8.0 6.8.0 8.8.0 12.8.0 14.8.0 0.10.0 2.10.0 6.10.0 8.10.0 12.10.0 14.10.0 1.1.1 3.1.1 5.1.1 7.1.1 9.1.1 11.1.1 13.1.1 1.3.1 3.3.1 5.3.1 7.3.1 9.3.1 11.3.1 13.3.1 1.5.1 3.5.1 5.5.1 7.5.1 9.5.1 11.5.1 13.5.1 1.7.1 3.7.1 5.7.1 7.7.1 9.7.1 11.7.1 13.7.1 1.9.1 3.9.1 5.9.1 7.9.1 9.9.1 11.9.1 13.9.1 2.1.2 2.3.2 2.5.2 2.7.2 2.9.2 4.2.2 4.4.2 4.6.2 4.8.2 6.1.2 6.3.2 6.5.2 6.7.2 6.9.2 8.2.2 8.4.2 8.6.2 8.8.2 10.1.2 10.3.2 10.5.2 10.7.2 10.9.2 12.2.2 12.4.2 12.6.2 12.8.2 6.5.3 8.4.3" },
   { id: "bakken", grp: "grow", name: "Bakken", asym: true, sub: "heller mot høyre", start: 8, peak: 14,
@@ -215,7 +222,7 @@ function openPts(rows, cols1, rows1, tops) {
 // down, so each keeps 100 tiles. The new ones have their own ids, so their leaderboards start afresh; the old ones are
 // retired but still built, so games under way on them can be played out. "open" moved with the simulated change
 // (40 games a board, a Middels player, old against new).
-var REBUILT = { fjellet: "fjellet-2", skredet: "skredet-2", klofta: "klofta-2", trappen: "trappen-2", bolgen: "bolgen-2", bikuben: "bikuben-2" };
+var REBUILT = { fjellet: "fjellet-2", skredet: "skredet-2", klofta: "klofta-2", trappen: "trappen-2", bolgen: "bolgen-2", bikuben: "bikuben-2", lokket: "lokket-2", bakken: "bakken-2" };
 var RETIRED = ["hakket", "skaret", "sletta", "trappa"].concat(Object.keys(REBUILT)), EXTRA = {};
 LAYOUTS = LAYOUTS.filter(function (L) { if (RETIRED.indexOf(L.id) < 0) return true; EXTRA[L.id] = L; return false; });
 // The library for Dagens brett (daily-boards.js) is built like any board but kept out of LAYOUTS, so it is never picked.
@@ -1204,19 +1211,21 @@ class Component extends DCLogic {
       else addStat({ mode: "local", won: -2, my: Math.max(res[0].score, res[1].score), their: Math.min(res[0].score, res[1].score), best: (res[0].best && res[1].best ? (res[0].best.pts >= res[1].best.pts ? res[0].best : res[1].best) : res[0].best || res[1].best) });
       return;
     }
-    var pen = 0;
-    var rec = { lay: st.lay, timeUp: !!st.timeUp, score: st.score, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
+    // Alone, the tiles still on the board when the game ends cost their points; the pocket costs nothing.
+    var self = this, pen = Object.keys(this.live()).reduce(function (n, id) { return n + self.ptsOf(st.letters[id]); }, 0);
+    var rec = { lay: st.lay, timeUp: !!st.timeUp, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
     addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 });
     this.setState({ phase: "done", played: rec, submitted: false });
-    this.celebrate(left === 0 ? { kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" } : { kind: "cheer", score: rec.score });
+    // The wreath only when the board is cleared; handed in with tiles left, the score stands without a cheer.
+    if (left === 0) this.celebrate({ kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" });
     if (st.daily) this.dailyFinish(rec);
   }
-  // Alone, when the board was not cleared: a word of praise, and the score against the best on the board's list.
+  // Alone, when the board was not cleared: the score against the best on the board's list, without praise.
   praiseSay(score, board) {
     var top = (board || []).reduce(function (m, r) { return Math.max(m, r.score || 0); }, 0);
     var line = !top || score <= 0 ? "" : score > top ? "Du slo toppscoren på brettet (" + top + " p)." : score === top ? "Like toppscoren på brettet (" + top + " p)." :
       Math.round(100 * score / top) + " % av toppscoren på brettet (" + top + " p).";
-    return { head: "Gratulerer, godt jobbet!", line: line };
+    return line ? { head: "", line: line } : null;
   }
   // Redraws during the cheer, so the score counts up and the sparks run; the view reads the age from celeb.at.
   celebrate(c) {
@@ -1783,7 +1792,7 @@ class Component extends DCLogic {
         return v;
       }
       v.score = rec.score;
-      v.doneSub = (rec.timeUp ? "Tiden gikk ut · " : "") + (rec.pen ? "−" + rec.pen + " for " + rec.pocketLeft + " i lommen · " : "") + rec.words + " ord · " + (rec.left ? rec.left + " brikker ble liggende" : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
+      v.doneSub = (rec.timeUp ? "Tiden gikk ut · " : "") + rec.words + " ord · " + (rec.left ? rec.left + " brikker ble liggende" + (rec.pen ? " (−" + rec.pen + " p)" : "") : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
       v.praise = rec.left ? this.praiseSay(rec.score, (st.daily ? (st.dailyTop ? st.dailyTop.top : []) : st.board)) : null;
       v.askName = !st.submitted && !!st.played;
       v.nameVal = st.name; v.onName = function (e) { self.state.name = e.target.value; self.setState({}); };
