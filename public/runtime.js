@@ -20,7 +20,7 @@ var App = (function () {
   '<div class="edgebar ' + esc(v.edge.cls) + '" role="progressbar" aria-label="Ryddet av brettet" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + v.edge.pct + '"><i style="width:' + v.edge.pct + '%"></i></div>' +
   '<div class="top">' +
     '<button type="button" class="back" aria-label="Til menyen"' + on(v.toMenu) + '><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13 4l-7 7 7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>' +
-    '<div class="title"><span class="t1">' + esc(v.kicker) + '</span><span class="t2">' + esc(v.lsub) + '</span></div>' +
+    '<div class="title"><span class="t1">' + esc(v.kicker) + '</span>' + (v.lsub ? '<span class="t2">' + esc(v.lsub) + '</span>' : '') + '</div>' +
     '<span class="topr">' + (v.chatBtn ? '<button type="button" class="qb chatb' + (v.chatUnread ? ' unread' : '') + '" aria-label="Reaksjoner og chat"' + on(v.openChat) + '>' + IC.chat + '</button>' : '') + '<button type="button" class="qb" aria-label="Trekkhistorikk"' + on(v.openHist) + '>' + IC.list + '</button><button type="button" class="qb" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
     '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>' + esc(v.hintLabel || "Hint −5") + '</button></span>' +
   '</div>' +
@@ -128,7 +128,7 @@ var App = (function () {
   }
   function chipRows(v) {
     return '<div class="chips" role="group" aria-label="Velg type brett" data-keep="grp">' +
-      each(v.groups, function (g) { return '<button type="button" class="' + g.cls + '" aria-pressed="' + g.on + '"' + on(g.pick) + '>' + esc(g.name) + '<span class="asym">' + esc(g.say) + '</span></button>'; }) + '</div>' +
+      each(v.groups, function (g) { return '<button type="button" class="' + g.cls + '" aria-pressed="' + g.on + '"' + on(g.pick) + '>' + esc(g.name) + '</button>'; }) + '</div>' +
       '<div class="chips" role="group" aria-label="Velg brett" data-keep="lay">' +
       each(v.chips, function (c) { return '<button type="button" class="' + c.cls + '" aria-pressed="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + (c.asym ? '<span class="asym">skjev</span>' : '') + '</button>'; }) + '</div>';
   }
@@ -167,7 +167,7 @@ var App = (function () {
           '<div class="preview' + (v.preview.slide ? ' slide-' + v.preview.slide : '') + '" data-swipe="swipe">' +
             '<button type="button" class="pvar" aria-label="Forrige brett"' + on(v.preview.prev) + '>' + IC.back + '</button>' +
             '<div class="pvboard" aria-hidden="true"><div style="' + esc(v.preview.box) + '">' + each(v.preview.tiles, function (t) { return '<span class="' + t.cls + '" style="' + esc(t.pos) + '"></span>'; }) + '</div></div>' +
-            '<div class="pvinfo"><span class="pvn">' + esc(v.preview.name) + '</span><span class="pvs">' + esc(v.preview.sub) + '</span><span class="pvs">' + esc(v.preview.open) + '</span></div>' +
+            '<div class="pvinfo"><span class="pvn">' + esc(v.preview.name) + '</span></div>' +
             '<button type="button" class="pvar next" aria-label="Neste brett"' + on(v.preview.next) + '>' + IC.back + '</button>' +
           '</div>' +
           '<div class="bdots static" aria-hidden="true">' + each(v.preview.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' +

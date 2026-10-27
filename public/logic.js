@@ -588,7 +588,7 @@ class Component extends DCLogic {
     return { lay: S.L.id, seed: seed || 0, lang: LANG, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], hint: false, soloT0: null, pop: null,
       turn: 0, passes: 0, busy: false, P: [{ score: 0, pocket: [], words: [] }, { score: 0, pocket: [], words: [] }], log: [], daily: null,
       phase: "play", played: null, submitted: false, confirm: null, introMsg: null,
-      msg: msg || (duel ? this.turnSay(0) + " " : "") + S.L.name + ": " + S.L.sub + ". " + openSay(S.L).replace(/^./, function (x) { return x.toUpperCase(); }) + ".", tone: "info" };
+      msg: msg || (duel ? this.turnSay(0) + " " : "") + S.L.name + ".", tone: "info" };
   }
   componentDidMount() {
     var self = this;
@@ -1346,7 +1346,7 @@ class Component extends DCLogic {
       credit: LANGS[st.lang || "no"].credit, listName: LANGS[st.lang || "no"].list, finnish: (st.lang || "no") === "fi", french: (st.lang || "no") === "fr", italian: (st.lang || "no") === "it", spanish: (st.lang || "no") === "es", credits: Object.keys(LANGS).map(function (c) { return { name: LANGS[c].name, credit: LANGS[c].credit }; }), vowPct: Math.round(LANGS[st.lang || "no"].vshare * 100),
       dictHost: DICT_URL.split("/")[2].replace(/^www\./, ""),
       rareSay: Array.from(RARE).sort(function (a, b) { return PTS[a] - PTS[b]; }).join(", "),
-      lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : openSay(S.L),
+      lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : "",
       kicker: online ? "Spill · " + S.L.name + (kindOf(S.L) === "ord" && st.lang !== "no" ? " · " + LANGS[st.lang].name : "") : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name + (kindOf(S.L) === "ord" && st.lang !== "no" ? " · " + LANGS[st.lang].name : ""),
       score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
       ads: !st.premium, premium: !!st.premium, adFull: !st.premium && !!st.adFull, closeAd: function () { self.setState({ adFull: null }); },
