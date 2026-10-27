@@ -154,6 +154,7 @@ egen pose, poeng og vokalandel (`LANGS` øverst i `public/logic.js`):
 | Norsk | NSF-ordlista 2026 (`words/nsf-2026.txt`) | Scrabble-posen med seks konsonanter byttet mot vokaler | 40 % |
 | Nederlandsk | OpenTaal 2.20.23, BSD / CC BY 3.0 (`words/nl.txt`, 296 451 ord) | den nederlandske Scrabble-posen, 102 brikker | 38 % |
 | Finsk | Kotus, Nykysuomen sanalista, CC BY 4.0 (`words/fi.txt`) | den finske Scrabble-posen, 100 brikker | 46 % |
+| Svensk | SALDOs morfologi, Språkbanken Text, CC BY 4.0 (`words/sv.txt`, 707 692 ord, med bøyde former) | den svenske Scrabble-posen (Mattel 2002) med fire konsonanter byttet mot vokaler | 40 % |
 | Engelsk | ENABLE, Alan Beale og M. Cooper, fri til allmenn bruk (`words/en.txt`, 172 823 ord, med bøyde former) | den engelske Scrabble-posen, 100 brikker | 45 % (Y regnet som vokal) |
 
 **Engelsk** bruker ENABLE fordi den er fri for alle, også kommersielt. Collins Scrabble Words og NASPA Word List
@@ -161,6 +162,19 @@ er turneringslistene, men krever lisens (NWL er gratis bare under ca. 1 000 USD 
 Posen er den vanlige engelske Scrabble-posen: simulert mot ENABLE (200 brett per form, en spiller med ord på 3–5
 bokstaver) ble rundt 5 % av brikkene liggende, mot 9–14 % for norsk, så den er ikke justert. ENABLE har noen
 støtende ord; de er ikke filtrert bort.
+
+**Svensk** bruker SALDOs morfologi fra Språkbanken Text (CC BY 4.0), fordi SAOL 15 (2026) bare kan leses med
+tilgang hos Språkbanken. Lista har grunnformer og alle bøyde former, som Wordfeud godtar på svensk; egennavn,
+forkortelser, flerordsuttrykk og forledd i sammensetninger er tatt ut, og ord med Q eller W (som posen ikke har).
+
+```bash
+# last ned https://svn.spraakbanken.gu.se/sb-arkiv/pub/lmf/saldom/saldom.xml (ca. 250 MB)
+python3 tools/saldo.py ~/Downloads/saldom.xml
+```
+
+Posen er Mattels svenske Scrabble-pose (2002, 100 brikker, C 8 og Z 10) med én R, S, T og N byttet mot A, E, I og O.
+Simulert alene (60 brett, en spiller med ord på 3–5 bokstaver) ble 9,5 % av brikkene liggende med posen som den
+selges, 3,5 % med fire byttet (6,7 % med to, 5,8 % med seks). Poengene er uendret.
 
 Et spill mot andre spilles i språket den som startet det valgte (lagret per spill på serveren), og tilfeldig
 motspiller finnes bare blant dem som søker i samme språk. Dagens brett er alltid norsk. Topplistene er per språk.

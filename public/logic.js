@@ -34,6 +34,15 @@ var LANGS = {
     pts: { A:1,I:1,N:1,T:1,E:1,S:1,K:2,L:2,O:2,Ä:2,U:3,M:3,H:4,J:4,P:4,R:4,V:4,Y:4,D:7,Ö:7,B:8,F:8,G:8,C:10 },
     bag: "AAAAAAAAAABCDEEEEEEEEFGHHIIIIIIIIIIJJKKKKKLLLLLMMMNNNNNNNNNOOOOOPPRRSSSSSSSTTTTTTTTTUUUUVVYYÄÄÄÄÄÖ**",
     words: "AI EI JA ON SE ME TE NE KUU MAA SUU TIE YÖ PUU KALA KISSA KOIRA LEIPÄ MAITO METSÄ SAUNA TALO VESI AURINKO JÄRVI KIRJA OMENA PÖYTÄ TUOLI" },
+  // Swedish: SALDO's morphology (Språkbanken Text, CC BY 4.0), base and inflected forms, built by tools/saldo.py. The bag is
+  // Mattel's Swedish set (2002) with four consonants swapped for vowels (one R, S, T, N → A, E, I, O): 39 vowels of 98,
+  // near the 36 % in the 3–5-letter words. Simulated alone (60 boards, a 3–5-letter player) it left 3.5 % of the tiles, against 9.5 % for the set as sold.
+  sv: { name: "Svenska", list: "SALDO", credit: "SALDO, Språkbanken Text (CC BY 4.0)", url: "words/sv.txt", re: /^[A-ZÅÄÖ]+$/,
+    dict: "https://svenska.se/?q=", vow: "AEIOUYÅÄÖ", alphabet: "ABCDEFGHIJKLMNOPRSTUVXYZÅÄÖ",
+    pts: { A:1,B:4,C:8,D:1,E:1,F:3,G:2,H:2,I:1,J:7,K:2,L:1,M:2,N:1,O:2,P:4,R:1,S:1,T:1,U:4,V:3,X:8,Y:7,Z:10,Å:4,Ä:3,Ö:4 },
+    bag: "AAAAAAAAABBCDDDDDEEEEEEEEFFGGGHHIIIIIIJKKKLLLLLMMMNNNNNOOOOOOPPRRRRRRRSSSSSSSTTTTTTTUUUVVXYZÅÅÄÄÖÖ**",
+    words: "AV DE DU EN ER ET HA JA MAN NI OM PÅ SE SÅ TA VI ÄR ÖL ARM BAD BAK BIL BOK BRA BRO DAG DAL DEG DEL DIG DÖR EGG FAR FEM FIN FOT FRÅN GÅR HAN HAR HON HUS KAN KO LAG LAM MAT MED MIG MOR " +
+      "NU OST REN RIS ROS SOL SER SIN SKO SUR TAK TID TRE TÅG UNG UT BAKA BERG BLAD BORD BRÖD DEGEN FISK FOLK GATA HAND HUND KAKA KALL KATT KORN LAND LÅNG MJÖL NATT NAMN RING SALT SAND SÄNG SKOG SMAK STOL STOR TAND VARM VATTEN VÄN VIND BAGARE STEN" },
   en: { name: "English", list: "ENABLE", credit: "ENABLE, Alan Beale and M. Cooper (public domain)", url: "words/en.txt", re: /^[A-Z]+$/,
     dict: "https://www.merriam-webster.com/dictionary/", vow: "AEIOUY", alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     pts: { A:1,B:3,C:3,D:2,E:1,F:4,G:2,H:4,I:1,J:8,K:5,L:1,M:3,N:1,O:1,P:3,Q:10,R:1,S:1,T:1,U:1,V:4,W:4,X:8,Y:4,Z:10 },
@@ -58,7 +67,7 @@ function useLang(c) {
 function langPref() {
   var c = lsGet(LANG_KEY); if (LANGS[c]) return c;
   var n = String((navigator.languages && navigator.languages[0]) || navigator.language || "").slice(0, 2).toLowerCase();
-  return n === "nl" ? "nl" : n === "en" ? "en" : "no";
+  return n === "nl" ? "nl" : n === "sv" ? "sv" : n === "en" ? "en" : "no";
 }
 // A board with fewer tiles draws from the same bag in the same shares: the bag's vowel share, 2 % jokers, the
 // rest consonants, each picked at random from the bag's own, so their mix follows the bag too.
