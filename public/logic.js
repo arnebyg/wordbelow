@@ -1088,7 +1088,8 @@ class Component extends DCLogic {
       var s = self.state;
       if (s.phase !== "play") return;
       self.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, hint: !!P[n].hint, sel: [], jokerAs: {}, picking: null, busy: false,
-        msg: self.turnSay(n) + " " + s.msg, tone: "info" });
+        // Against the machine the move's own message stays as it is, so it shows once; the score boxes say whose turn it is.
+        msg: s.opp === "cpu" ? s.msg : self.turnSay(n) + " " + s.msg, tone: s.opp === "cpu" ? s.tone : "info" });
       if (self.cpuTurn()) self.timers.push(setTimeout(function () { self.cpuMove(); }, 700));
     }, delay || 0));
   }
@@ -1097,7 +1098,7 @@ class Component extends DCLogic {
     if (st.phase !== "play" || !this.cpuTurn()) return;
     var pick = this.cpuPick(st.diff);
     if (pick) {
-      this.setState({ sel: pick.sel, jokerAs: Object.assign({}, st.jokerAs, pick.ja), busy: true, msg: "Maskinen legger «" + pick.w + "»" + (pick.jokers ? " med joker" : "") + " …", tone: "info" });
+      this.setState({ sel: pick.sel, jokerAs: Object.assign({}, st.jokerAs, pick.ja), busy: true });
       this.timers.push(setTimeout(function () { self.setState({ busy: false }); if (!self.playWord()) self.pass(); }, 1100));
       return;
     }
