@@ -1519,7 +1519,7 @@ class Component extends DCLogic {
       v.buy = function () { self.setState({ premMsg: "Betaling er ikke koblet til ennå. Når den er det, kjøper du Premium her én gang og har det for alltid." }); };
       v.restore = function () { self.setState({ premMsg: "Det finnes ingen kjøp å gjenopprette ennå." }); };
       v.testOn = function () { self.setPremium(!st.premium); };
-      v.back = function () { self.setState({ phase: st.after === "stats" ? "stats" : "home", after: null }); };
+      v.back = function () { self.setState({ phase: st.after === "stats" || st.after === "settings" ? st.after : "home", after: null }); };
       return v;
     }
     if (st.phase === "editor") {
@@ -1565,6 +1565,8 @@ class Component extends DCLogic {
       return v;
     }
     if (st.phase === "settings") {
+      // Premium is always reachable from here, also when it is on and the diamond at the top is gone.
+      v.openPremiumSet = function () { self.setState({ phase: "premium", after: "settings", premMsg: "" }); };
       v.themes = [{ id: "system", name: "System" }, { id: "dark", name: "Mørkt tema" }, { id: "light", name: "Lyst tema" }].map(function (t) {
         var on = st.theme === t.id;
         return { name: t.name, on: on, pick: function () { lsSet(THEME_KEY, t.id); self.setState({ theme: t.id }); if (window.applyTheme) window.applyTheme(t.id, self.state.bg); } };
