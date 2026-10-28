@@ -3,6 +3,8 @@
 name = "wordbelow"
 main = "src/worker.js"
 # wordbelow.app is the game's own address (the zone is in this Cloudflare account; its iCloud mail records stay as they are).
+# The old address stays on: phones already have the game saved from it.
+workers_dev = true
 routes = [
   { pattern = "wordbelow.app", custom_domain = true },
   { pattern = "www.wordbelow.app", custom_domain = true }
