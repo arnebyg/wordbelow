@@ -226,7 +226,7 @@ var App = (function () {
         ["Ordbonus 2×O / 3×O", "ganger bokstavene"], ["Lengde", "+5 for hver bokstav over tre"],
         ["Rydder hele brettet", "+50"], ["Hint", "−5, én gang per spill"]]) +
         '<p class="fine">Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Treffer ordet 2×O, blir det 9 × 2 = 18, pluss 15 for seks bokstaver: 33 poeng.</p>') +
-      sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen og bonusene virker som ellers.</p>' +
+      sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen virker som ellers. I Tall gjelder bonusene som for bokstaver. I Sett er hver brikke verdt 1, så der er det bare ordbonuser (2×O og 3×O).</p>' +
         '<p><b>Tall:</b> bygg et regnestykke som går opp, for eksempel 9 × 2 = 18. Sifre ved siden av hverandre blir ett tall, og det må være minst ett regnetegn. «=»-knappen er gratis og brukes én gang. Vanlig regnerekkefølge, og deling må gå opp. Poeng: siffer 1, + 1, − 2, × 3, ÷ 4, +5 per brikke over tre.</p>' +
         '<p><b>Sett:</b> hver brikke har form, farge og antall. Tre brikker er et sett når hver egenskap enten er lik på alle tre eller ulik på alle tre. Poeng: 3, +2 for hver egenskap som er ulik på alle.</p>') +
       sec("Brettene", '<p>Brettene har ulike former: på noen er få brikker åpne hele spillet, på andre blir det flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: ' + v.vowPct + ' % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
@@ -341,7 +341,7 @@ var App = (function () {
       }) + '</div>' +
       '<p class="fine">Tall og Sett har egne, mer åpne brett. Dagens brett er alltid med bokstaver.</p>' +
       '<h2 class="sec">Språk i spillet</h2><div class="group" role="radiogroup" aria-label="Språk i spillet">' + each(v.langs, function (k) {
-        return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t">' + esc(k.name) + '</span><span class="s">' + esc(k.say) + '</span></span></button>';
+        return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t" translate="no">' + esc(k.name) + '</span><span class="s">' + esc(k.say) + '</span></span></button>';
       }) + '</div>' +
       '<p class="fine">Gjelder nye spill med bokstaver. Et spill mot andre spilles i språket den som startet det valgte. Dagens brett er på norsk.' + (v.fiMissing ? ' Finsk kommer når ordlista fra Kotus er lagt inn.' : '') + '</p>' +
       '<h2 class="sec">Bakgrunn</h2><div class="group" role="radiogroup" aria-label="Bakgrunn">' + each(v.bgs, function (b) {

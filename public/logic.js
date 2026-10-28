@@ -469,7 +469,9 @@ function genBoard(S, seed) {
   var kind = kindOf(S.L), letters = kind === "tall" ? dealTall(S, R) : kind === "sett" ? dealSett(S, R) : S.L.grp === "tight" || S.L.grp === "daily" ? deal(S, R) : dealRamp(S, R), b = {};
   var on = function (l) { return S.pos.filter(function (p) { return p.l === l && letters[p.id] !== "*"; }); };
   var top = Math.max.apply(null, S.pos.map(function (p) { return p.l; }));
-  function put(list, s) { list = list.filter(function (p) { return !b[p.id]; }); var p = list[Math.floor(R() * list.length)]; if (p) b[p.id] = { m: +s[0], t: s.slice(-1) }; }
+  // In Sett every tile is worth 1, so a letter bonus would add a single point: Sett has word bonuses only. The draw
+  // still happens, so the word bonuses land where they always did.
+  function put(list, s) { list = list.filter(function (p) { return !b[p.id]; }); var p = list[Math.floor(R() * list.length)]; if (p && !(kind === "sett" && s.slice(-1) === "B")) b[p.id] = { m: +s[0], t: s.slice(-1) }; }
   put(on(top), "3×O"); put(on(1), "2×O"); put(on(0), "3×B"); put(on(0).concat(on(1)), "2×B"); put(on(0).concat(on(1)), "2×B"); put(on(2), "2×B");
   return { letters: letters, bonus: b };
 }
@@ -976,6 +978,8 @@ class Component extends DCLogic {
     return k === "tall" ? tallPretty(chars) : k === "sett" ? settText(chars) : chars.join("");
   }
   // A tile's points: letters by the Scrabble values, Tall by TALL_PTS (digits 1), Sett tiles 1.
+  // What a tile shows in its corner: in Tall every digit is worth 1, so only the signs show their points.
+  ptShow(raw) { return this.kind() === "tall" && !TALL_PTS[raw] ? "" : this.ptsOf(raw); }
   ptsOf(raw) { var k = this.kind(); return k === "tall" ? (TALL_PTS[raw] || 1) : k === "sett" ? 1 : (PTS[raw] || 0); }
   // Players
   duel() { return this.state.mode === "duel"; }
@@ -1474,9 +1478,12 @@ class Component extends DCLogic {
       // The six ways to start, as letter tiles (Meny-A), each with its letter's value in the Norwegian bag. The machine's level shows under them when M is chosen.
       var TILE = { cpu: ["M", 2, "Lett til sterk"], random: ["T", 1, "Finn en motspiller"], solo: ["A", 1, "Toppliste per brett"],
         friend: ["V", 4, "Velg eller inviter"], local: ["E", 1, "Over bordet"], code: ["K", 2, "Bli med i et spill"] };
+      var TILE_EN = { cpu: "C", random: "R", solo: "S", friend: "F", local: "O", code: "H" };
       v.modes = ["random", "friend", "solo", "cpu", "local", "code"].map(function (id) {
         var p = PICKS.filter(function (x) { return x.id === id; })[0], t = TILE[id];
-        return { k: t[0], p: t[1], t: p.name, s: t[2], on: id === P.id ? "true" : "false", pick: function () { choose(id); } };
+        // In English the tile carries the English word's first letter and its value in the English bag.
+        var k = UI === "en" ? TILE_EN[id] : t[0], pts = UI === "en" ? LANGS.en.pts[k] : t[1];
+        return { k: k, p: pts, t: p.name, s: t[2], on: id === P.id ? "true" : "false", pick: function () { choose(id); } };
       });
       v.tabs = [{ id: "on", name: "Mot andre" }, { id: "off", name: "Uten nett" }].map(function (T) { var on = T.id === P.grp; return { name: T.name, on: on ? "true" : "false", cls: "seg" + (on ? " on" : ""), pick: function () { if (!on) choose(st.pickBy[T.id] || (T.id === "on" ? "friend" : "cpu")); } }; });
       v.picks = PICKS.filter(function (p) { return p.grp === P.grp; }).map(function (p) { var on = p.id === P.id; return { name: p.name, on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { choose(p.id); } }; });
@@ -1729,7 +1736,7 @@ class Component extends DCLogic {
         if (free) nFree++;
         var x = S.offX + p.c * 49 - p.l * 4, y = S.offY + p.r * 60 - p.l * 7;
         return {
-          ch: syms ? "" : ch, p: jk || syms ? "" : pts, syms: syms, bonus: bonus, bnCls: "bn " + (b && b.t === "O" ? "ob" : "lb"),
+          ch: syms ? "" : ch, p: jk || syms ? "" : self.ptShow(raw), syms: syms, bonus: bonus, bnCls: "bn " + (b && b.t === "O" ? "ob" : "lb"),
           cls: "tile l" + p.l + (jk ? " jk" : "") + (kd === "tall" && TALL_PTS[raw] ? " op" : "") + (b ? " bonus" : "") + (st.sel.indexOf(id) >= 0 ? (self.cpuTurn() ? " sel cpu" : " sel") : ""),
           blocked: !free, pos: "left:" + x + "px;top:" + y + "px;z-index:" + Math.round(p.l * 1000 + p.r * 20 + p.c * 2 + 1),
           label: (jk ? "Joker" + (st.jokerAs[id] ? " som " + st.jokerAs[id] : "") : syms ? settSay(raw) : ch + ", " + pts + " poeng") + (bonus ? ", bonus " + bonus : "") + (free ? ", åpen" : ", sperret"),
@@ -1767,19 +1774,20 @@ class Component extends DCLogic {
       v.cancelPick = function () { self.setState({ picking: null }); };
       v.rack = st.sel.map(function (id) {
         var jk = id[0] !== "p" && st.letters[id] === "*", ch = self.chOf(id), sy = kindOf(S.L) === "sett" ? symsOf(ch) : null;
-        return { ch: sy ? "" : ch, syms: sy, p: jk || sy || id === "eq" ? "" : self.ptsOf(ch), cls: "rk" + (jk ? " jk" : "") + (id[0] === "p" ? " pk" : "") + (id === "eq" ? " eqk" : ""), label: "Fjern " + ch + " fra ordet", back: function () {
+        return { ch: sy ? "" : ch, syms: sy, p: jk || sy || id === "eq" ? "" : self.ptShow(ch), cls: "rk" + (jk ? " jk" : "") + (id[0] === "p" ? " pk" : "") + (id === "eq" ? " eqk" : ""), label: "Fjern " + ch + " fra ordet", back: function () {
           if (locked) return;
           var ja = Object.assign({}, self.state.jokerAs); delete ja[id];
           self.setState({ sel: self.state.sel.filter(function (x) { return x !== id; }), jokerAs: ja });
         } };
       });
+      var kd0 = kindOf(S.L);
       v.rackEmpty = st.sel.length === 0;
       v.rackHint = this.cpuTurn() ? "Maskinen tenker …" : this.waitTurn() ? (st.online.status === "waiting" ? "Spillet starter når motspilleren er med." : "Venter på " + st.online.oppName + ". Du får se trekket her.") :
-        st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : "Trykk en brikke i lommen for å bruke den i et ord.") : (duel ? "Legg et ord, ta en brikke i lommen eller stå over." : "Lommen tar to brikker du kan bruke i et senere ord.");
+        st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : (kd0 === "tall" ? "Trykk en brikke i lommen for å bruke den i et regnestykke." : kd0 === "sett" ? "Trykk en brikke i lommen for å bruke den i et sett." : "Trykk en brikke i lommen for å bruke den i et ord.")) : (duel ? (kd0 === "tall" ? "Legg et regnestykke, ta en brikke i lommen eller stå over." : kd0 === "sett" ? "Legg et sett, ta en brikke i lommen eller stå over." : "Legg et ord, ta en brikke i lommen eller stå over.") : (kd0 === "tall" ? "Lommen tar to brikker du kan bruke i et senere regnestykke." : kd0 === "sett" ? "Lommen tar to brikker du kan bruke i et senere sett." : "Lommen tar to brikker du kan bruke i et senere ord."));
       v.pocket = st.pocket.map(function (ch, i) {
         var pid = "p" + i, on = st.sel.indexOf(pid) >= 0;
         var sy = kindOf(S.L) === "sett" ? symsOf(ch) : null;
-        return { ch: sy ? "" : ch, syms: sy, p: sy ? "" : self.ptsOf(ch), on: on ? "true" : "false", cls: "rk pk" + (on ? " on" : ""), label: (sy ? settSay(ch) : ch) + " i lommen" + (on ? ", i ordet" : ""), tap: function () {
+        return { ch: sy ? "" : ch, syms: sy, p: sy ? "" : self.ptShow(ch), on: on ? "true" : "false", cls: "rk pk" + (on ? " on" : ""), label: (sy ? settSay(ch) : ch) + " i lommen" + (on ? ", i ordet" : ""), tap: function () {
           if (locked) return;
           var s0 = self.state.sel.slice(), j = s0.indexOf(pid);
           if (j >= 0) s0.splice(j, 1); else s0.push(pid);
@@ -1794,7 +1802,7 @@ class Component extends DCLogic {
       v.pocketIt = function () { if (!locked) self.pocketTile(self.state.sel[0]); };
       var w = this.word(st.sel);
       v.sendOff = locked || st.sel.length < 1 || (kindOf(S.L) === "sett" && st.sel.length !== 3);
-      v.sendLabel = this.cpuTurn() ? "Maskinens tur" : this.waitTurn() ? (st.online.status === "waiting" ? "Venter …" : st.online.oppName + " sin tur") : st.sel.length < 1 ? "Send ord" : "«" + w + "» · " + this.evaluate(st.sel).total + " p";
+      v.sendLabel = this.cpuTurn() ? "Maskinens tur" : this.waitTurn() ? (st.online.status === "waiting" ? "Venter …" : st.online.oppName + " sin tur") : st.sel.length < 1 ? (kindOf(S.L) === "tall" ? "Send regnestykket" : kindOf(S.L) === "sett" ? "Send settet" : "Send ord") : "«" + w + "» · " + this.evaluate(st.sel).total + " p";
       v.send = function () { if (!locked) self.playWord(); };
       // One hint per game for each player.
       v.hintOff = locked || !!st.hint; v.hintLabel = st.hint ? "Hint brukt" : "Hint −5";
