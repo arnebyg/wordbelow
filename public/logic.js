@@ -500,7 +500,7 @@ function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase
 var REPORT_REASONS = ["Stygt brukernavn", "Stygge meldinger", "Juks", "Noe annet"];
 var REACTIONS = ["👏", "😮", "😅", "😂", "🔥", "🙈"];
 // The iPhone app is served from the phone itself, so it reaches the server by its full address.
-var API = window.WB_NATIVE ? "https://wordbelow.arneby.workers.dev/api" : "/api";
+var API = window.WB_NATIVE ? "https://wordbelow.app/api" : "/api";
 var BG_KEY = "ordspill/bakgrunn/v1";
 var BGS = [{ id: "filt", name: "Filtgrønn (standard)", hex: "#1E6550" }, { id: "natt", name: "Nattblå", hex: "#142A52" }, { id: "fjord", name: "Fjordblå", hex: "#1D5470" },
   { id: "skifer", name: "Skifer", hex: "#2E3746" }, { id: "biljard", name: "Biljardgrønn", hex: "#0E3B35" }, { id: "sand", name: "Sand (lys)", hex: "#EFE4CF" }];

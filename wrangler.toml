@@ -2,6 +2,11 @@
 # The server's data lives in a Durable Object with SQLite; the first deploy creates it.
 name = "wordbelow"
 main = "src/worker.js"
+# wordbelow.app is the game's own address (the zone is in this Cloudflare account; its iCloud mail records stay as they are).
+routes = [
+  { pattern = "wordbelow.app", custom_domain = true },
+  { pattern = "www.wordbelow.app", custom_domain = true }
+]
 compatibility_date = "2026-10-01"
 
 [assets]

@@ -247,7 +247,7 @@ fysisk sett før lansering.
 ## The iPhone app (Capacitor)
 
 `ios/` is the Xcode project; the app shows `public/` from the phone itself and reaches the server at
-`https://wordbelow.arneby.workers.dev/api` (the Worker allows the app's origin, `capacitor://localhost`).
+`https://wordbelow.app/api` (the Worker allows the app's origin, `capacitor://localhost`).
 After a change in `public/`: `npx cap sync ios`, then build in Xcode (`npx cap open ios`) or with xcodebuild.
 
 - Bundle id `app.wordbelow`, display name «wordbelow», portrait only.
