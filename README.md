@@ -243,3 +243,20 @@ egennavn, forkortelser eller ord med aksenter).
 
 Poengene og posene for nederlandsk og finsk er de vanlige Scrabble-settene slik jeg kjenner dem; sjekk dem mot et
 fysisk sett før lansering.
+
+## The iPhone app (Capacitor)
+
+`ios/` is the Xcode project; the app shows `public/` from the phone itself and reaches the server at
+`https://wordbelow.arneby.workers.dev/api` (the Worker allows the app's origin, `capacitor://localhost`).
+After a change in `public/`: `npx cap sync ios`, then build in Xcode (`npx cap open ios`) or with xcodebuild.
+
+- Bundle id `app.wordbelow`, display name «wordbelow», portrait only.
+- Ads: Google AdMob through `@capacitor-community/admob`, wired in `public/native.js`. **Test ads only** for now: Google's
+  published test app id (`GADApplicationIdentifier` in `ios/App/App/Info.plist`) and test unit ids, `isTesting: true`.
+  Before release: an AdMob account, the app registered there, the real app id and unit ids, `isTesting: false`, and
+  Google's consent form for the EEA (UMP).
+- Banner in the strip at the bottom (home, game, result); full-screen ad after every 2nd own move against another
+  player online, every 5th in all other games (`AD_EVERY` in `logic.js`). None with Premium. The web page shows no
+  full-screen ad.
+- Apple's tracking question (App Tracking Transparency) comes once, before the ads start; the text is
+  `NSUserTrackingUsageDescription` in Info.plist.

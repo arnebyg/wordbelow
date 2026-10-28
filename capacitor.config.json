@@ -1,0 +1,9 @@
+{
+  "appId": "app.wordbelow",
+  "appName": "wordbelow",
+  "webDir": "public",
+  "ios": { "contentInset": "never", "backgroundColor": "#1E6550" },
+  "plugins": {
+    "AdMob": {}
+  }
+}

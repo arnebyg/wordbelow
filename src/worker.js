@@ -23,10 +23,23 @@ const LANGS = ["no", "nl", "fi", "sv", "fr", "it", "es", "en"];
 const langOf = (body) => LANGS.includes(body && body.lang) ? body.lang : "no";
 const MOVE_LIMIT = 72 * 3600e3, REMIND_BEFORE = 12 * 3600e3;
 
+const APP_ORIGINS = ["capacitor://localhost"];
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname.startsWith("/api/")) return env.HUB.get(env.HUB.idFromName("hub")).fetch(request);
+    if (url.pathname.startsWith("/api/")) {
+      // The iPhone app runs from capacitor://localhost and calls the API across origins; the web page is same-origin.
+      const app = APP_ORIGINS.includes(request.headers.get("origin") || "");
+      const cors = app ? { "access-control-allow-origin": request.headers.get("origin"), "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "access-control-allow-headers": "content-type, authorization", "access-control-max-age": "86400", "vary": "origin" } : null;
+      if (request.method === "OPTIONS") return new Response(null, { status: app ? 204 : 403, headers: cors || {} });
+      const res = await env.HUB.get(env.HUB.idFromName("hub")).fetch(request);
+      if (!cors) return res;
+      const out = new Response(res.body, res);
+      for (const k in cors) out.headers.set(k, cors[k]);
+      return out;
+    }
     return env.ASSETS.fetch(request);
   }
 };

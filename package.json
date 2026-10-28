@@ -1,0 +1,18 @@
+{
+  "name": "wordbelow",
+  "private": true,
+  "description": "WordBelow: the web game (public/), its server (src/worker.js) and the iPhone app (ios/, Capacitor).",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "ios:sync": "cap sync ios",
+    "ios:open": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor-community/admob": "^8.2.1",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3"
+  }
+}

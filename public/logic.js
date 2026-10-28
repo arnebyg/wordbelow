@@ -1,5 +1,6 @@
-// The full-screen ad after each move is paused while the app is being developed; set to true to turn it on.
-var AD_FULL_ON = false;
+// The full-screen ad comes only in the iPhone app (native.js), where a real ad network fills it: after every second
+// move of your own in a game against another player, and after every fifth move in all other games.
+var AD_FULL_ON = !!window.WB_NATIVE, AD_EVERY = { online: 2, other: 5 };
 var LEN_BONUS = 5, JOKER_EAGER = 8;
 // The share of the best word the machine aims for at each move: Middels about 58 % on average, Sterk about 70 %.
 var AIM = { middels: [0.42, 0.72], sterk: [0.54, 0.84] };
@@ -498,7 +499,8 @@ var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1",
 function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase()); }
 var REPORT_REASONS = ["Stygt brukernavn", "Stygge meldinger", "Juks", "Noe annet"];
 var REACTIONS = ["👏", "😮", "😅", "😂", "🔥", "🙈"];
-var API = "/api";
+// The iPhone app is served from the phone itself, so it reaches the server by its full address.
+var API = window.WB_NATIVE ? "https://wordbelow.arneby.workers.dev/api" : "/api";
 var BG_KEY = "ordspill/bakgrunn/v1";
 var BGS = [{ id: "filt", name: "Filtgrønn (standard)", hex: "#1E6550" }, { id: "natt", name: "Nattblå", hex: "#142A52" }, { id: "fjord", name: "Fjordblå", hex: "#1D5470" },
   { id: "skifer", name: "Skifer", hex: "#2E3746" }, { id: "biljard", name: "Biljardgrønn", hex: "#0E3B35" }, { id: "sand", name: "Sand (lys)", hex: "#EFE4CF" }];
@@ -675,7 +677,12 @@ class Component extends DCLogic {
   // Ads and Premium. The free version shows a banner at the bottom and a full-screen ad after each of your
   // own moves; Premium has neither, and opens the statistics. Payment is not connected yet (see README).
   humanMove() { var st = this.state; return st.phase === "play" && !this.cpuTurn() && !this.waitTurn(); }
-  adAfterMove() { if (AD_FULL_ON && !this.state.premium) this.setState({ adFull: Date.now() }); }
+  adAfterMove() {
+    if (!AD_FULL_ON || this.state.premium) return;
+    this.adMoves = (this.adMoves || 0) + 1;
+    if (this.adMoves % (this.online() ? AD_EVERY.online : AD_EVERY.other)) return;
+    if (window.WB_ADS && window.WB_ADS.interstitialNative) window.WB_ADS.interstitialNative(); else this.setState({ adFull: Date.now() });
+  }
   setKind(id) {
     lsSet(KIND_KEY, id);
     var first = LAYOUTS.filter(function (L) { return kindOf(L) === id; })[0];

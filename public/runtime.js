@@ -444,7 +444,8 @@ var App = (function () {
     var banner = !!v.ads && (v.phase === "home" || v.phase === "play" || v.phase === "done"), full = !!v.adFull && v.phase !== "premium";
     if (banner !== adShown.banner) {
       adShown.banner = banner; adBanner.hidden = !banner;
-      if (banner) adFill(adBanner.querySelector("[data-ad]"), "banner");
+      if (window.WB_ADS && window.WB_ADS.bannerShow) window.WB_ADS.bannerShow(banner);
+      else if (banner) adFill(adBanner.querySelector("[data-ad]"), "banner");
       root.style.setProperty("--ad", banner ? adBanner.offsetHeight + "px" : "0px");
       fitBoard();
     }
@@ -490,7 +491,8 @@ var App = (function () {
     var w = window.innerWidth, h = standalone && screen.width === w ? Math.max(window.innerHeight, screen.height) : window.innerHeight, s = Math.min(w / 390, (h - top - bot) / 640), H = Math.floor(h / s);
     // iOS 26 draws a Liquid Glass blur over the top of an installed web app, about 38–40 pt below the status bar;
     // nothing in the page turns it off, so the content starts below it (24 pt was too little).
-    var EDGE = top ? 40 : 0;
+    // The iPhone app (native.js) has no such blur, so it starts right below the status bar.
+    var EDGE = top && !window.WB_NATIVE ? 40 : 0;
     root.style.height = H + "px";
     root.style.setProperty("--st", Math.round((top + EDGE) / s) + "px");
     root.style.setProperty("--sb", Math.round(bot / s) + "px");
@@ -597,6 +599,6 @@ window.addEventListener("DOMContentLoaded", function () {
   if (window.I18N && I18N.ready) I18N.ready.then(go, go); else go();
 });
 
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && !window.WB_NATIVE) {
   window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
 }
