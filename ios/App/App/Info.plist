@@ -6,6 +6,17 @@
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>nb</string>
+		<string>nl</string>
+		<string>fi</string>
+		<string>sv</string>
+		<string>fr</string>
+		<string>it</string>
+		<string>es</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>wordbelow</string>
 	<key>CFBundleExecutable</key>
@@ -29,7 +40,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSUserTrackingUsageDescription</key>
-	<string>Brukes bare til å vise annonser som passer deg bedre. Spillet virker likt uansett hva du svarer.</string>
+	<string>Used only to show ads that suit you better. The game works the same whatever you answer.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

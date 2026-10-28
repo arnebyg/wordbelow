@@ -95,12 +95,8 @@ function useLang(c) {
   if (!L.small) { L.small = L.words.split(" "); L.smallSet = new Set(L.small); }
   WORDS = L.small; WORDSET = L.smallSet; DICT = L.dictSet || null; SEARCH = L.search || null;
 }
-// The language new games are played in: the one chosen in settings, else the phone's own if the app has it.
-function langPref() {
-  var c = lsGet(LANG_KEY); if (LANGS[c]) return c;
-  var n = String((navigator.languages && navigator.languages[0]) || navigator.language || "").slice(0, 2).toLowerCase();
-  return n === "nl" ? "nl" : n === "sv" ? "sv" : n === "fr" ? "fr" : n === "it" ? "it" : n === "es" ? "es" : n === "en" ? "en" : "no";
-}
+// The language new games are played in, and the app is shown in: UI, read in i18n.js.
+function langPref() { return LANGS[UI] ? UI : "no"; }
 // A board with fewer tiles draws from the same bag in the same shares: the bag's vowel share, 2 % jokers, the
 // rest consonants, each picked at random from the bag's own, so their mix follows the bag too.
 function bagFor(n, R) {
@@ -612,6 +608,7 @@ class Component extends DCLogic {
     var gid = (location.search.match(/[?&]game=([0-9a-f]{16})/) || [])[1];
     if (gid) { try { history.replaceState(null, "", location.pathname); } catch (e) {} if (this.state.account) this.openOnline(gid); }
     if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.openGame && self.state.account) self.openOnline(e.data.openGame); });
+    try { if (sessionStorage.getItem("wb-reopen") === "settings") { sessionStorage.removeItem("wb-reopen"); this.openSettings(); } } catch (e) {}
     this.pushCheck();
     // In the iPhone app the App Store says whether Premium is bought (also on a new phone), and gives the price.
     if (window.WB_IAP) {
@@ -696,9 +693,11 @@ class Component extends DCLogic {
     lsSet("ordspill/klassiker/brett/v1", first.id);
     this.setState(Object.assign(this.fresh(first.id), { phase: this.state.phase, help: false }));
   }
+  // The app's texts follow the game's language, so a new language starts the app again, back in Settings.
   setGameLang(c) {
     lsSet(LANG_KEY, c);
-    this.setState(Object.assign(this.fresh(this.state.lay), { phase: this.state.phase, help: false }));
+    try { sessionStorage.setItem("wb-reopen", "settings"); } catch (e) {}
+    location.reload();
   }
   setPremium(on, msg) { lsSet(PREMIUM_KEY, on); this.setState({ premium: on, adFull: null, premMsg: msg || (on ? "Premium er på for denne telefonen." : "Premium er av.") }); }
   // Push messages when it is your turn
@@ -1373,7 +1372,7 @@ class Component extends DCLogic {
       dictHost: DICT_URL.split("/")[2].replace(/^www\./, ""),
       rareSay: Array.from(RARE).sort(function (a, b) { return PTS[a] - PTS[b]; }).join(", "),
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : "",
-      kicker: online ? "Spill · " + S.L.name + (kindOf(S.L) === "ord" && st.lang !== "no" ? " · " + LANGS[st.lang].name : "") : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name + (kindOf(S.L) === "ord" && st.lang !== "no" ? " · " + LANGS[st.lang].name : ""),
+      kicker: online ? "Spill · " + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : "") : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : ""),
       score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
       ads: !st.premium, premium: !!st.premium, adFull: !st.premium && !!st.adFull, closeAd: function () { self.setState({ adFull: null }); },
       openPremium: function () { self.setState({ phase: "premium", premMsg: "", help: false }); },
@@ -1478,11 +1477,14 @@ class Component extends DCLogic {
       // The six ways to start, as letter tiles (Meny-A), each with its letter's value in the Norwegian bag. The machine's level shows under them when M is chosen.
       var TILE = { cpu: ["M", 2, "Lett til sterk"], random: ["T", 1, "Finn en motspiller"], solo: ["A", 1, "Toppliste per brett"],
         friend: ["V", 4, "Velg eller inviter"], local: ["E", 1, "Over bordet"], code: ["K", 2, "Bli med i et spill"] };
-      var TILE_EN = { cpu: "C", random: "R", solo: "S", friend: "F", local: "O", code: "H" };
+      // In another language the tile carries the first letter of the mode's name there, and its value in that language's bag.
+      var TILE_L = { en: { cpu: "C", random: "R", solo: "S", friend: "F", local: "O", code: "H" },
+        sv: { cpu: "D", random: "S", solo: "E", friend: "V", local: "T", code: "H" }, nl: { cpu: "C", random: "W", solo: "S", friend: "V", local: "E", code: "M" },
+        fi: { cpu: "T", random: "S", solo: "Y", friend: "K", local: "P", code: "L" }, fr: { cpu: "O", random: "H", solo: "S", friend: "A", local: "U", code: "C" },
+        it: { cpu: "I", random: "C", solo: "S", friend: "A", local: "U", code: "H" }, es: { cpu: "M", random: "R", solo: "S", friend: "A", local: "U", code: "C" } };
       v.modes = ["random", "friend", "solo", "cpu", "local", "code"].map(function (id) {
         var p = PICKS.filter(function (x) { return x.id === id; })[0], t = TILE[id];
-        // In English the tile carries the English word's first letter and its value in the English bag.
-        var k = UI === "en" ? TILE_EN[id] : t[0], pts = UI === "en" ? LANGS.en.pts[k] : t[1];
+        var tl = TILE_L[UI], k = tl ? tl[id] : t[0], pts = tl ? LANGS[UI].pts[k] || 1 : t[1];
         return { k: k, p: pts, t: p.name, s: t[2], on: id === P.id ? "true" : "false", pick: function () { choose(id); } };
       });
       v.tabs = [{ id: "on", name: "Mot andre" }, { id: "off", name: "Uten nett" }].map(function (T) { var on = T.id === P.grp; return { name: T.name, on: on ? "true" : "false", cls: "seg" + (on ? " on" : ""), pick: function () { if (!on) choose(st.pickBy[T.id] || (T.id === "on" ? "friend" : "cpu")); } }; });
@@ -1632,7 +1634,6 @@ class Component extends DCLogic {
       v.blockedList = (st.blocked || []).map(function (u) { return { name: u.name, unblock: function () { self.state.player = { id: u.id, name: u.name, step: "menu", msg: "" }; self.block(false); } }; });
       v.toggleChat = function () { self.setChatPref(!st.chatPref); };
       var curKind = kindOf(S.L);
-      v.uiLangs = Object.keys(UI_LANGS).map(function (c) { return { name: UI_LANGS[c], on: c === UI, pick: function () { if (c !== UI) setUiLang(c); } }; });
       var curLang = langPref();
       v.langs = Object.keys(LANGS).filter(function (c) { return c !== "fi" || LANGS.fi.avail || curLang === "fi"; }).map(function (c) {
         return { name: LANGS[c].name, say: "Ordliste: " + LANGS[c].list, on: c === curLang, pick: function () { if (c !== curLang) self.setGameLang(c); } };

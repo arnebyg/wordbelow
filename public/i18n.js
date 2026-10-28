@@ -3,12 +3,17 @@
 // pieces, such as "«" + word + "» står ikke i ordlista.", has each known piece swapped, longest first and only
 // at word edges. Names, played words and chat messages sit in elements marked translate="no" and are left as
 // they are. The server translates its push messages with the same catalogue and the same rule (src/i18n.js).
-var UI_KEY = "ordspill/appsprak/v1";
-var UI_LANGS = { no: "Norsk", en: "English" };
-var UI = (function () {
-  try { var c = JSON.parse(localStorage.getItem(UI_KEY)); if (UI_LANGS[c]) return c; } catch (e) {}
+// The app is shown in the language the game is played in (logic.js reads the same choice): the one chosen in
+// Settings, else the phone's own if the game has it, else English. Changing it reloads the app.
+var LANG_PICK_KEY = "ordspill/spillsprak/v1";
+var UI_LANGS = ["no", "nl", "fi", "sv", "fr", "it", "es", "en"];
+function phoneLang() {
   var n = String((navigator.languages && navigator.languages[0]) || navigator.language || "").slice(0, 2).toLowerCase();
-  return n === "nb" || n === "nn" || n === "no" ? "no" : "en";
+  return n === "nb" || n === "nn" ? "no" : UI_LANGS.indexOf(n) >= 0 ? n : "en";
+}
+var UI = (function () {
+  try { var c = JSON.parse(localStorage.getItem(LANG_PICK_KEY)); if (UI_LANGS.indexOf(c) >= 0) return c; } catch (e) {}
+  return phoneLang();
 })();
 var I18N = { cat: null, re: null, memo: new Map(), missing: new Set() };
 function trSetup(cat) {
@@ -58,4 +63,3 @@ I18N.ready = UI === "no" ? Promise.resolve() : fetch("i18n/" + UI + ".json").the
   document.documentElement.lang = UI;
   ["splash", "adbar", "adfull"].forEach(function (id) { var el = document.getElementById(id); if (el) trTree(el); });
 }).catch(function () { UI = "no"; });
-function setUiLang(c) { try { localStorage.setItem(UI_KEY, JSON.stringify(c)); } catch (e) {} location.reload(); }

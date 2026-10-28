@@ -328,9 +328,6 @@ var App = (function () {
   }
   function settingsView(v) {
     return '<div class="screen sub">' + head("Innstillinger", v.back) + '<div class="scroll">' +
-      '<h2 class="sec">Språk i appen</h2><div class="group" role="radiogroup" aria-label="Språk i appen" translate="no">' + each(v.uiLangs, function (k) {
-        return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t">' + esc(k.name) + '</span></span></button>';
-      }) + '</div>' +
       '<h2 class="sec">Tema</h2><div class="group" role="radiogroup" aria-label="Tema">' + each(v.themes, function (t) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + t.on + '"' + on(t.pick) + '><span class="dot' + (t.on ? ' on' : '') + '"></span><span>' + esc(t.name) + '</span></button>';
       }) + '</div>' +
@@ -340,10 +337,10 @@ var App = (function () {
         return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t">' + esc(k.name) + '</span><span class="s">' + esc(k.say) + '</span></span></button>';
       }) + '</div>' +
       '<p class="fine">Tall og Sett har egne, mer åpne brett. Dagens brett er alltid med bokstaver.</p>' +
-      '<h2 class="sec">Språk i spillet</h2><div class="group" role="radiogroup" aria-label="Språk i spillet">' + each(v.langs, function (k) {
+      '<h2 class="sec">Språk</h2><div class="group" role="radiogroup" aria-label="Språk">' + each(v.langs, function (k) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + k.on + '"' + on(k.pick) + '><span class="dot' + (k.on ? ' on' : '') + '"></span><span class="ot"><span class="t" translate="no">' + esc(k.name) + '</span><span class="s">' + esc(k.say) + '</span></span></button>';
       }) + '</div>' +
-      '<p class="fine">Gjelder nye spill med bokstaver. Et spill mot andre spilles i språket den som startet det valgte. Dagens brett er på norsk.' + (v.fiMissing ? ' Finsk kommer når ordlista fra Kotus er lagt inn.' : '') + '</p>' +
+      '<p class="fine">Appen vises på språket du velger, og nye spill med bokstaver spilles på det. Et spill mot andre spilles i språket den som startet det valgte. Dagens brett er på norsk.' + (v.fiMissing ? ' Finsk kommer når ordlista fra Kotus er lagt inn.' : '') + '</p>' +
       '<h2 class="sec">Bakgrunn</h2><div class="group" role="radiogroup" aria-label="Bakgrunn">' + each(v.bgs, function (b) {
         return '<button type="button" class="radio" role="radio" aria-checked="' + b.on + '"' + on(b.pick) + '><span class="dot' + (b.on ? ' on' : '') + '"></span><span class="swatch" style="background:' + b.hex + '"></span><span>' + esc(b.name) + '</span></button>';
       }) + '</div>' +
