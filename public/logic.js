@@ -1596,6 +1596,18 @@ class Component extends DCLogic {
       // Premium is always reachable from here, also when it is on and the diamond at the top is gone.
       v.openPremiumSet = function () { self.setState({ phase: "premium", after: "settings", premMsg: "" }); };
       // Where the law asks for it (the EEA, the UK, Switzerland), the ad consent can be changed again here.
+      // Deleting the account: asked once more, then the server removes everything tied to it and the phone forgets it.
+      v.delAsk = !!st.delAsk; v.delMsg = st.delMsg || "";
+      v.askDel = st.account ? function () { self.setState({ delAsk: true, delMsg: "" }); } : null;
+      v.cancelDel = function () { self.setState({ delAsk: false }); };
+      v.doDel = function () {
+        if (st.delBusy) return;
+        self.setState({ delBusy: true });
+        api("/me", { method: "DELETE" }).then(function () {
+          lsSet(ACCOUNT_KEY, null);
+          self.setState({ account: null, games: null, friends: [], delAsk: false, delBusy: false, delMsg: "Kontoen er slettet. Spill alene og mot datamaskinen ligger fortsatt på telefonen." });
+        }, function (e) { self.setState({ delBusy: false, delMsg: e.message }); });
+      };
       v.adChoices = window.WB_ADS && window.WB_ADS.privacyNeeded && window.WB_ADS.privacyNeeded() ? function () { window.WB_ADS.privacyForm().catch(function () {}); } : null;
       v.themes = [{ id: "system", name: "System" }, { id: "dark", name: "Mørkt tema" }, { id: "light", name: "Lyst tema" }].map(function (t) {
         var on = st.theme === t.id;

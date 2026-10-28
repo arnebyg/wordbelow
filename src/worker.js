@@ -86,7 +86,7 @@ export class Hub extends DurableObject {
     const tok = h.startsWith("Bearer ") ? h.slice(7) : "";
     return tok ? this.one("SELECT id, name FROM users WHERE token = ?", tok) : null;
   }
-  nameOf(id) { const u = id && this.one("SELECT name FROM users WHERE id = ?", id); return u ? u.name : null; }
+  nameOf(id) { const u = id && this.one("SELECT name FROM users WHERE id = ?", id); return u ? u.name : id ? "Slettet spiller" : null; }
   summary(g, me) {
     const you = g.p0 === me ? 0 : 1, oppId = you === 0 ? g.p1 : g.p0, st = g.state ? JSON.parse(g.state) : null;
     return { id: g.id, you, opp: oppId ? { id: oppId, name: this.nameOf(oppId) } : null, status: g.status, kind: g.kind, code: g.code,
@@ -353,6 +353,33 @@ export class Hub extends DurableObject {
     }
 
     // Reactions and short messages in a game between two people; off for both when either has turned them off.
+    // Deleting an account removes everything tied to it. A game still being played ends as if the player had
+    // resigned, so the other player is told and wins; finished games stay in the other player's history, but with
+    // the name taken out, and the deleted player shows as «Slettet spiller».
+    if (path === "/me" && m === "DELETE") {
+      const gone = "Slettet spiller";
+      for (const g of this.all("SELECT * FROM games WHERE p0 = ? OR p1 = ?", me.id, me.id)) {
+        const you = g.p0 === me.id ? 0 : 1, oppId = you === 0 ? g.p1 : g.p0;
+        if (g.status !== "active" && g.status !== "done") { this.sql.exec("DELETE FROM games WHERE id = ?", g.id); continue; }
+        const st = g.state ? JSON.parse(g.state.split(me.name).join(gone)) : { P: [{ score: 0 }, { score: 0 }] };
+        if (g.status === "active") {
+          st.result = { resigned: you, winner: 1 - you };
+          st.last = "Motspilleren slettet kontoen sin.";
+          this.notify(oppId, "Spillet er ferdig", "Motspilleren slettet kontoen sin, og du vant.", g.id);
+        }
+        this.sql.exec("UPDATE games SET state = ?, status = 'done', ver = ver + 1, updated = ? WHERE id = ?", JSON.stringify(st), Date.now(), g.id);
+      }
+      this.sql.exec("DELETE FROM chat WHERE uid = ?", me.id);
+      this.sql.exec("DELETE FROM friends WHERE uid = ? OR fid = ?", me.id, me.id);
+      this.sql.exec("DELETE FROM blocks WHERE uid = ? OR bid = ?", me.id, me.id);
+      this.sql.exec("DELETE FROM reports WHERE uid = ? OR about = ?", me.id, me.id);
+      this.sql.exec("DELETE FROM subs WHERE uid = ?", me.id);
+      this.sql.exec("DELETE FROM daily WHERE uid = ?", me.id);
+      this.sql.exec("DELETE FROM boards WHERE owner = ?", me.id);
+      this.sql.exec("DELETE FROM ratings WHERE uid = ?", me.id);
+      this.sql.exec("DELETE FROM users WHERE id = ?", me.id);
+      return json({ ok: true });
+    }
     if (path === "/me/chat" && m === "POST") { this.sql.exec("UPDATE users SET chat = ? WHERE id = ?", body.on ? 1 : 0, me.id); return json({ ok: true }); }
     const gm = path.match(/^\/games\/([0-9a-f]{16})(\/move|\/resign|\/cancel|\/accept|\/decline|\/chat|\/hide)?$/);
     if (gm) {

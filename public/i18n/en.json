@@ -1,4 +1,12 @@
 {
+"Vil du slette kontoen": "Delete the account",
+"Slett kontoen": "Delete account",
+"Fjerner navnet, spillene mot andre, chatten og vennene dine fra serveren.": "Removes your name, your games against others, the chat and your friends from the server.",
+"Kontoen er slettet. Spill alene og mot datamaskinen ligger fortsatt på telefonen.": "The account has been deleted. Games alone and against the computer are still on this phone.",
+"Spill som er i gang, avsluttes, og motspilleren vinner. Det kan ikke angres.": "Games in progress end, and the other player wins. This cannot be undone.",
+"Slettet spiller": "Deleted player",
+"Motspilleren slettet kontoen sin.": "The other player deleted their account.",
+"Motspilleren slettet kontoen sin, og du vant.": "The other player deleted their account, and you won.",
 "Personvern": "Privacy",
 "Personvernerklæring": "Privacy policy",
 "Hva som lagres, og hvor.": "What is stored, and where.",
