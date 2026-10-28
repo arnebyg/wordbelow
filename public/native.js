@@ -23,7 +23,7 @@
   if (!AdMob) return;
   // The ad units are wordbelow's own in AdMob. While TEST is true the plugin swaps them for Google's test ads;
   // TEST goes false only for the build that is sent to App Review.
-  var TEST = true, IDS = { banner: "ca-app-pub-6230023114953568/8226377247", interstitial: "ca-app-pub-6230023114953568/6119088651" };
+  var TEST = false, IDS = { banner: "ca-app-pub-6230023114953568/8226377247", interstitial: "ca-app-pub-6230023114953568/6119088651" };
   var ready = false, wantBanner = false, bannerOn = false, fullReady = false;
   function prepFull() {
     fullReady = false;
