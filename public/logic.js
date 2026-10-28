@@ -577,7 +577,7 @@ class Component extends DCLogic {
     var id = lsGet("ordspill/klassiker/brett/v1"), id = REBUILT[id] || id, id = id && RETIRED.indexOf(id) < 0 ? id : LAYOUTS[0].id, m = lsGet(MODE_KEY) || {};
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
-      account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
+      account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "dark", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
       search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" }, push: "unknown", pushMsg: "", pushCard: !lsGet(PUSH_CARD_KEY), premium: !!lsGet(PREMIUM_KEY), chatPref: lsGet(CHAT_KEY) !== false, chat: null, chatOpen: false, chatIn: "", chatErr: "" };
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }

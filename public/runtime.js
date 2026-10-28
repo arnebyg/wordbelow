@@ -571,11 +571,11 @@ var App = (function () {
   };
 })();
 
-// Theme: "system" follows the phone; the light theme is a class on <html>.
+// Theme: dark unless the player picks another; "system" follows the phone. The light theme is a class on <html>.
 // The background is a CSS variable: a dark one shows in the dark theme; sand is light and always gives the light look.
 var BACKGROUNDS = { filt: "#1E6550", natt: "#142A52", fjord: "#1D5470", skifer: "#2E3746", biljard: "#0E3B35", sand: "#EFE4CF" };
 window.applyTheme = function (t, bg) {
-  if (t === undefined) t = window.themeChoice || "system";
+  if (t === undefined) t = window.themeChoice || "dark";
   if (bg === undefined) bg = window.bgChoice || "filt";
   var light = bg === "sand" || t === "light" || (t === "system" && window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches);
   var de = document.documentElement, dark = BACKGROUNDS[bg] && bg !== "sand" ? BACKGROUNDS[bg] : BACKGROUNDS.filt;
@@ -590,7 +590,7 @@ if (window.matchMedia) matchMedia("(prefers-color-scheme: light)").addEventListe
 window.addEventListener("DOMContentLoaded", function () {
   // The chosen theme and background before the first paint, so the screen does not flash the default green.
   var read = function (k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
-  window.applyTheme(read("ordspill/tema/v1", "system"), read("ordspill/bakgrunn/v1", "filt"));
+  window.applyTheme(read("ordspill/tema/v1", "dark"), read("ordspill/bakgrunn/v1", "filt"));
   // In another language than Norwegian the catalogue comes first (from the phone's cache after the first time).
   var go = function () { App.boot(); };
   if (window.I18N && I18N.ready) I18N.ready.then(go, go); else go();
