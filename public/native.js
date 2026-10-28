@@ -16,8 +16,10 @@
     fullReady = false;
     AdMob.prepareInterstitial({ adId: IDS.interstitial, isTesting: TEST }).then(function () { fullReady = true; }, function () {});
   }
+  // The banner waits until the opening animation (#splash) has gone.
   function syncBanner() {
     if (!ready || wantBanner === bannerOn) return;
+    if (wantBanner && document.getElementById("splash")) { setTimeout(syncBanner, 300); return; }
     bannerOn = wantBanner;
     if (wantBanner) AdMob.showBanner({ adId: IDS.banner, adSize: "BANNER", position: "BOTTOM_CENTER", margin: 3, isTesting: TEST }).catch(function () { bannerOn = false; });
     else AdMob.hideBanner().catch(function () {});
