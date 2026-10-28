@@ -578,7 +578,7 @@ class Component extends DCLogic {
     this.state = { name: lsGet(NAME_KEY) || "", uid: null, board: [], boardSrc: "none", confirm: null,
       mode: m.mode || "solo", opp: m.opp || "cpu", diff: m.diff || "middels",
       account: lsGet(ACCOUNT_KEY), theme: lsGet(THEME_KEY) || "system", bg: lsGet(BG_KEY) || "filt", games: null, gamesMsg: "", friends: [],
-      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" }, push: "unknown", pushMsg: "", pushCard: !lsGet(PUSH_CARD_KEY), premium: !!lsGet(PREMIUM_KEY), chatPref: lsGet(CHAT_KEY) !== false, chat: null, chatOpen: false, chatIn: "", chatPop: null };
+      search: "", found: [], codeIn: "", acctName: "", acctMsg: "", after: null, online: null, inviteCard: !lsGet(INVITE_CARD_KEY), homeMsg: "", pick: lsGet(PICK_KEY) || "cpu", pickBy: lsGet(PICK_BY_KEY) || { on: "friend", off: "cpu" }, push: "unknown", pushMsg: "", pushCard: !lsGet(PUSH_CARD_KEY), premium: !!lsGet(PREMIUM_KEY), chatPref: lsGet(CHAT_KEY) !== false, chat: null, chatOpen: false, chatIn: "", chatErr: "" };
     Object.assign(this.state, this.fresh(id, "Laster ordlista …"), { phase: "home" });
   }
   // A game is dealt in its own language: an online game in the one it was started in, Dagens brett in
@@ -814,23 +814,24 @@ class Component extends DCLogic {
       }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
     });
   }
-  // Reactions and short messages, in online games only. A new one from the other player shows for a moment.
+  // Reactions and short messages, in online games only. A new one from the other player only lights the dot on the chat button;
+  // it is read by opening the chat.
   applyChat(id, d) {
     var st = this.state, old = st.chat && st.chat.gid === id ? st.chat : null, list = d.chat || [];
     var lastSeen = old ? old.lastSeen : (list.length ? list[list.length - 1].id : 0);
-    var fresh = old ? list.filter(function (c) { return !c.me && c.id > old.top; }) : [];
     var top = list.length ? list[list.length - 1].id : 0;
     var next = { chat: { gid: id, list: list, on: !!d.chatOn, why: d.chatWhy || null, top: top, lastSeen: st.chatOpen ? top : lastSeen } };
-    if (fresh.length && !st.chatOpen) next.chatPop = (st.online.oppName || "Motspilleren") + ": " + fresh[fresh.length - 1].text;
     this.setState(next);
   }
-  sendChat(text) {
+  // typed: the text came from the field, so the field is emptied once it is sent; a reaction leaves the field as it was.
+  sendChat(text, typed) {
     var self = this, o = this.state.online; text = (text || "").trim();
     if (!o || !text) return;
+    this.setState({ chatErr: "" });
     api("/games/" + o.id + "/chat", { method: "POST", body: { text: text } }).then(function (d) {
       self.applyChat(o.id, { chat: d.chat, chatOn: true });
-      self.setState({ chatIn: "" });
-    }, function (e) { self.setState({ chatPop: e.message }); });
+      if (typed) self.setState({ chatIn: "" });
+    }, function (e) { self.setState({ chatErr: e.message }); });
   }
   // Block and report another player.
   openPlayer(id, name) { this.setState({ player: { id: id, name: name, step: "menu", msg: "" }, chatOpen: false }); }
@@ -1368,14 +1369,19 @@ class Component extends DCLogic {
           best: (e.pct !== undefined && e.pct !== null ? (e.pct >= 100 ? "Beste trekk" : e.pct + " % av beste") + (e.best ? " · " : "") : "") + (e.best ? "beste mulige «" + e.best.w + "» +" + e.best.pts : "") };
       }),
       chatBtn: online && st.chatPref, chatUnread: !!(st.chat && st.chat.top > st.chat.lastSeen),
-      openChat: function () { self.setState({ chatOpen: true, chatPop: null, chat: st.chat ? Object.assign({}, st.chat, { lastSeen: st.chat.top }) : st.chat }); },
+      openChat: function () { self.setState({ chatOpen: true, chatErr: "", chat: st.chat ? Object.assign({}, st.chat, { lastSeen: st.chat.top }) : st.chat }); },
       closeChat: function () { self.setState({ chatOpen: false }); },
-      chatOpen: online && !!st.chatOpen, chatPop: online ? st.chatPop : null,
+      chatOpen: online && !!st.chatOpen, chatErr: st.chatErr || "",
       chatOn: !!(st.chat && st.chat.on), chatWhy: st.chat ? st.chat.why : null, opp: online ? st.online.oppName : "",
       chatList: (st.chat && st.chat.list || []).map(function (c) { return { text: c.text, cls: "cmsg" + (c.me ? " me" : "") + (REACTIONS.indexOf(c.text) >= 0 ? " big" : "") }; }),
-      reactions: REACTIONS.map(function (r) { return { r: r, send: function () { self.sendChat(r); } }; }),
+      // With text in the field, an emoji is added to the end of it instead of being sent on its own.
+      reactions: REACTIONS.map(function (r) { return { r: r, send: function () {
+        var t = self.state.chatIn || "";
+        if (t.trim()) { if ((t + " " + r).length <= 140) self.setState({ chatIn: t.replace(/\s*$/, " ") + r }); }
+        else self.sendChat(r);
+      } }; }),
       chatIn: st.chatIn, onChatIn: function (e) { self.state.chatIn = e.target.value; },
-      sendChatIn: function () { self.sendChat(self.state.chatIn); },
+      sendChatIn: function () { self.sendChat(self.state.chatIn, true); },
       player: st.player || null,
       closePlayer: function () { self.setState({ player: null }); },
       playerBlocked: !!(st.player && (st.blocked || []).some(function (x) { return x.id === st.player.id; })),
@@ -1397,12 +1403,12 @@ class Component extends DCLogic {
       var gs = st.games || [];
       var row = function (g) {
         var who = g.opp ? g.opp.name : g.kind === "invite" ? "Invitasjon · kode " + g.code : "Tilfeldig motspiller";
-        var sc = g.scores[g.you] + "–" + g.scores[1 - g.you], L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0];
+        var sc = g.scores[g.you] + "–" + g.scores[1 - g.you], L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0] || EXTRA[g.layout];
         var res = g.result, won = res && res.winner !== undefined ? (res.winner === g.you ? 1 : res.winner < 0 ? -1 : 0) : null;
         var why = res && res.timeout !== undefined ? (res.timeout === g.you ? "Tiden din gikk ut · " : "Motspilleren brukte for lang tid · ") : res && res.resigned !== undefined ? (res.resigned === g.you ? "Du ga opp · " : "Motspilleren ga opp · ") : "";
         var line = g.status === "offer" ? "Venter på at " + (g.opp ? g.opp.name : "motspilleren") + " godtar" : g.status === "waiting" ? (g.kind === "invite" ? "Del koden med den du vil spille mot" : "Venter på at noen andre søker") :
           g.status === "done" ? (res && res.res ? (function () { var a = res.res[g.you].score, b = res.res[1 - g.you].score; return why + (a > b ? "Du vant " : a < b ? "Du tapte " : "Uavgjort ") + a + "–" + b; })() : res && won !== null ? why + (won > 0 ? "Du vant" : won < 0 ? "Uavgjort" : "Du tapte") : "Ferdig") :
-          (L ? L.name : g.layout) + " · " + sc + (g.deadline ? " · " + (g.myTurn ? "du har " : "de har ") + left(g.deadline) : "") + (g.last ? " · " + g.last : "");
+          (L ? L.name : g.layout) + " · " + sc + (g.deadline ? " · " + (g.myTurn ? "du har " : "motstanderen har ") + left(g.deadline) : "") + (g.last ? " · " + g.last : "");
         return { id: g.id, initial: (who[0] || "?").toUpperCase(), who: who, line: line, when: ago(g.updated), cls: "game" + (g.myTurn ? " mine" : ""), mine: !!g.myTurn,
           open: function () { if (g.status === "waiting" && g.kind === "invite") self.shareCode(g); else self.openOnline(g.id); },
           // Each card can be ended from the list: an invitation withdrawn, a game resigned (two taps), a finished one removed.
@@ -1416,14 +1422,14 @@ class Component extends DCLogic {
         streakSay: streak ? streak + (streak === 1 ? " dag" : " dager") + " på rad" : "Start en rekke i dag",
         play: function () { self.startDaily(); }, share: function () { self.shareDaily(); } };
       v.offers = gs.filter(function (g) { return g.incoming; }).map(function (g) {
-        var L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0];
+        var L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0] || EXTRA[g.layout];
         return { who: g.opp ? g.opp.name : "Noen", initial: ((g.opp && g.opp.name) || "?")[0].toUpperCase(), line: "Vil spille på " + (L ? L.name : g.board ? g.board.name : g.layout) + " · " + ago(g.updated),
           yes: function () { self.answerOffer(g, true); }, no: function () { self.answerOffer(g, false); } };
       });
       gs = gs.filter(function (g) { return !g.incoming; });
       v.sections = [
         { title: "Din tur", badge: "Din tur", rows: gs.filter(function (g) { return g.myTurn; }).map(row) },
-        { title: "Deres tur", badge: "Deres tur", rows: gs.filter(function (g) { return g.status === "active" && !g.myTurn; }).map(row) },
+        { title: "Motstanders tur", badge: "Motstanders tur", rows: gs.filter(function (g) { return g.status === "active" && !g.myTurn; }).map(row) },
         { title: "Venter på motspiller", badge: "Venter", rows: gs.filter(function (g) { return g.status === "waiting" || g.status === "offer"; }).map(row) },
         { title: "Ferdige", badge: "Ferdig", rows: gs.filter(function (g) { return g.status === "done"; }).slice(0, 10).map(row) }
       ].filter(function (s) { return s.rows.length; });

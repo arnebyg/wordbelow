@@ -37,7 +37,6 @@ var App = (function () {
     '</div>' +
     (v.pop ? '<div class="pop" aria-hidden="true">' + esc(v.pop) + '</div>' : '') +
     (v.toast ? toastHtml(v) : '') +
-    (v.chatPop && !v.chatOpen ? '<div class="toast chatpop" role="status" translate="no">' + esc(v.chatPop) + '</div>' : '') +
     (v.dots ? '<div class="bdots" aria-hidden="true">' + each(v.dots, function (d) { return '<span class="' + d.cls + '"></span>'; }) + '</div>' : '') +
     (v.picking ? '<div class="over" role="dialog" aria-label="Velg bokstav for jokeren">' +
       '<div class="overtop"><span>Hvilken bokstav er jokeren?</span><button type="button" class="small"' + on(v.cancelPick) + '>Avbryt</button></div>' +
@@ -250,6 +249,7 @@ var App = (function () {
     var body = !v.chatOn ? '<p>' + (v.chatWhy === "mine" ? 'Du har slått av reaksjoner og chat i innstillingene.' : v.chatWhy === "blocked" ? 'Chatten er stengt fordi en av dere har blokkert den andre.' : v.chatWhy === "opp" ? esc(v.opp) + ' har slått av reaksjoner og chat.' : 'Chatten er ikke tilgjengelig i dette spillet.') + '</p>' :
       '<div class="reacts">' + each(v.reactions, function (r) { return '<button type="button" class="react"' + on(r.send) + '>' + r.r + '</button>'; }) + '</div>' +
       '<div class="cmsgs">' + (v.chatList.length ? each(v.chatList, function (c) { return '<div class="' + c.cls + '" translate="no">' + esc(c.text) + '</div>'; }) : '<p class="fine">Ingen meldinger ennå. Send en reaksjon eller skriv noe kort.</p>') + '</div>' +
+      (v.chatErr ? '<div class="note">' + esc(v.chatErr) + '</div>' : '') +
       '<div class="crow"><input id="chatin" class="inp" type="text" maxlength="140" autocomplete="off" placeholder="Skriv en kort melding" value="' + esc(v.chatIn) + '" data-input="onChatIn"><button type="button" class="act green"' + on(v.sendChatIn) + '>Send</button></div>';
     return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Reaksjoner og chat"><div class="helpsheet">' +
       '<div class="helphead"><b>' + esc(v.opp || 'Chat') + '</b><span class="hbtns">' + (v.openOppPlayer ? '<button type="button" class="pill small"' + on(v.openOppPlayer) + '>Blokker eller rapporter</button>' : '') + '<button type="button" class="x" aria-label="Lukk"' + on(v.closeChat) + '>' + IC.close + '</button></span></div>' +

@@ -364,7 +364,6 @@ html.light .stat .lastmv,html.light .missed .mrow .arr{color:#5D6B67}html.light 
 /* Reactions and chat */
 .qb.chatb{position:relative}
 .qb.chatb.unread::after{content:"";position:absolute;right:-2px;top:-2px;width:10px;height:10px;border-radius:5px;background:#F2C46B;box-shadow:0 0 0 2px var(--bg,#1E6550)}
-.toast.chatpop{top:auto;bottom:10px;background:#F4EFE2;color:#1C2626;animation:toast 6s ease forwards}
 .reacts{display:flex;justify-content:space-between;gap:6px;flex:none}
 .react{width:48px;height:48px;border:0;border-radius:14px;background:rgba(0,0,0,.24);font-size:26px;cursor:pointer}
 .react:active{transform:scale(.92)}
