@@ -8,6 +8,18 @@
   document.documentElement.classList.add("native");
   // The app view reports the notch and home-bar insets a moment after the page starts; measure the screen again then.
   window.addEventListener("load", function () { [150, 600, 1500].forEach(function (ms) { setTimeout(function () { window.dispatchEvent(new Event("resize")); }, ms); }); });
+  // Premium is one purchase in the App Store (non-consumable app.wordbelow.premium). StoreKit keeps it, so
+  // checking the purchases at start gives it back on a new phone or after a reinstall.
+  var IAP = C.Plugins && C.Plugins.NativePurchases, PREMIUM_ID = "app.wordbelow.premium";
+  if (IAP) {
+    var owns = function (r) { return ((r && r.purchases) || []).some(function (p) { return p.productIdentifier === PREMIUM_ID; }); };
+    window.WB_IAP = {
+      price: function () { return IAP.getProducts({ productIdentifiers: [PREMIUM_ID] }).then(function (r) { var p = r && r.products && r.products[0]; return p ? p.priceString : null; }); },
+      owned: function () { return IAP.getPurchases().then(owns); },
+      buy: function () { return IAP.purchaseProduct({ productIdentifier: PREMIUM_ID, quantity: 1 }).then(function (t) { return !!t; }); },
+      restore: function () { return IAP.restorePurchases().then(function () { return IAP.getPurchases(); }).then(owns); }
+    };
+  }
   var AdMob = C.Plugins && C.Plugins.AdMob;
   if (!AdMob) return;
   var TEST = true, IDS = { banner: "ca-app-pub-3940256099942544/2934735716", interstitial: "ca-app-pub-3940256099942544/4411468910" };

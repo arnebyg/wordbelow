@@ -611,6 +611,11 @@ class Component extends DCLogic {
     if (gid) { try { history.replaceState(null, "", location.pathname); } catch (e) {} if (this.state.account) this.openOnline(gid); }
     if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.openGame && self.state.account) self.openOnline(e.data.openGame); });
     this.pushCheck();
+    // In the iPhone app the App Store says whether Premium is bought (also on a new phone), and gives the price.
+    if (window.WB_IAP) {
+      window.WB_IAP.owned().then(function (own) { if (own !== !!self.state.premium) { lsSet(PREMIUM_KEY, own); self.setState({ premium: own }); } }, function () {});
+      window.WB_IAP.price().then(function (p) { if (p) self.setState({ premPrice: p }); }, function () {});
+    }
     this.refreshGames();
     this.poll = setInterval(function () { self.tick(); }, 5000);
     this.clock = setInterval(function () { self.soloTick(); }, 1000);
@@ -675,7 +680,7 @@ class Component extends DCLogic {
     if (this.state.account) api("/stats").then(function (d) { self.setState({ srvStats: d }); }, function () {});
   }
   // Ads and Premium. The free version shows a banner at the bottom and a full-screen ad after each of your
-  // own moves; Premium has neither, and opens the statistics. Payment is not connected yet (see README).
+  // own moves; Premium has neither, and opens the statistics. It is bought in the App Store (native.js).
   humanMove() { var st = this.state; return st.phase === "play" && !this.cpuTurn() && !this.waitTurn(); }
   adAfterMove() {
     if (!AD_FULL_ON || this.state.premium) return;
@@ -693,7 +698,7 @@ class Component extends DCLogic {
     lsSet(LANG_KEY, c);
     this.setState(Object.assign(this.fresh(this.state.lay), { phase: this.state.phase, help: false }));
   }
-  setPremium(on) { lsSet(PREMIUM_KEY, on); this.setState({ premium: on, adFull: null, premMsg: on ? "Premium er på for denne telefonen." : "Premium er av." }); }
+  setPremium(on, msg) { lsSet(PREMIUM_KEY, on); this.setState({ premium: on, adFull: null, premMsg: msg || (on ? "Premium er på for denne telefonen." : "Premium er av.") }); }
   // Push messages when it is your turn
   pushCheck() {
     var self = this, can = pushCan();
@@ -1523,9 +1528,25 @@ class Component extends DCLogic {
     }
     if (st.phase === "premium") {
       v.premMsg = st.premMsg;
-      v.buy = function () { self.setState({ premMsg: "Betaling er ikke koblet til ennå. Når den er det, kjøper du Premium her én gang og har det for alltid." }); };
-      v.restore = function () { self.setState({ premMsg: "Det finnes ingen kjøp å gjenopprette ennå." }); };
-      v.testOn = function () { self.setPremium(!st.premium); };
+      var iap = window.WB_IAP;
+      v.price = st.premPrice;
+      v.busy = !!st.premBusy;
+      // In the iPhone app the purchase goes through the App Store; on the web, payment is not connected.
+      v.buy = function () {
+        if (!iap) { self.setState({ premMsg: "Premium kjøpes i iPhone-appen. Betaling på nettsiden er ikke koblet til ennå." }); return; }
+        if (st.premBusy) return;
+        self.setState({ premBusy: true, premMsg: "" });
+        iap.buy().then(function (ok) { self.setState({ premBusy: false }); if (ok) self.setPremium(true, "Takk! Du har Premium nå."); },
+          function (e) { var m = String((e && e.message) || e || ""); self.setState({ premBusy: false, premMsg: /cancel/i.test(m) ? "" : "Kjøpet gikk ikke gjennom. Prøv igjen om litt." }); });
+      };
+      v.restore = function () {
+        if (!iap) { self.setState({ premMsg: "Kjøp gjenopprettes i iPhone-appen." }); return; }
+        if (st.premBusy) return;
+        self.setState({ premBusy: true, premMsg: "" });
+        iap.restore().then(function (own) { self.setState({ premBusy: false }); if (own) self.setPremium(true, "Premium er gjenopprettet."); else self.setState({ premMsg: "Fant ikke noe Premium-kjøp på denne Apple-ID-en." }); },
+          function () { self.setState({ premBusy: false, premMsg: "Kunne ikke nå App Store. Prøv igjen om litt." }); });
+      };
+      v.testOn = iap ? null : function () { self.setPremium(!st.premium); };
       v.back = function () { self.setState({ phase: st.after === "stats" || st.after === "settings" ? st.after : "home", after: null }); };
       return v;
     }

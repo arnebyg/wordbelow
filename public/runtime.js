@@ -270,10 +270,10 @@ var App = (function () {
     return '<div class="screen sub">' + head("Premium", v.back) + '<div class="scroll">' +
       '<div class="premhero">' + IC.gem + '<b>WordBelow Premium</b><span>Ett kjøp, for alltid.</span></div>' +
       '<div class="group">' + li("Ingen reklame", "Verken banneret nederst eller reklamen etter hvert trekk.") + li("Full statistikk", "Resultater, rating over tid, beste ord og resultater mot hver motspiller.") + '</div>' +
-      (v.premium ? '<div class="note">Du har Premium på denne telefonen.</div>' : '<button type="button" class="bigbtn"' + on(v.buy) + '>' + IC.gem + '<span>Kjøp Premium</span></button>') +
-      '<button type="button" class="pill"' + on(v.restore) + '>Gjenopprett kjøp</button>' +
+      (v.premium ? '<div class="note">Du har Premium på denne telefonen.</div>' : '<button type="button" class="bigbtn"' + (v.busy ? ' disabled' : '') + on(v.buy) + '>' + IC.gem + '<span>Kjøp Premium</span>' + (v.price ? '<span class="price" translate="no">' + esc(v.price) + '</span>' : '') + '</button>') +
+      (v.premium ? '' : '<button type="button" class="pill"' + (v.busy ? ' disabled' : '') + on(v.restore) + '>Gjenopprett kjøp</button>') +
       (v.premMsg ? '<div class="note">' + esc(v.premMsg) + '</div>' : '') +
-      '<h2 class="sec">For testing</h2><div class="group"><div class="opt"><span class="ot"><span class="t">Premium på denne telefonen</span><span class="s">Til betalingen er koblet til: slå Premium av og på for å se begge versjonene.</span></span><button type="button" class="pill small"' + on(v.testOn) + '>' + (v.premium ? 'Slå av' : 'Slå på') + '</button></div></div>' +
+      (v.testOn ? '<h2 class="sec">For testing</h2><div class="group"><div class="opt"><span class="ot"><span class="t">Premium på denne telefonen</span><span class="s">Slå Premium av og på for å se begge versjonene.</span></span><button type="button" class="pill small"' + on(v.testOn) + '>' + (v.premium ? 'Slå av' : 'Slå på') + '</button></div></div>' : '') +
       '</div></div>';
   }
   function editorView(v) {
