@@ -1,6 +1,5 @@
 // The iPhone app (Capacitor) puts real ads where the web page has placeholders. On the web this file does nothing.
-// While the app is tested, every ad is one of Google's own test ads (the ids below are Google's published test ids);
-// the real ids replace them, and isTesting goes false, only when the app is about to be released.
+// While the app is tested, every ad is one of Google's own test ads (TEST below).
 (function () {
   var C = window.Capacitor;
   if (!C || !C.isNativePlatform || !C.isNativePlatform()) return;
@@ -22,7 +21,9 @@
   }
   var AdMob = C.Plugins && C.Plugins.AdMob;
   if (!AdMob) return;
-  var TEST = true, IDS = { banner: "ca-app-pub-3940256099942544/2934735716", interstitial: "ca-app-pub-3940256099942544/4411468910" };
+  // The ad units are wordbelow's own in AdMob. While TEST is true the plugin swaps them for Google's test ads;
+  // TEST goes false only for the build that is sent to App Review.
+  var TEST = true, IDS = { banner: "ca-app-pub-6230023114953568/8226377247", interstitial: "ca-app-pub-6230023114953568/6119088651" };
   var ready = false, wantBanner = false, bannerOn = false, fullReady = false;
   function prepFull() {
     fullReady = false;
@@ -36,8 +37,16 @@
     if (wantBanner) AdMob.showBanner({ adId: IDS.banner, adSize: "BANNER", position: "BOTTOM_CENTER", margin: 3, isTesting: TEST }).catch(function () { bannerOn = false; });
     else AdMob.hideBanner().catch(function () {});
   }
-  // Apple asks before any tracking; the answer only changes which ads are shown, never the game.
-  AdMob.trackingAuthorizationStatus().then(function (s) {
+  // In the EEA, the UK and Switzerland, Google's consent form (UMP) comes first; it is the message set up in AdMob,
+  // and outside those places it does not show. Then Apple asks before any tracking. Neither answer changes the game.
+  // privacy says whether Settings must offer a way back to the form.
+  var privacy = false;
+  AdMob.requestConsentInfo({}).then(function (c) {
+    privacy = c && c.privacyOptionsRequirementStatus === "REQUIRED";
+    return c && c.status === "REQUIRED" && c.isConsentFormAvailable ? AdMob.showConsentForm() : c;
+  }).catch(function () {}).then(function () {
+    return AdMob.trackingAuthorizationStatus();
+  }).then(function (s) {
     return s && s.status === "notDetermined" ? AdMob.requestTrackingAuthorization() : null;
   }).catch(function () {}).then(function () {
     return AdMob.initialize({ initializeForTesting: TEST });
@@ -47,6 +56,9 @@
     // The web page keeps its banner strip as the room the native banner sits in.
     bannerShow: function (on) { wantBanner = !!on; syncBanner(); },
     // Shown at once if one has loaded; a move never waits for an ad.
-    interstitialNative: function () { if (ready && fullReady) { fullReady = false; AdMob.showInterstitial().catch(prepFull); } }
+    interstitialNative: function () { if (ready && fullReady) { fullReady = false; AdMob.showInterstitial().catch(prepFull); } },
+    // Where the law asks for it, the player can open the consent form again from Settings.
+    privacyNeeded: function () { return privacy; },
+    privacyForm: function () { return AdMob.showPrivacyOptionsForm(); }
   };
 })();

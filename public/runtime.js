@@ -353,6 +353,8 @@ var App = (function () {
       (v.pushMsg ? '<div class="note">' + esc(v.pushMsg) + '</div>' : '') +
       '<p class="fine">Mot andre har hver spiller 72 timer på et trekk. Går tiden ut, er spillet over og den andre vinner.</p>' +
       '<h2 class="sec">Premium</h2><div class="group"><button type="button" class="opt"' + on(v.openPremiumSet) + '><span class="tileic">' + IC.gem + '</span><span class="ot"><span class="t">' + (v.premium ? 'Du har Premium' : 'WordBelow Premium') + '</span><span class="s">' + (v.premium ? 'Uten reklame, med full statistikk.' : 'Ingen reklame og full statistikk, med ett kjøp.') + '</span></span><span class="chev">' + IC.chev + '</span></button></div>' +
+      '<h2 class="sec">Personvern</h2><div class="group"><a class="opt" href="https://wordbelow.app/privacy" target="_blank" rel="noopener"><span class="ot"><span class="t">Personvernerklæring</span><span class="s">Hva som lagres, og hvor.</span></span><span class="chev">' + IC.chev + '</span></a>' +
+        (v.adChoices ? '<button type="button" class="opt"' + on(v.adChoices) + '><span class="ot"><span class="t">Annonsevalg</span><span class="s">Endre samtykket ditt til tilpassede annonser.</span></span><span class="chev">' + IC.chev + '</span></button>' : '') + '</div>' +
       '<h2 class="sec">Konto</h2><div class="group"><div class="opt"><span class="ot"><span class="t">' + esc(v.account ? v.account.name : "Ingen konto ennå") + '</span><span class="s">' + (v.account ? "Kontoen ligger på denne telefonen." : "Du får en når du spiller mot andre første gang.") + '</span></span></div></div>' +
       '</div></div>';
   }

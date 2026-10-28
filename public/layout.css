@@ -111,7 +111,7 @@ button.mode:active{background:rgba(0,0,0,.34)}
 .nav{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;height:56px;flex:none}
 .nav h1{margin:0;text-align:center;font-size:24px;font-weight:700}
 .group{border-radius:16px;background:rgba(0,0,0,.24);overflow:hidden;flex:none}
-.opt{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;min-height:72px;padding:12px 14px;border:0;border-bottom:1px solid rgba(244,239,226,.1);background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer}
+.opt{text-decoration:none;display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;min-height:72px;padding:12px 14px;border:0;border-bottom:1px solid rgba(244,239,226,.1);background:transparent;color:inherit;font-family:inherit;text-align:left;cursor:pointer}
 .opt:last-child{border-bottom:0}
 .tileic{width:50px;height:50px;flex:none;border-radius:8px;background:#FBF6EA;color:#1C2626;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 0 #C2702C;font-size:30px;font-weight:800}
 .ot{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}

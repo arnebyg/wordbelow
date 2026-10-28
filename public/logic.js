@@ -1595,6 +1595,8 @@ class Component extends DCLogic {
     if (st.phase === "settings") {
       // Premium is always reachable from here, also when it is on and the diamond at the top is gone.
       v.openPremiumSet = function () { self.setState({ phase: "premium", after: "settings", premMsg: "" }); };
+      // Where the law asks for it (the EEA, the UK, Switzerland), the ad consent can be changed again here.
+      v.adChoices = window.WB_ADS && window.WB_ADS.privacyNeeded && window.WB_ADS.privacyNeeded() ? function () { window.WB_ADS.privacyForm().catch(function () {}); } : null;
       v.themes = [{ id: "system", name: "System" }, { id: "dark", name: "Mørkt tema" }, { id: "light", name: "Lyst tema" }].map(function (t) {
         var on = st.theme === t.id;
         return { name: t.name, on: on, pick: function () { lsSet(THEME_KEY, t.id); self.setState({ theme: t.id }); if (window.applyTheme) window.applyTheme(t.id, self.state.bg); } };
