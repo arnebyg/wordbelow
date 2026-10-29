@@ -1032,7 +1032,12 @@ class Component extends DCLogic {
         if (d.mine) { self.setState({ phase: "home", ngMsg: "Det er din egen invitasjon. Send koden til den du vil spille mot." }); return; }
         if (d.board) sharedLayout(d.board.code, d.board.name, d.board.cells);
         self.setState({ phase: "home", pick: "code", codeIn: c, codePeek: d, ngMsg: "" });
-      }, function (e) { self.setState({ phase: "home", ngMsg: e.message, codePeek: null }); });
+      }, function (e) {
+        // A shared board's code (six letters and digits) is typed here too, now that its link no longer opens the game on the web.
+        if (/^[A-Z0-9]{6}$/.test(c)) api("/boards/" + c.toLowerCase()).then(function () { self.setState({ codeIn: "", codePeek: null }); self.importBoard(c.toLowerCase()); },
+          function () { self.setState({ phase: "home", ngMsg: e.message, codePeek: null }); });
+        else self.setState({ phase: "home", ngMsg: e.message, codePeek: null });
+      });
       return;
     }
     this.setState({ codePeek: null });

@@ -2,3 +2,5 @@ node_modules/
 .wrangler/
 .DS_Store
 admin-key.txt
+dist-site/
+wrangler.site.toml

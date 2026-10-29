@@ -5,7 +5,8 @@
   "scripts": {
     "deploy": "wrangler deploy",
     "ios:sync": "cap sync ios",
-    "ios:open": "cap open ios"
+    "ios:open": "cap open ios",
+    "deploy:site": "sh tools/site-build.sh && wrangler deploy -c wrangler.site.toml"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.2.1",
