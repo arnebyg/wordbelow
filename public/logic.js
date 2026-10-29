@@ -495,6 +495,43 @@ var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det be
 var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1", CHAT_KEY = "ordspill/chat/v1";
 // Word meanings: Bokmålsordboka and Nynorskordboka at ordbokene.no (Språkrådet and the University of Bergen).
 function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase()); }
+// A word's meaning, from Wiktionary in the game's own language: the part of the page for that language, without
+// pronunciation, etymology, translations and the like. A form of another word («bøyningsform av brød») is looked up
+// once more under that word. Fetched from the phone straight to Wikimedia; kept for this visit.
+var WIKI_HEAD = { no: "Norsk", sv: "Svenska", nl: "Nederlands", fi: "Suomi", fr: "Français", it: "Italiano", es: "Español", en: "English" };
+var WIKI_SKIP = /uttale|etymologi|oversett|faste uttrykk|sitat|referanser|uttal|översättning|uitspraak|woordafbreking|woordherkomst|vertaling|ääntäminen|etymologia|käännök|prononciation|étymologie|traduction|anagramme|références|voir aussi|pronuncia|etimologia|traduzion|sillabazione|pronunciación|etimología|traducci|pronunciation|etymology|translation|anagram|references|see also|further reading|alternative|varianter|varianten|descendants|derived|hyponym|synonym|antonym|related|kilder|källor|bronnen|lähteet|fonti|fuentes|bøyning|böjning|taivutus|flexion|conjugaison|flessione|conjugación|declension|inflection/i;
+var WIKI_MEMO = {};
+var WIKI_FORM = /(?:bøyningsform av|böjningsform av|(?:meervoud|verkleinwoord|vervoeging|vrouwelijke vorm|vergrotende trap|overtreffende trap) van|muoto sanasta|sanan|pluriel de|féminin de|forme (?:conjuguée )?de|plurale di|femminile di|forma (?:del plural |femenina |plural )?de|plural of|form of|participle of|(?:simple )?(?:past|present)(?: tense)? of|indicative of)\s+(?:(?:het|de|zelfstandig|naamwoord|werkwoord|bijvoeglijk|du verbe|del verbo|the)\s+)*«?([^\s«».,;:()]+)/i;
+function wikiOne(lang, w) {
+  var url = "https://" + lang + ".wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles=" + encodeURIComponent(w);
+  return fetch(url).then(function (r) { return r.json(); }).then(function (d) {
+    var pg = d && d.query && d.query.pages, p = pg && pg[Object.keys(pg)[0]], text = p && p.extract;
+    if (!text) return null;
+    var head = WIKI_HEAD[lang], at = text.search(new RegExp("(^|\\n)== *" + head + " *==")), part;
+    if (at < 0) return null;
+    part = text.slice(at).replace(/^\n?== *[^=\n]+ *==/, "");
+    var end = part.search(/\n== [^=]/); if (end >= 0) part = part.slice(0, end);
+    var out = [], skip = false;
+    part.split("\n").forEach(function (ln) {
+      var h = ln.match(/^=+ *(.+?) *=+$/);
+      if (h) { skip = WIKI_SKIP.test(h[1]); if (!skip) out.push({ h: h[1] }); return; }
+      ln = ln.trim(); if (!skip && ln && !/^(uttal|uttale|IPA|Geluid|Ääntäminen|Prononciation)\b/i.test(ln)) out.push({ t: ln });
+    });
+    while (out.length && out[out.length - 1].h) out.pop();
+    return out.length ? { title: p.title, lines: out } : null;
+  });
+}
+function wikiLook(lang, w) {
+  var key = lang + "/" + w;
+  if (WIKI_MEMO[key]) return WIKI_MEMO[key];
+  return (WIKI_MEMO[key] = wikiOne(lang, w).then(function (r) {
+    // An entry that is a form of another word («bøyningsform av brød», «plural of bread»): look that word up too.
+    var form = null;
+    (r ? r.lines.filter(function (x) { return x.t; }).slice(0, 4) : []).some(function (x) { return (form = x.t.match(WIKI_FORM)); });
+    if (form && form[1].toLowerCase() !== w) return wikiOne(lang, form[1].toLowerCase()).then(function (r2) { return { first: r, lemma: form[1].toLowerCase(), second: r2 }; });
+    return { first: r };
+  }).catch(function (e) { delete WIKI_MEMO[key]; throw e; }));
+}
 var REPORT_REASONS = ["Stygt brukernavn", "Stygge meldinger", "Juks", "Noe annet"];
 var REACTIONS = ["👏", "😮", "😅", "😂", "🔥", "🙈"];
 // The iPhone app is served from the phone itself, so it reaches the server by its full address.
@@ -729,7 +766,8 @@ class Component extends DCLogic {
   setPremium(on, msg) { lsSet(PREMIUM_KEY, on); this.setState({ premium: on, adFull: null, premMsg: msg || (on ? "Premium er på for denne telefonen." : "Premium er av.") }); }
   // Push messages when it is your turn
   pushCheck() {
-    var self = this, can = pushCan();
+    // The iPhone app cannot take the web page's notifications (they need the phone's own, APNs), so it does not offer them.
+    var self = this, can = window.WB_NATIVE ? "app" : pushCan();
     if (can !== "ok") { this.setState({ push: can }); return; }
     navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
       self.setState({ push: sub ? "on" : "off" });
@@ -763,6 +801,7 @@ class Component extends DCLogic {
     var p = this.state.push;
     return p === "on" ? "På. Du får beskjed når det er din tur, når noen blir med, og 12 timer før tiden går ut." :
       p === "install" ? "På iPhone og iPad kommer varsler bare til appen på Hjem-skjermen. Åpne siden i Safari, trykk Del og «Legg til på Hjem-skjerm», og slå på varsler der." :
+      p === "app" ? "Varsler kommer i en senere versjon av iPhone-appen." :
       p === "denied" ? "Telefonen har sagt nei til varsler for WordBelow. Slå dem på i telefonens innstillinger." :
       p === "none" ? "Denne nettleseren kan ikke vise varsler." :
       !this.state.account ? "Varsler krever at du har valgt brukernavn." : "Av. Slå på for å få beskjed når det er din tur.";
@@ -905,6 +944,15 @@ class Component extends DCLogic {
   setChatPref(on) {
     lsSet(CHAT_KEY, on); this.setState({ chatPref: on });
     if (this.state.account) api("/me/chat", { method: "POST", body: { on: on } }).catch(function () {});
+  }
+  lookupWord(w, lang, url) {
+    var self = this, word = String(w).toLowerCase();
+    this.setState({ lookup: { w: word, lang: lang, url: url, busy: true } });
+    wikiLook(lang, word).then(function (r) {
+      if (self.state.lookup && self.state.lookup.w === word) self.setState({ lookup: Object.assign({}, self.state.lookup, { busy: false, res: r }) });
+    }, function () {
+      if (self.state.lookup && self.state.lookup.w === word) self.setState({ lookup: Object.assign({}, self.state.lookup, { busy: false, err: true }) });
+    });
   }
   answerOffer(g, yes) {
     var self = this;
@@ -1422,7 +1470,7 @@ class Component extends DCLogic {
       histRows: (st.log || []).slice().reverse().map(function (e) {
         var who = duel ? nm[e.p] : "Du";
         return { who: who, what: e.k === "w" ? "«" + e.w + "»" : e.k === "p" ? e.w + " i lommen" : "sto over", pts: e.k === "w" ? "+" + e.pts : "",
-          url: e.k === "w" && kindOf(S.L) === "ord" ? dictUrl(e.w) : null,
+          url: e.k === "w" && kindOf(S.L) === "ord" ? dictUrl(e.w) : null, look: e.k === "w" && kindOf(S.L) === "ord" ? function () { self.lookupWord(e.w, st.lang || "no", dictUrl(e.w)); } : null,
           best: (e.pct !== undefined && e.pct !== null ? (e.pct >= 100 ? "Beste trekk" : e.pct + " % av beste") + (e.best ? " · " : "") : "") + (e.best ? "beste mulige «" + e.best.w + "» +" + e.best.pts : "") };
       }),
       chatBtn: online && st.chatPref, chatUnread: !!(st.chat && st.chat.top > st.chat.lastSeen),
@@ -1439,6 +1487,12 @@ class Component extends DCLogic {
       } }; }),
       chatIn: st.chatIn, onChatIn: function (e) { self.state.chatIn = e.target.value; },
       sendChatIn: function () { self.sendChat(self.state.chatIn, true); },
+      lookup: st.lookup ? (function (L) {
+        var r = L.res || {}, pick = function (x) { return x ? { title: x.title, lines: x.lines.slice(0, 14) } : null; };
+        return { w: L.w, busy: !!L.busy, err: !!L.err, url: L.url, host: L.url ? L.url.split("/")[2].replace(/^www\./, "") : "", wiki: "https://" + L.lang + ".wiktionary.org/wiki/" + encodeURIComponent(L.w),
+          first: pick(r.first), lemma: r.lemma || null, second: pick(r.second), none: !L.busy && !L.err && !r.first && !r.second,
+          close: function () { self.setState({ lookup: null }); } };
+      })(st.lookup) : null,
       player: st.player || null,
       closePlayer: function () { self.setState({ player: null }); },
       playerBlocked: !!(st.player && (st.blocked || []).some(function (x) { return x.id === st.player.id; })),
@@ -1883,7 +1937,7 @@ class Component extends DCLogic {
       var meIdx = online ? st.online.you : 0;
       v.missed = (st.log || []).filter(function (e) { return e.k === "w" && e.best && (!duel || e.p === meIdx); })
         .sort(function (a, b) { return (b.best.pts - b.pts) - (a.best.pts - a.pts); }).slice(0, 3)
-        .map(function (e) { return { played: "«" + e.w + "» +" + e.pts, best: "«" + e.best.w + "» +" + e.best.pts, url: kindOf(S.L) === "ord" ? dictUrl(e.best.w) : null }; });
+        .map(function (e) { return { played: "«" + e.w + "» +" + e.pts, best: "«" + e.best.w + "» +" + e.best.pts, url: kindOf(S.L) === "ord" ? dictUrl(e.best.w) : null, look: kindOf(S.L) === "ord" ? function () { self.lookupWord(e.best.w, st.lang || "no", dictUrl(e.best.w)); } : null }; });
       if (rec.duel) {
         var r = rec.res, win = r[0].score === r[1].score ? -1 : r[0].score > r[1].score ? 0 : 1;
         if (rec.resigned !== undefined) win = 1 - rec.resigned;

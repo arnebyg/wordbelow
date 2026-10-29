@@ -466,3 +466,7 @@ label.pill{cursor:pointer;display:inline-flex;align-items:center}
 .offerwho{display:flex;gap:14px;align-items:center;margin:4px 0 16px}
 .offerwho p{margin:4px 0 0}
 .helpbody .cbtns,.note .cbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+button.wlink{background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px;cursor:pointer}
+.wdef h3{font-size:14px;letter-spacing:.04em;text-transform:uppercase;opacity:.75;margin:14px 0 4px}
+.wdef h3:first-child{margin-top:0}
+.wdef p{margin:0 0 6px}

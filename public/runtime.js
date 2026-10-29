@@ -90,7 +90,7 @@ var App = (function () {
     '</div>' +
   '</div>') +
   (v.dailySay ? '<p class="fine dsay">' + esc(v.dailySay) + '</p>' : '') +
-  (v.missed && v.missed.length ? '<div class="missed"><h2 class="sec">Ord du kunne lagt</h2>' + each(v.missed, function (m) { return '<div class="mrow"><span>' + esc(m.played) + '</span><span class="arr">→</span>' + (m.url ? '<a class="wlink" href="' + esc(m.url) + '" target="_blank" rel="noopener"><b>' + esc(m.best) + '</b></a>' : '<b>' + esc(m.best) + '</b>') + '</div>'; }) + '<button type="button" class="pill small"' + on(v.openHist) + '>Se alle trekk</button></div>' : '') +
+  (v.missed && v.missed.length ? '<div class="missed"><h2 class="sec">Ord du kunne lagt</h2>' + each(v.missed, function (m) { return '<div class="mrow"><span>' + esc(m.played) + '</span><span class="arr">→</span>' + (m.look ? '<button type="button" class="wlink"' + on(m.look) + '><b>' + esc(m.best) + '</b></button>' : '<b>' + esc(m.best) + '</b>') + '</div>'; }) + '<button type="button" class="pill small"' + on(v.openHist) + '>Se alle trekk</button></div>' : '') +
   '<div class="actions">' +
     (v.share ? '<button type="button" class="act green"' + on(v.share) + '>Del</button>' : '') +
     '<button type="button" class="act grey wide"' + on(v.toPicker) + '>' + esc(v.pickerLabel) + '</button>' +
@@ -240,8 +240,8 @@ var App = (function () {
   function histView(v) {
     return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Trekkhistorikk"><div class="helpsheet">' +
       '<div class="helphead"><b>Trekkhistorikk</b><button type="button" class="x" aria-label="Lukk"' + on(v.closeHist) + '>' + IC.close + '</button></div>' +
-      '<div class="scroll helpbody">' + (v.histRows.some(function (r) { return r.url; }) ? '<p class="fine">Trykk på et ord for å se hva det betyr i ' + esc(v.dictHost) + '.</p>' : '') + (v.histRows.length ? '<div class="group statg">' + each(v.histRows, function (r) {
-        return '<div class="srow hrow"><span><b>' + esc(r.who) + '</b> ' + (r.url ? '<a class="wlink" href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.what) + '</a>' : esc(r.what)) + (r.best ? '<small>' + esc(r.best) + '</small>' : '') + '</span><b>' + esc(r.pts) + '</b></div>';
+      '<div class="scroll helpbody">' + (v.histRows.some(function (r) { return r.url; }) ? '<p class="fine">Trykk på et ord for å se hva det betyr.</p>' : '') + (v.histRows.length ? '<div class="group statg">' + each(v.histRows, function (r) {
+        return '<div class="srow hrow"><span><b>' + esc(r.who) + '</b> ' + (r.look ? '<button type="button" class="wlink"' + on(r.look) + '>' + esc(r.what) + '</button>' : esc(r.what)) + (r.best ? '<small>' + esc(r.best) + '</small>' : '') + '</span><b>' + esc(r.pts) + '</b></div>';
       }) + '</div>' : '<p>Ingen trekk ennå.</p>') + '</div></div></div>';
   }
   // Reactions and short messages with the other player.
@@ -267,6 +267,17 @@ var App = (function () {
       '<div class="scroll helpbody"><div class="who offerwho">' + av(o.initial, o.pic, 'big') + '<div><b translate="no">' + esc(o.who) + '</b><p>vil spille mot deg på ' + esc(o.board) + (o.lang ? ' (<span translate="no">' + esc(o.lang) + '</span>)' : '') + '.</p></div></div>' +
       '<div class="cbtns"><button type="button" class="act green"' + on(o.yes) + '>Godta</button><button type="button" class="pill"' + on(o.no) + '>Avslå</button></div>' +
       '<p class="fine">Du kan også svare senere under Utfordringer på startsiden.</p></div></div></div>';
+  }
+  // A word's meaning from Wiktionary, in the game's language; the full entry and the game's own dictionary are a tap away.
+  function lookupView(v) {
+    var L = v.lookup;
+    var block = function (x) { return '<div class="wdef" translate="no">' + x.lines.map(function (l) { return l.h ? '<h3>' + esc(l.h) + '</h3>' : '<p>' + esc(l.t) + '</p>'; }).join("") + '</div>'; };
+    var body = L.busy ? '<p class="fine">Henter forklaringen …</p>' : L.err ? '<p>Fikk ikke kontakt med Wiktionary. Er du på nett?</p>' : L.none ? '<p>Fant ingen forklaring på Wiktionary.</p>' :
+      (L.first ? block(L.first) : '') + (L.second ? '<p class="fine">Grunnform: <span translate="no">' + esc(L.lemma) + '</span></p>' + block(L.second) : '');
+    return '<div class="helpov" role="dialog" aria-modal="true" aria-label="' + esc(L.w) + '"><div class="helpsheet">' +
+      '<div class="helphead"><b translate="no">' + esc(L.w.toUpperCase()) + '</b><button type="button" class="x" aria-label="Lukk"' + on(L.close) + '>' + IC.close + '</button></div>' +
+      '<div class="scroll helpbody">' + body +
+      '<p class="fine">Fra <a class="wlink" href="' + esc(L.wiki) + '" target="_blank" rel="noopener">Wiktionary</a> (CC BY-SA)' + (L.url ? ' · slå opp i <a class="wlink" href="' + esc(L.url) + '" target="_blank" rel="noopener" translate="no">' + esc(L.host) + '</a>' : '') + '</p></div></div></div>';
   }
   function playerView(v) {
     var p = v.player;
@@ -430,7 +441,7 @@ var App = (function () {
     H = [];
     var v = comp.renderVals();
     var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
-    var html = (V[v.phase] || homeView)(v) + (v.phase === "done" && v.win ? winView(v) : "") + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "") + (v.offerAsk && v.phase === "home" ? offerView(v) : "");
+    var html = (V[v.phase] || homeView)(v) + (v.phase === "done" && v.win ? winView(v) : "") + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "") + (v.offerAsk && v.phase === "home" ? offerView(v) : "") + (v.lookup ? lookupView(v) : "");
     if (window.trHtml) html = trHtml(html);
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
