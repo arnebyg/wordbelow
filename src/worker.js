@@ -25,13 +25,13 @@ const LANGS = ["no", "nl", "fi", "sv", "fr", "it", "es", "en"];
 const langOf = (body) => LANGS.includes(body && body.lang) ? body.lang : "no";
 const MOVE_LIMIT = 72 * 3600e3, REMIND_BEFORE = 12 * 3600e3;
 
-const APP_ORIGINS = ["capacitor://localhost"];
+const APP_ORIGINS = ["capacitor://localhost", "https://localhost"];
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/")) {
-      // The iPhone app runs from capacitor://localhost and calls the API across origins; the web page is same-origin.
+      // The iPhone app runs from capacitor://localhost, the Android app from https://localhost; both call the API across origins. The web page is same-origin.
       const app = APP_ORIGINS.includes(request.headers.get("origin") || "");
       const cors = app ? { "access-control-allow-origin": request.headers.get("origin"), "access-control-allow-methods": "GET, POST, PUT, DELETE, OPTIONS",
         "access-control-allow-headers": "content-type, authorization", "access-control-max-age": "86400", "vary": "origin" } : null;
