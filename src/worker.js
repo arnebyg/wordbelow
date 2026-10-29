@@ -395,7 +395,11 @@ export class Hub extends DurableObject {
         return json({ game: this.summary(ng, me.id) });
       }
       if (body.random) {
-        const w = this.one("SELECT * FROM games g WHERE status = 'waiting' AND kind = 'random' AND lang = ? AND p0 != ? AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.uid = g.p0 AND b.bid = ?) OR (b.uid = ? AND b.bid = g.p0)) ORDER BY created LIMIT 1", langOf(body), me.id, me.id, me.id);
+        // Someone waiting on the same board first, then anyone waiting.
+        const lay = typeof body.layout === "string" ? REBUILT[body.layout] || body.layout : "";
+        const seek = (same) => this.one("SELECT * FROM games g WHERE status = 'waiting' AND kind = 'random' AND lang = ? AND p0 != ?" + (same ? " AND layout = ?" : "") + " AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.uid = g.p0 AND b.bid = ?) OR (b.uid = ? AND b.bid = g.p0)) ORDER BY created LIMIT 1",
+          ...(same ? [langOf(body), me.id, lay, me.id, me.id] : [langOf(body), me.id, me.id, me.id]));
+        const w = seek(true) || seek(false);
         if (w) {
           this.sql.exec("UPDATE games SET p1 = ?, status = 'active', updated = ? WHERE id = ?", me.id, Date.now(), w.id);
           this.notify(w.p0, "Din tur", me.name + " ble med i det tilfeldige spillet ditt.", w.id);
@@ -406,6 +410,13 @@ export class Hub extends DurableObject {
       }
       if (body.invite) return json({ game: this.summary(this.newGame(me.id, null, "invite", body), me.id) });
       return err(400, "Mangler motspiller.");
+    }
+    // Who invited and on which board, shown before joining.
+    const im = path.match(/^\/invite\/([A-Za-z0-9]{4,10})$/);
+    if (im && m === "GET") {
+      const g = this.one("SELECT * FROM games WHERE code = ? AND status = 'waiting'", im[1].toUpperCase());
+      if (!g) return err(404, "Fant ingen åpen invitasjon med den koden.");
+      return json({ code: g.code, from: this.nameOf(g.p0), mine: g.p0 === me.id, layout: g.layout, lang: g.lang || "no", board: this.boardOf(g.layout) });
     }
     if (path === "/join" && m === "POST") {
       const c = String(body.code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");

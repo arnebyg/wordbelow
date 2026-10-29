@@ -991,9 +991,19 @@ class Component extends DCLogic {
     else if (navigator.clipboard) navigator.clipboard.writeText(tr(text));
   }
   joinCode() {
-    var self = this, c = (this.state.codeIn || "").trim();
+    var self = this, c = (this.state.codeIn || "").trim().toUpperCase();
     if (!c) return;
     if (this.needAccount("join")) return;
+    // First the invitation is shown (who and which board); the next tap joins.
+    if (!this.state.codePeek || this.state.codePeek.code !== c) {
+      api("/invite/" + encodeURIComponent(c)).then(function (d) {
+        if (d.mine) { self.setState({ phase: "home", ngMsg: "Det er din egen invitasjon. Send koden til den du vil spille mot." }); return; }
+        if (d.board) sharedLayout(d.board.code, d.board.name, d.board.cells);
+        self.setState({ phase: "home", pick: "code", codeIn: c, codePeek: d, ngMsg: "" });
+      }, function (e) { self.setState({ phase: "home", ngMsg: e.message, codePeek: null }); });
+      return;
+    }
+    this.setState({ codePeek: null });
     api("/join", { method: "POST", body: { code: c } }).then(function (d) { self.setState({ codeIn: "" }); self.openOnline(d.game.id); },
       function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
   }
@@ -1031,7 +1041,8 @@ class Component extends DCLogic {
       var next = Object.assign(base, { online: o, log: s && s.log ? s.log : [], gone: s ? s.gone : {}, jokerAs: s && s.jokerAs ? s.jokerAs : {}, P: P, turn: turn, passes: s ? s.passes : 0,
         score: P[turn].score, pocket: P[turn].pocket, words: P[turn].words, hint: !!P[turn].hint, mode: "duel", opp: "online" });
       if (g.status === "waiting") next.msg = g.kind === "invite" ? "Venter på at noen blir med. Koden er " + g.code + "." : "Venter på en tilfeldig motspiller.";
-      else next.msg = (turn === g.you ? "Din tur. " : o.oppName + " sin tur. ") + (s && s.last ? s.last : "Nytt spill på " + base.lay.replace(/^./, function (x) { return x.toUpperCase(); }) + ".");
+      // Before the first move the board is named, with who chose it (the one who started the game).
+      else next.msg = (turn === g.you ? "Din tur. " : o.oppName + " sin tur. ") + (s && s.last ? s.last : "Dere spiller på " + layoutOf(base.lay).L.name + (g.you === 0 ? ", som du valgte." : ", valgt av " + (o.oppName || "motspilleren") + "."));
       if (g.status === "done" && s && s.result) {
         next.phase = "done";
         next.played = { duel: true, res: s.result.res || self.resultOf(P, Object.keys(base.letters).length - Object.keys(next.gone).length), left: s.result.left || 0, lay: g.layout, resigned: s.result.resigned, timeout: s.result.timeout };
@@ -1574,7 +1585,12 @@ class Component extends DCLogic {
         { id: "solo", grp: "off", name: "Alene", go: "Spill alene", say: "Så mange poeng du kan, toppliste per brett.", run: function () { self.start("solo"); } }
       ];
       var P = PICKS.filter(function (p) { return p.id === st.pick; })[0] || PICKS[0];
-      v.pick = P.id; v.pickSay = P.id === "cpu" ? null : P.say; v.goLabel = P.go; v.go = P.run;
+      v.pick = P.id; v.pickSay = P.id === "cpu" ? null : P.say; v.goLabel = P.id === "code" ? (st.codePeek && st.codePeek.code === (st.codeIn || "").trim() ? "Bli med" : "Se invitasjonen") : P.go + " · " + S.L.name; v.go = P.run;
+      // An invitation read from its code: who sent it, and the board, before joining.
+      if (P.id === "code" && st.codePeek && st.codePeek.code === (st.codeIn || "").trim()) {
+        var cp = st.codePeek, cL = LAYOUTS.filter(function (x) { return x.id === cp.layout; })[0] || EXTRA[cp.layout];
+        v.codePeek = { from: cp.from, board: cL ? cL.name : cp.board ? cp.board.name : cp.layout, lang: cp.lang !== UI && LANGS[cp.lang] ? LANGS[cp.lang].name : null };
+      }
       // Two tabs as in proposal C, each remembering its last pick.
       var choose = function (id) { var by = Object.assign({}, st.pickBy); PICKS.forEach(function (p) { if (p.id === id) by[p.grp] = id; }); lsSet(PICK_KEY, id); lsSet(PICK_BY_KEY, by); self.setState({ pick: id, pickBy: by, ngMsg: "" }); };
       // The six ways to start, as letter tiles (Meny-A), each with its letter's value in the Norwegian bag. The machine's level shows under them when M is chosen.

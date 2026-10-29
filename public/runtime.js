@@ -141,7 +141,7 @@ var App = (function () {
     });
     var extra = '';
     if (v.pick === "cpu") extra = '<div class="chips lvl" role="group" aria-label="Nivå"><span class="lbl inl">Nivå</span>' + each(v.diffs, function (d) { return '<button type="button" class="' + d.cls + '" aria-pressed="' + d.on + '"' + on(d.pick) + '>' + esc(d.name) + '</button>'; }) + '</div><p class="fine">' + esc(v.diffSay) + '</p>';
-    else if (v.pick === "code") extra = '<div class="coderow"><input id="code" class="inp" type="text" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="ABC123" aria-label="Kode" value="' + esc(v.codeIn) + '" data-input="onCode"></div><p class="fine">' + esc(v.pickSay) + '</p>';
+    else if (v.pick === "code") extra = '<div class="coderow"><input id="code" class="inp" type="text" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="ABC123" aria-label="Kode" value="' + esc(v.codeIn) + '" data-input="onCode"></div>' + (v.codePeek ? '<div class="note"><b translate="no">' + esc(v.codePeek.from) + '</b> inviterer deg til et spill på <b>' + esc(v.codePeek.board) + '</b>' + (v.codePeek.lang ? ' (<span translate="no">' + esc(v.codePeek.lang) + '</span>)' : '') + '.</div>' : '<p class="fine">' + esc(v.pickSay) + '</p>');
     else if (v.pick === "friend") extra = '<p class="fine">' + esc(v.pickSay) + '</p><div class="chips"><button type="button" class="chip"' + on(v.goInvite) + '>' + IC.share + 'Inviter med kode</button><button type="button" class="chip"' + on(v.goFind) + '>' + IC.search + 'Finn spiller</button></div>';
     else extra = '<p class="fine">' + esc(v.pickSay) + '</p>';
     return '<div class="screen home">' +
