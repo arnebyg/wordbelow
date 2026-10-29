@@ -1153,7 +1153,7 @@ class Component extends DCLogic {
     if (!r) return;
     var longest = (r.words || []).reduce(function (b, w) { return Math.max(b, w.w.length); }, 0), d = key.split("-");
     var text = "WordBelow · Dagens brett " + (+d[2]) + "." + (+d[1]) + ". · " + D.name + "\n" + r.score + " poeng · " + (r.words || []).length + " ord · lengste " + longest + " bokstaver · " +
-      (r.left ? r.left + " brikker igjen" : "brettet ryddet") + "\n" + shareGrid(r.words || []) + "\n" + location.origin + location.pathname;
+      (r.left ? r.left + " brikker igjen" : "brettet ryddet") + "\n" + shareGrid(r.words || []) + "\n" + (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname);
     var self = this;
     if (navigator.share) navigator.share({ text: tr(text) }).catch(function () {});
     else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ toastNote: "Resultatet er kopiert. Lim det inn der du vil dele det." }); }, function () {});
