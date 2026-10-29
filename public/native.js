@@ -38,9 +38,13 @@
   var ANDROID = C.getPlatform && C.getPlatform() === "android";
   var TEST = false, IDS = ANDROID ? { banner: "ca-app-pub-6230023114953568/3609610859", interstitial: "ca-app-pub-6230023114953568/4444180375" } : { banner: "ca-app-pub-6230023114953568/8226377247", interstitial: "ca-app-pub-6230023114953568/6119088651" };
   var ready = false, wantBanner = false, bannerOn = false, fullReady = false;
+  // A load that fails (no ad to give, no network) is tried again after 30 s, then 60, 120 … up to 10 min.
+  var fullWait = 30e3, fullTimer = null;
   function prepFull() {
-    fullReady = false;
-    AdMob.prepareInterstitial({ adId: IDS.interstitial, isTesting: TEST }).then(function () { fullReady = true; }, function () {});
+    fullReady = false; clearTimeout(fullTimer);
+    AdMob.prepareInterstitial({ adId: IDS.interstitial, isTesting: TEST }).then(function () { fullReady = true; fullWait = 30e3; }, function () {
+      fullTimer = setTimeout(prepFull, fullWait); fullWait = Math.min(fullWait * 2, 600e3);
+    });
   }
   // The banner waits until the opening animation (#splash) has gone.
   function syncBanner() {
@@ -69,7 +73,8 @@
     // The web page keeps its banner strip as the room the native banner sits in.
     bannerShow: function (on) { wantBanner = !!on; syncBanner(); },
     // Shown at once if one has loaded; a move never waits for an ad.
-    interstitialNative: function () { if (ready && fullReady) { fullReady = false; AdMob.showInterstitial().catch(prepFull); } },
+    // Says whether one was shown, so a turn without a loaded ad can pass it on to the next.
+    interstitialNative: function () { if (!(ready && fullReady)) return false; fullReady = false; AdMob.showInterstitial().catch(prepFull); return true; },
     // Where the law asks for it, the player can open the consent form again from Settings.
     privacyNeeded: function () { return privacy; },
     privacyForm: function () { return AdMob.showPrivacyOptionsForm(); }

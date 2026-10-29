@@ -778,8 +778,9 @@ class Component extends DCLogic {
   adAfterMove() {
     if (!AD_FULL_ON || this.state.premium) return;
     this.adMoves = (this.adMoves || 0) + 1;
-    if (this.adMoves % (this.online() ? AD_EVERY.online : AD_EVERY.other)) return;
-    if (window.WB_ADS && window.WB_ADS.interstitialNative) window.WB_ADS.interstitialNative(); else this.setState({ adFull: Date.now() });
+    // An ad that had not loaded when its turn came is owed, and shown after the next move that has one.
+    if (!this.adOwed && this.adMoves % (this.online() ? AD_EVERY.online : AD_EVERY.other)) return;
+    if (window.WB_ADS && window.WB_ADS.interstitialNative) this.adOwed = !window.WB_ADS.interstitialNative(); else this.setState({ adFull: Date.now() });
   }
   setKind(id) {
     lsSet(KIND_KEY, id);
