@@ -1,1 +1,3 @@
 "NSUserTrackingUsageDescription" = "Used only to show ads that suit you better. The game works the same whatever you answer.";
+"NSCameraUsageDescription" = "Used only when you take a profile picture.";
+"NSPhotoLibraryUsageDescription" = "Used only when you choose a profile picture.";

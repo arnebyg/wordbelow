@@ -514,6 +514,32 @@ function api(path, opts) {
     });
   }, function () { var e = new Error("Får ikke kontakt med serveren. Er du på nett?"); e.status = 0; throw e; });
 }
+// Profile pictures. A player's picture is fetched as an image from the server; one that is not there (404) is
+// remembered for this visit, and the initial shows instead. Your own carries when it was set, so a new one shows at once.
+// Players you have blocked show only their initial.
+var PIC_MISS = {};
+window.wbPicMiss = function (img) { var id = img.getAttribute("data-pic"); if (id) PIC_MISS[id] = 1; img.remove(); };
+function picOf(id, st) {
+  if (!id || PIC_MISS[id] || (st.blocked || []).some(function (x) { return x.id === id; })) return null;
+  if (st.account && st.account.id === id) return st.myPicv ? { id: id, src: API + "/avatar/" + id + "?v=" + st.myPicv } : null;
+  return { id: id, src: API + "/avatar/" + id };
+}
+// A picture from the phone is cut to a square from the middle and made 96 × 96, as a JPEG under 12 KB.
+function picMake(file) {
+  return new Promise(function (ok, no) {
+    var url = URL.createObjectURL(file), im = new Image();
+    im.onload = function () {
+      var c = document.createElement("canvas"), n = 96, w = im.naturalWidth, h = im.naturalHeight, d = Math.min(w, h);
+      c.width = n; c.height = n;
+      c.getContext("2d").drawImage(im, (w - d) / 2, (h - d) / 2, d, d, 0, 0, n, n);
+      URL.revokeObjectURL(url);
+      for (var q = 0.8; q >= 0.3; q -= 0.1) { var out = c.toDataURL("image/jpeg", q); if (out.length * 0.75 < 11500) return ok(out); }
+      no(new Error("Bildet ble for stort."));
+    };
+    im.onerror = function () { URL.revokeObjectURL(url); no(new Error("Bildet kunne ikke leses.")); };
+    im.src = url;
+  });
+}
 function left(ms) {
   var h = Math.max(0, (ms - Date.now()) / 3600e3);
   return h >= 1 ? Math.floor(h) + " t igjen" : Math.max(1, Math.round(h * 60)) + " min igjen";
@@ -608,6 +634,7 @@ class Component extends DCLogic {
     var gid = (location.search.match(/[?&]game=([0-9a-f]{16})/) || [])[1];
     if (gid) { try { history.replaceState(null, "", location.pathname); } catch (e) {} if (this.state.account) this.openOnline(gid); }
     if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.openGame && self.state.account) self.openOnline(e.data.openGame); });
+    this.loadBlocked();
     try { if (sessionStorage.getItem("wb-reopen") === "settings") { sessionStorage.removeItem("wb-reopen"); this.openSettings(); } } catch (e) {}
     this.pushCheck();
     // In the iPhone app the App Store says whether Premium is bought (also on a new phone), and gives the price.
@@ -862,7 +889,19 @@ class Component extends DCLogic {
       self.setState({ player: Object.assign({}, p, { step: "menu", msg: "Takk. Rapporten om " + p.name + " er sendt" + (self.state.online ? ", med chatten i dette spillet" : "") + "." }) });
     }, function (e) { self.setState({ player: Object.assign({}, p, { msg: e.message }) }); });
   }
-  loadBlocked() { var self = this; if (this.state.account) api("/me").then(function (d) { self.setState({ blocked: d.blocked || [] }); }, function () {}); }
+  loadBlocked() { var self = this; if (this.state.account) api("/me").then(function (d) { self.setState({ blocked: d.blocked || [], myPicv: d.picv || 0 }); }, function () {}); }
+  setPic(file) {
+    var self = this;
+    if (!file) return;
+    this.setState({ picMsg: "Laster opp …" });
+    picMake(file).then(function (data) { return api("/me/pic", { method: "POST", body: { pic: data } }); }).then(function (d) {
+      delete PIC_MISS[self.state.account.id]; self.setState({ myPicv: d.picv, picMsg: "" });
+    }, function (e) { self.setState({ picMsg: e.message }); });
+  }
+  removePic() {
+    var self = this;
+    api("/me/pic", { method: "DELETE" }).then(function () { self.setState({ myPicv: 0, picMsg: "" }); }, function (e) { self.setState({ picMsg: e.message }); });
+  }
   setChatPref(on) {
     lsSet(CHAT_KEY, on); this.setState({ chatPref: on });
     if (this.state.account) api("/me/chat", { method: "POST", body: { on: on } }).catch(function () {});
@@ -1424,7 +1463,7 @@ class Component extends DCLogic {
         var line = g.status === "offer" ? "Venter på at " + (g.opp ? g.opp.name : "motspilleren") + " godtar" : g.status === "waiting" ? (g.kind === "invite" ? "Del koden med den du vil spille mot" : "Venter på at noen andre søker") :
           g.status === "done" ? (res && res.res ? (function () { var a = res.res[g.you].score, b = res.res[1 - g.you].score; return why + (a > b ? "Du vant " : a < b ? "Du tapte " : "Uavgjort ") + a + "–" + b; })() : res && won !== null ? why + (won > 0 ? "Du vant" : won < 0 ? "Uavgjort" : "Du tapte") : "Ferdig") :
           (L ? L.name : g.layout) + " · " + sc + (g.deadline ? " · " + (g.myTurn ? "du har " : "motstanderen har ") + left(g.deadline) : "") + (g.last ? " · " + g.last : "");
-        return { id: g.id, initial: (who[0] || "?").toUpperCase(), who: who, line: line, when: ago(g.updated), cls: "game" + (g.myTurn ? " mine" : ""), mine: !!g.myTurn,
+        return { id: g.id, initial: (who[0] || "?").toUpperCase(), pic: picOf(g.opp && g.opp.id, st), who: who, line: line, when: ago(g.updated), cls: "game" + (g.myTurn ? " mine" : ""), mine: !!g.myTurn,
           open: function () { if (g.status === "waiting" && g.kind === "invite") self.shareCode(g); else self.openOnline(g.id); },
           // Each card can be ended from the list: an invitation withdrawn, a game resigned (two taps), a finished one removed.
           end: g.status === "waiting" || g.status === "offer" ? (g.incoming ? null : { label: "Trekk", go: function () { self.cancelInvite(g); } }) :
@@ -1438,7 +1477,7 @@ class Component extends DCLogic {
         play: function () { self.startDaily(); }, share: function () { self.shareDaily(); } };
       v.offers = gs.filter(function (g) { return g.incoming; }).map(function (g) {
         var L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0] || EXTRA[g.layout];
-        return { who: g.opp ? g.opp.name : "Noen", initial: ((g.opp && g.opp.name) || "?")[0].toUpperCase(), line: "Vil spille på " + (L ? L.name : g.board ? g.board.name : g.layout) + " · " + ago(g.updated),
+        return { who: g.opp ? g.opp.name : "Noen", initial: ((g.opp && g.opp.name) || "?")[0].toUpperCase(), pic: picOf(g.opp && g.opp.id, st), line: "Vil spille på " + (L ? L.name : g.board ? g.board.name : g.layout) + " · " + ago(g.updated),
           yes: function () { self.answerOffer(g, true); }, no: function () { self.answerOffer(g, false); } };
       });
       gs = gs.filter(function (g) { return !g.incoming; });
@@ -1591,13 +1630,13 @@ class Component extends DCLogic {
     if (st.phase === "find") {
       v.search = st.search; v.findMsg = st.findMsg;
       v.onSearch = function (e) { self.doSearch(e.target.value); };
-      v.found = st.found.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), play: function () { self.startWith(u); }, add: function () { self.addFriend(u); } }; });
+      v.found = st.found.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), pic: picOf(u.id, st), play: function () { self.startWith(u); }, add: function () { self.addFriend(u); } }; });
       v.back = function () { self.setState({ phase: "home" }); };
       return v;
     }
     if (st.phase === "friends") {
       v.friendsMsg = st.friendsMsg;
-      v.friendRows = st.friends.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), play: function () { self.startWith(u); } }; });
+      v.friendRows = st.friends.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), pic: picOf(u.id, st), play: function () { self.startWith(u); } }; });
       v.back = function () { self.setState({ phase: "home" }); };
       return v;
     }
@@ -1609,6 +1648,10 @@ class Component extends DCLogic {
       v.delAsk = !!st.delAsk; v.delMsg = st.delMsg || "";
       v.askDel = st.account ? function () { self.setState({ delAsk: true, delMsg: "" }); } : null;
       v.cancelDel = function () { self.setState({ delAsk: false }); };
+      // The profile picture: shown to the players you meet, next to your name.
+      v.myPic = st.account ? picOf(st.account.id, st) : null; v.picMsg = st.picMsg || "";
+      v.pickPic = st.account ? function (e) { var f = e.target.files && e.target.files[0]; e.target.value = ""; self.setPic(f); } : null;
+      v.removePic = st.account && st.myPicv ? function () { self.removePic(); } : null;
       v.doDel = function () {
         if (st.delBusy) return;
         self.setState({ delBusy: true });
@@ -1695,19 +1738,19 @@ class Component extends DCLogic {
           hi: hi, mid: Math.round((hi + lo) / 2), lo: lo, d0: d[0], d1: d[1], d2: d[2], last: { x: x(t1).toFixed(1), y: y(h[h.length - 1].r).toFixed(1) } };
       })(srv.history) : null;
       var vsMap = {};
-      if (srv && (sm === "all" || sm === "online")) srv.vs.forEach(function (o) { vsMap["u:" + o.id] = { name: o.name, w: o.w, l: o.l, d: o.d }; });
+      if (srv && (sm === "all" || sm === "online")) srv.vs.forEach(function (o) { vsMap["u:" + o.id] = { name: o.name, id: o.id, w: o.w, l: o.l, d: o.d }; });
       if (sm === "all" || sm === "cpu") all.filter(function (x) { return x.mode === "cpu"; }).forEach(function (x) {
         var k = "c:" + (x.diff || "middels"), o = vsMap[k] || (vsMap[k] = { name: x.opp || "Maskinen", w: 0, l: 0, d: 0 });
         if (x.won === 1) o.w++; else if (x.won === 0) o.l++; else o.d++;
       });
-      v.vs = Object.keys(vsMap).map(function (k) { var o = vsMap[k]; return { name: o.name, line: o.w + " vunnet · " + o.l + " tapt" + (o.d ? " · " + o.d + " uavgjort" : ""), initial: (o.name[0] || "?").toUpperCase() }; });
+      v.vs = Object.keys(vsMap).map(function (k) { var o = vsMap[k]; return { name: o.name, line: o.w + " vunnet · " + o.l + " tapt" + (o.d ? " · " + o.d + " uavgjort" : ""), initial: (o.name[0] || "?").toUpperCase(), pic: picOf(o.id, st) }; });
       // The free version shows what the statistics hold, with the numbers hidden, and offers Premium.
       v.locked = !st.premium;
       if (v.locked) {
         var hide = function (r) { return { k: r.k, v: "SKJULT" }; };
         v.results = v.results.map(hide); v.scores = v.scores.map(hide); v.longs = v.longs.map(hide);
         v.rating = "SKJULT"; v.chart = null; v.ratingInfo = false;
-        v.vs = v.vs.map(function (o) { return { name: o.name, line: "SKJULT", initial: o.initial }; });
+        v.vs = v.vs.map(function (o) { return { name: o.name, line: "SKJULT", initial: o.initial, pic: o.pic }; });
         v.unlock = function () { self.setState({ phase: "premium", after: "stats", premMsg: "" }); };
       }
       v.back = function () { self.goHome(); };
@@ -1755,7 +1798,10 @@ class Component extends DCLogic {
         var sc = st.P.map(function (p, i) { return i === st.turn ? st.score : p.score; });
         var order = online && st.online.you === 1 ? [1, 0] : [0, 1];
         var lastOf = function (i) { var e = (st.log || []).filter(function (x) { return x.p === i; }).pop(); return !e ? "" : e.k === "w" ? e.w + " +" + e.pts : e.k === "p" ? e.w + " i lommen" : "sto over"; };
-        v.stats = order.map(function (i) { return { k: nm[i] + (st.turn === i && (!online || st.online.status === "active") ? " · tur" : ""), v: sc[i], last: lastOf(i), cls: st.turn === i ? "stat mine" : "stat" }; })
+        // Against another player each box carries that player's picture, and the other player's box opens block and report.
+        var idOf = function (i) { return !online ? null : i === st.online.you ? (st.account && st.account.id) : st.online.oppId; };
+        v.stats = order.map(function (i) { return { k: nm[i] + (st.turn === i && (!online || st.online.status === "active") ? " · tur" : ""), v: sc[i], last: lastOf(i), cls: st.turn === i ? "stat mine" : "stat",
+          pic: picOf(idOf(i), st), open: online && i !== st.online.you && st.online.oppId ? function () { self.openPlayer(st.online.oppId, st.online.oppName); } : null }; })
           .concat([{ k: "Åpne · igjen", v: nFree + " · " + v.left, cls: "stat" }]);
       } else {
         var ms = this.soloLeft(), sec = Math.ceil(ms / 1000);

@@ -1,1 +1,3 @@
 "NSUserTrackingUsageDescription" = "Solo se usa para mostrarte anuncios que te encajen mejor. El juego funciona igual respondas lo que respondas.";
+"NSCameraUsageDescription" = "Solo se usa cuando haces una foto de perfil.";
+"NSPhotoLibraryUsageDescription" = "Solo se usa cuando eliges una foto de perfil.";

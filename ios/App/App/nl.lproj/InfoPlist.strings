@@ -1,1 +1,3 @@
 "NSUserTrackingUsageDescription" = "Wordt alleen gebruikt om advertenties te tonen die beter bij je passen. Het spel werkt hetzelfde, wat je ook antwoordt.";
+"NSCameraUsageDescription" = "Wordt alleen gebruikt als je een profielfoto maakt.";
+"NSPhotoLibraryUsageDescription" = "Wordt alleen gebruikt als je een profielfoto kiest.";

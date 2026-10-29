@@ -25,7 +25,7 @@ var App = (function () {
     '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>' + esc(v.hintLabel || "Hint −5") + '</button></span>' +
   '</div>' +
   '<div class="stats">' +
-    each(v.stats, function (x) { return '<div class="' + x.cls + '"><span class="k">' + esc(x.k) + '</span><span class="v">' + esc(x.v) + '</span>' + (x.last ? '<span class="lastmv">' + esc(x.last) + '</span>' : '') + '</div>'; }) +
+    each(v.stats, function (x) { var tag = x.open ? 'button type="button"' : 'div', end = x.open ? 'button' : 'div'; return '<' + tag + ' class="' + x.cls + (x.open ? ' tap' : '') + '"' + (x.open ? on(x.open) : '') + '><span class="k">' + (x.pic ? '<img class="avs" alt="" data-pic="' + esc(x.pic.id) + '" src="' + esc(x.pic.src) + '" onerror="wbPicMiss(this)">' : '') + esc(x.k) + '</span><span class="v">' + esc(x.v) + '</span>' + (x.last ? '<span class="lastmv">' + esc(x.last) + '</span>' : '') + '</' + end + '>'; }) +
   '</div>' +
   '<div class="board' + (v.slide ? ' slide-' + v.slide : '') + '"' + (v.canSwipe ? ' data-swipe="swipe"' : '') + '>' +
     '<div class="bfit" data-fit="' + esc(v.boardFit) + '" style="' + esc(v.boardBox) + '">' +
@@ -134,7 +134,7 @@ var App = (function () {
   function homeView(v) {
     var games = each(v.sections, function (sec) {
       return each(sec.rows, function (r) {
-        return '<div class="gcard' + (r.mine ? ' mine' : '') + '"><button type="button" class="gopen"' + on(r.open) + '><span class="gtop"><span class="av">' + esc(r.initial) + '</span><span class="badge' + (r.mine ? ' on' : '') + '">' + esc(sec.badge) + '</span></span>' +
+        return '<div class="gcard' + (r.mine ? ' mine' : '') + '"><button type="button" class="gopen"' + on(r.open) + '><span class="gtop">' + av(r.initial, r.pic) + '<span class="badge' + (r.mine ? ' on' : '') + '">' + esc(sec.badge) + '</span></span>' +
           '<span class="gn">' + esc(r.who) + '</span><span class="gl">' + esc(r.line) + '</span><span class="gw">' + esc(r.when) + '</span></button>' +
           (r.end ? '<button type="button" class="gx' + (r.end.warn ? ' warn' : '') + '"' + on(r.end.go) + '>' + esc(r.end.label) + '</button>' : '') + '</div>';
       });
@@ -156,7 +156,7 @@ var App = (function () {
         '<span class="dn">' + esc(v.daily.name) + '<small>' + esc(v.daily.line) + '</small></span></div>' +
         (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Se</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div>' +
       (v.offers.length ? '<h2 class="sec">Utfordringer</h2><div class="group">' + each(v.offers, function (o) {
-        return '<div class="opt offer"><span class="av">' + esc(o.initial) + '</span><span class="ot"><span class="t">' + esc(o.who) + '</span><span class="s">' + esc(o.line) + '</span></span><button type="button" class="pill small"' + on(o.no) + '>Avslå</button><button type="button" class="act green go"' + on(o.yes) + '>Godta</button></div>';
+        return '<div class="opt offer">' + av(o.initial, o.pic) + '<span class="ot"><span class="t">' + esc(o.who) + '</span><span class="s">' + esc(o.line) + '</span></span><button type="button" class="pill small"' + on(o.no) + '>Avslå</button><button type="button" class="act green go"' + on(o.yes) + '>Godta</button></div>';
       }) + '</div>' : '') +
       '<div class="ngpanel"><h2 class="sec">Nytt spill</h2>' +
         (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
@@ -255,6 +255,10 @@ var App = (function () {
       '<div class="helphead"><b>' + esc(v.opp || 'Chat') + '</b><span class="hbtns">' + (v.openOppPlayer ? '<button type="button" class="pill small"' + on(v.openOppPlayer) + '>Blokker eller rapporter</button>' : '') + '<button type="button" class="x" aria-label="Lukk"' + on(v.closeChat) + '>' + IC.close + '</button></span></div>' +
       '<div class="scroll helpbody">' + body + '</div></div></div>';
   }
+  // A player's tile: the initial, with the picture over it when there is one.
+  function av(initial, pic, cls) {
+    return '<span class="av' + (cls ? ' ' + cls : '') + '">' + esc(initial) + (pic ? '<img class="avp" alt="" data-pic="' + esc(pic.id) + '" src="' + esc(pic.src) + '" onerror="wbPicMiss(this)">' : '') + '</span>';
+  }
   function playerView(v) {
     var p = v.player;
     var body = p.step === "report" ? '<p>Hva gjelder det? Rapporten går til den som driver WordBelow' + (v.isOnline ? ', sammen med chatten i dette spillet' : '') + '.</p><div class="group">' +
@@ -316,14 +320,14 @@ var App = (function () {
       '<input id="find" class="inp big" type="search" autocomplete="off" autocapitalize="none" placeholder="Søk etter brukernavn" value="' + esc(v.search) + '" data-input="onSearch">' +
       '<div data-region="found">' + (v.findMsg ? '<div class="note">' + esc(v.findMsg) + '</div>' : '') +
       '<div class="group">' + each(v.found, function (u) {
-        return '<div class="opt"><span class="av">' + esc(u.initial) + '</span><span class="ot"><span class="t" translate="no">' + esc(u.name) + '</span></span><button type="button" class="pill small"' + on(u.add) + '>Legg til venn</button><button type="button" class="act green go"' + on(u.play) + '>Spill</button></div>';
+        return '<div class="opt">' + av(u.initial, u.pic) + '<span class="ot"><span class="t" translate="no">' + esc(u.name) + '</span></span><button type="button" class="pill small"' + on(u.add) + '>Legg til venn</button><button type="button" class="act green go"' + on(u.play) + '>Spill</button></div>';
       }) + '</div></div></div></div>';
   }
   function friendsView(v) {
     return '<div class="screen sub">' + head("Venner", v.back) + '<div class="scroll">' +
       (v.friendsMsg ? '<div class="note">' + esc(v.friendsMsg) + '</div>' : '') +
       '<div class="group">' + each(v.friendRows, function (u) {
-        return '<button type="button" class="opt"' + on(u.play) + '><span class="av">' + esc(u.initial) + '</span><span class="ot"><span class="t" translate="no">' + esc(u.name) + '</span><span class="s">Start et spill</span></span><span class="chev">' + IC.chev + '</span></button>';
+        return '<button type="button" class="opt"' + on(u.play) + '>' + av(u.initial, u.pic) + '<span class="ot"><span class="t" translate="no">' + esc(u.name) + '</span><span class="s">Start et spill</span></span><span class="chev">' + IC.chev + '</span></button>';
       }) + '</div></div></div>';
   }
   function settingsView(v) {
@@ -352,7 +356,11 @@ var App = (function () {
       '<h2 class="sec">Premium</h2><div class="group"><button type="button" class="opt"' + on(v.openPremiumSet) + '><span class="tileic">' + IC.gem + '</span><span class="ot"><span class="t">' + (v.premium ? 'Du har Premium' : 'WordBelow Premium') + '</span><span class="s">' + (v.premium ? 'Uten reklame, med full statistikk.' : 'Ingen reklame og full statistikk, med ett kjøp.') + '</span></span><span class="chev">' + IC.chev + '</span></button></div>' +
       '<h2 class="sec">Personvern</h2><div class="group"><a class="opt" href="https://wordbelow.app/privacy" target="_blank" rel="noopener"><span class="ot"><span class="t">Personvernerklæring</span><span class="s">Hva som lagres, og hvor.</span></span><span class="chev">' + IC.chev + '</span></a>' +
         (v.adChoices ? '<button type="button" class="opt"' + on(v.adChoices) + '><span class="ot"><span class="t">Annonsevalg</span><span class="s">Endre samtykket ditt til tilpassede annonser.</span></span><span class="chev">' + IC.chev + '</span></button>' : '') + '</div>' +
-      '<h2 class="sec">Konto</h2><div class="group"><div class="opt"><span class="ot"><span class="t">' + esc(v.account ? v.account.name : "Ingen konto ennå") + '</span><span class="s">' + (v.account ? "Kontoen ligger på denne telefonen." : "Du får en når du spiller mot andre første gang.") + '</span></span></div>' +
+      '<h2 class="sec">Konto</h2><div class="group"><div class="opt">' + (v.account ? av(v.account.name[0].toUpperCase(), v.myPic) : '') + '<span class="ot"><span class="t">' + esc(v.account ? v.account.name : "Ingen konto ennå") + '</span><span class="s">' + (v.account ? "Kontoen ligger på denne telefonen." : "Du får en når du spiller mot andre første gang.") + '</span></span></div>' +
+        (v.pickPic ? '<div class="opt"><span class="ot"><span class="t">Profilbilde</span><span class="s">Vises ved navnet ditt for spillerne du møter.</span></span>' +
+          '<label class="pill small">' + (v.myPic ? 'Bytt' : 'Velg bilde') + '<input type="file" accept="image/*" hidden data-change="pickPic"></label>' +
+          (v.removePic ? '<button type="button" class="pill small"' + on(v.removePic) + '>Fjern</button>' : '') + '</div>' : '') +
+        (v.picMsg ? '<div class="note">' + esc(v.picMsg) + '</div>' : '') +
         (v.askDel && !v.delAsk ? '<button type="button" class="opt danger"' + on(v.askDel) + '><span class="ot"><span class="t">Slett kontoen</span><span class="s">Fjerner navnet, spillene mot andre, chatten og vennene dine fra serveren.</span></span></button>' : '') + '</div>' +
       (v.delAsk ? '<div class="note">Vil du slette kontoen «<span translate="no">' + esc(v.account.name) + '</span>»? Spill som er i gang, avsluttes, og motspilleren vinner. Det kan ikke angres.</div><div class="cbtns"><button type="button" class="act red"' + on(v.doDel) + '>Slett kontoen</button><button type="button" class="pill"' + on(v.cancelDel) + '>Avbryt</button></div>' : '') +
       (v.delMsg ? '<div class="note">' + esc(v.delMsg) + '</div>' : '') +
@@ -379,7 +387,7 @@ var App = (function () {
           : v.locked ? '<div class="hiddenchart">SKJULT</div>' : '<p class="fine pad">Grafen kommer når du har spilt ferdig to spill mot andre.</p>') + '</div>' : '') +
       rows(v.scores) +
       rows(v.longs) + '<p class="fine">Et langt ord har sju bokstaver eller flere.</p>' +
-      (v.vs.length ? '<h2 class="sec">Statistikk mot motspillere</h2><div class="group">' + each(v.vs, function (o) { return '<div class="opt"><span class="av">' + esc(o.initial) + '</span><span class="ot"><span class="t">' + esc(o.name) + '</span><span class="s">' + esc(o.line) + '</span></span></div>'; }) + '</div>' : '') +
+      (v.vs.length ? '<h2 class="sec">Statistikk mot motspillere</h2><div class="group">' + each(v.vs, function (o) { return '<div class="opt">' + av(o.initial, o.pic) + '<span class="ot"><span class="t" translate="no">' + esc(o.name) + '</span><span class="s">' + esc(o.line) + '</span></span></div>'; }) + '</div>' : '') +
       '</div></div>';
   }
 
@@ -558,6 +566,10 @@ var App = (function () {
       if (!el || el.disabled) return;
       var fn = H[+el.getAttribute("data-h")];
       if (fn) fn(e);
+    });
+    root.addEventListener("change", function (e) {
+      var k = e.target.getAttribute("data-change");
+      if (k && App.lastVals && typeof App.lastVals[k] === "function") App.lastVals[k](e);
     });
     root.addEventListener("input", function (e) {
       var k = e.target.getAttribute("data-input");

@@ -39,6 +39,10 @@
 	<string>ca-app-pub-6230023114953568~1483828748</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Used only when you take a profile picture.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Used only when you choose a profile picture.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Used only to show ads that suit you better. The game works the same whatever you answer.</string>
 	<key>SKAdNetworkItems</key>

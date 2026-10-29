@@ -1,1 +1,3 @@
 "NSUserTrackingUsageDescription" = "Används bara för att visa annonser som passar dig bättre. Spelet fungerar likadant oavsett vad du svarar.";
+"NSCameraUsageDescription" = "Används bara när du tar en profilbild.";
+"NSPhotoLibraryUsageDescription" = "Används bara när du väljer en profilbild.";

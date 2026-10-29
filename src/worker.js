@@ -70,6 +70,9 @@ export class Hub extends DurableObject {
     // A finished game a player has removed from their list (hid0 for p0, hid1 for p1); it still counts in the statistics.
     try { this.sql.exec("ALTER TABLE games ADD COLUMN hid0 INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE games ADD COLUMN hid1 INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
+    // A profile picture: a small JPEG (96 × 96, made on the phone), base64, and when it was set (picv), so a new one is fetched.
+    try { this.sql.exec("ALTER TABLE users ADD COLUMN pic TEXT"); } catch (e) { /* already there */ }
+    try { this.sql.exec("ALTER TABLE users ADD COLUMN picv INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     // The language the app on that phone is shown in; its push messages come in the same.
     try { this.sql.exec("ALTER TABLE subs ADD COLUMN lang TEXT NOT NULL DEFAULT 'no'"); } catch (e) { /* already there */ }
     this.sql.exec(`CREATE TABLE IF NOT EXISTS blocks (uid TEXT NOT NULL, bid TEXT NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (uid, bid));
@@ -200,6 +203,19 @@ export class Hub extends DurableObject {
       const rows = this.all("SELECT r.*, a.name AS reporter, b.name AS about_name FROM reports r LEFT JOIN users a ON a.id = r.uid LEFT JOIN users b ON b.id = r.about ORDER BY r.at DESC LIMIT 200");
       return json({ reports: rows.map((r) => Object.assign(r, { chat: r.gid ? this.all("SELECT uid, at, text FROM chat WHERE gid = ? ORDER BY id", r.gid) : [] })) });
     }
+    // Profile pictures are fetched as plain images (an <img> sends no token); a missing one is a 404 and the app shows the initial.
+    const pm = path.match(/^\/avatar\/([A-Za-z0-9_-]{4,40})$/);
+    if (pm && m === "GET") {
+      const u = this.one("SELECT pic FROM users WHERE id = ?", pm[1]);
+      const head = { "cache-control": "public, max-age=300" };
+      if (!u || !u.pic) return new Response(null, { status: 404, headers: head });
+      return new Response(Uint8Array.from(atob(u.pic), (c) => c.charCodeAt(0)), { headers: Object.assign({ "content-type": "image/jpeg" }, head) });
+    }
+    if (path === "/admin/pic" && m === "POST") {
+      if (!this.env.ADMIN_KEY || request.headers.get("x-admin-key") !== this.env.ADMIN_KEY) return err(403, "Ingen tilgang.");
+      this.sql.exec("UPDATE users SET pic = NULL, picv = 0 WHERE id = ?", String(body.id || ""));
+      return json({ ok: true });
+    }
     const bm = path.match(/^\/boards\/([a-z0-9]{6})$/);
     if (bm && m === "GET") {
       const b = this.one("SELECT * FROM boards WHERE code = ?", bm[1]);
@@ -234,7 +250,22 @@ export class Hub extends DurableObject {
     if (path === "/me" && m === "GET") {
       const friends = this.all("SELECT u.id, u.name FROM friends f JOIN users u ON u.id = f.fid WHERE f.uid = ? AND NOT EXISTS (SELECT 1 FROM blocks b WHERE b.uid = ? AND b.bid = u.id) ORDER BY u.name COLLATE NOCASE", me.id, me.id);
       const blocked = this.all("SELECT u.id, u.name FROM blocks b JOIN users u ON u.id = b.bid WHERE b.uid = ? ORDER BY b.at DESC", me.id);
-      return json({ id: me.id, name: me.name, friends, blocked });
+      const pv = this.one("SELECT picv FROM users WHERE id = ?", me.id);
+      return json({ id: me.id, name: me.name, picv: (pv && pv.picv) || 0, friends, blocked });
+    }
+    // The picture is made small on the phone; here it must be a JPEG of at most 12 KB.
+    if (path === "/me/pic" && m === "POST") {
+      const b64 = String(body.pic || "").replace(/^data:image\/jpeg;base64,/, "");
+      let bin = "";
+      try { bin = atob(b64); } catch (e) { return err(400, "Bildet kunne ikke leses."); }
+      if (bin.length > 12288 || bin.charCodeAt(0) !== 0xFF || bin.charCodeAt(1) !== 0xD8) return err(400, "Bildet kunne ikke leses.");
+      const v = Date.now();
+      this.sql.exec("UPDATE users SET pic = ?, picv = ? WHERE id = ?", b64, v, me.id);
+      return json({ picv: v });
+    }
+    if (path === "/me/pic" && m === "DELETE") {
+      this.sql.exec("UPDATE users SET pic = NULL, picv = 0 WHERE id = ?", me.id);
+      return json({ picv: 0 });
     }
     if (path === "/block" && m === "POST") {
       const o = this.one("SELECT id FROM users WHERE id = ?", String(body.id || ""));
