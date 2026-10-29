@@ -917,7 +917,7 @@ class Component extends DCLogic {
   startWith(u, rematch) {
     var self = this;
     this.ensureShared(function () {
-      api("/games", { method: "POST", body: { to: u.id, layout: self.state.lay, lang: self.state.lang, rematch: !!rematch } }).then(function (d) {
+      api("/games", { method: "POST", body: { to: u.id, layout: self.state.lay, lang: rematch ? self.state.lang : langPref(), rematch: !!rematch } }).then(function (d) {
         self.goHome();
         self.setState({ homeMsg: (rematch ? "Revansjen" : "Utfordringen") + " er sendt til " + (d.game.opp ? d.game.opp.name : u.name || "motspilleren") + ". Spillet starter når " + (d.game.opp ? d.game.opp.name : "de") + " godtar." });
       }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
@@ -996,7 +996,7 @@ class Component extends DCLogic {
     var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.random(); }); return; }
     if (this.needAccount("random")) return;
     this.setState({ ngMsg: "Leter etter en motspiller …" });
-    api("/games", { method: "POST", body: { random: true, layout: this.state.lay, lang: this.state.lang } }).then(function (d) {
+    api("/games", { method: "POST", body: { random: true, layout: this.state.lay, lang: langPref() } }).then(function (d) {
       if (d.matched) self.openOnline(d.game.id);
       else { self.setState({ phase: "home", ngMsg: "", homeMsg: "Du står i kø for en tilfeldig motspiller. Spillet starter når noen andre også velger Tilfeldig." }); self.refreshGames(); }
     }, function (e) { self.setState({ ngMsg: e.message }); });
@@ -1007,7 +1007,7 @@ class Component extends DCLogic {
     var self = this;
     var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.invite(to); }); return; }
     if (this.needAccount("invite")) return;
-    api("/games", { method: "POST", body: { invite: true, layout: this.state.lay, lang: this.state.lang } }).then(function (d) {
+    api("/games", { method: "POST", body: { invite: true, layout: this.state.lay, lang: langPref() } }).then(function (d) {
       var c = d.game.code, text = inviteText(c, self.state.account.name);
       self.setState({ phase: "home", homeMsg: "Invitasjonen har koden " + c + ". Den ligger under «Venter på motspiller» til noen blir med." });
       self.refreshGames();
@@ -1456,7 +1456,8 @@ class Component extends DCLogic {
     lsSet("ordspill/klassiker/brett/v1", next.id);
     this.setState(Object.assign(this.fresh(next.id), { phase: "home", ed: null, delAsk: null, homeMsg: "«" + name + "» er slettet." }));
   }
-  goHome() { this.timers.forEach(clearTimeout); this.timers = []; this.setState({ phase: "home", confirm: null, busy: false, online: null, ngMsg: "" }); this.refreshGames(); }
+  // An online game in another language switches LANG to the game's; home goes back to the phone's own, so a new game starts in it.
+  goHome() { this.timers.forEach(clearTimeout); this.timers = []; if (LANG !== langPref()) useLang(langPref()); this.setState({ phase: "home", confirm: null, busy: false, online: null, ngMsg: "", lang: LANG }); this.refreshGames(); }
   // A sideways swipe moves to the next or previous of all twelve boards: in a game only before the first move,
   // on the new-game screen any time.
   cycleLay(dir, inGame) {
