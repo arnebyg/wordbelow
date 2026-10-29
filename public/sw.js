@@ -1,5 +1,5 @@
 // Keeps the game and the word list on the phone. Bump VERSION on every deploy so phones pick up the new files.
-var VERSION = "wb-2026-10-29-9";
+var VERSION = "wb-2026-10-29-10";
 var FILES = ["./", "index.html", "game.css", "layout.css", "splash.css", "native.js", "i18n.js", "i18n/en.json", "i18n/nl.json", "i18n/fi.json", "i18n/sv.json", "i18n/fr.json", "i18n/it.json", "i18n/es.json", "runtime.js", "daily-boards.js", "logic.js", "manifest.webmanifest",
   "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "words/nsf-2026.txt"];
 

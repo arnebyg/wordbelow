@@ -391,7 +391,7 @@ export class Hub extends DurableObject {
         this.sql.exec("INSERT OR IGNORE INTO friends (uid, fid) VALUES (?, ?)", me.id, o.id);
         // A challenge to a named player waits until they accept it.
         const ng = this.newGame(me.id, o.id, "direct", body, "offer");
-        this.notify(o.id, (body.rematch ? "Revansje fra " : "Utfordring fra ") + me.name, me.name + (body.rematch ? " vil ha revansje. Godta eller avslå i appen." : " vil spille mot deg. Godta eller avslå i appen."), ng.id);
+        this.notify(o.id, (body.rematch ? "Omkamp fra " : "Utfordring fra ") + me.name, me.name + (body.rematch ? " vil ha omkamp. Godta eller avslå i appen." : " vil spille mot deg. Godta eller avslå i appen."), ng.id);
         return json({ game: this.summary(ng, me.id) });
       }
       if (body.random) {

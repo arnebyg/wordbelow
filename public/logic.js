@@ -920,7 +920,7 @@ class Component extends DCLogic {
     this.ensureShared(function () {
       api("/games", { method: "POST", body: { to: u.id, layout: self.state.lay, lang: rematch ? self.state.lang : langPref(), rematch: !!rematch } }).then(function (d) {
         self.goHome();
-        self.setState({ homeMsg: (rematch ? "Revansjen" : "Utfordringen") + " er sendt til " + (d.game.opp ? d.game.opp.name : u.name || "motspilleren") + ". Spillet starter når " + (d.game.opp ? d.game.opp.name : "de") + " godtar." });
+        self.setState({ homeMsg: (rematch ? "Omkampen" : "Utfordringen") + " er sendt til " + (d.game.opp ? d.game.opp.name : u.name || "motspilleren") + ". Spillet starter når " + (d.game.opp ? d.game.opp.name : "de") + " godtar." });
       }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
     });
   }
@@ -2022,7 +2022,7 @@ class Component extends DCLogic {
         });
         if (online) {
           v.again = function () { if (st.online.oppId) self.startWith({ id: st.online.oppId, name: st.online.oppName }, true); else self.goHome(); };
-          v.againLabel = "Revansje";
+          v.againLabel = "Omkamp";
         } else { v.again = function () { self.start("duel"); }; v.againLabel = "Ny duell"; }
         v.toPicker = v.goHome; v.pickerLabel = "Til start";
         return v;
