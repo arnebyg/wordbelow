@@ -254,6 +254,18 @@ export class Hub extends DurableObject {
       if (!b) return err(404, "Fant ikke brettet. Sjekk lenken.");
       return json({ code: b.code, name: b.name, cells: b.cells, by: this.nameOf(b.owner) });
     }
+    // Today's board for the front page (site/): the five best, name and score only. No words (they give the
+    // board's letters away), no ids, and no one who is shut out.
+    const pdm = path.match(/^\/public\/daily\/(\d{4}-\d{2}-\d{2})$/);
+    if (pdm && m === "GET") {
+      const day = pdm[1];
+      if (Math.abs(Date.parse(day + "T12:00:00Z") - Date.now()) > 2 * 864e5) return err(400, "Feil dato.");
+      const top = this.all("SELECT d.score, u.name FROM daily d JOIN users u ON u.id = d.uid WHERE d.date = ? AND u.banned = 0 ORDER BY d.score DESC, d.at ASC LIMIT 5", day);
+      const count = this.one("SELECT COUNT(*) AS n FROM daily d JOIN users u ON u.id = d.uid WHERE d.date = ? AND u.banned = 0", day).n;
+      const res = json({ date: day, count, top: top.map((x) => ({ name: x.name, score: x.score })) });
+      res.headers.set("cache-control", "public, max-age=60");
+      return res;
+    }
     const me = this.userOf(request);
     if (!me) return err(401, "Ikke logget inn.");
     this.sql.exec("INSERT OR REPLACE INTO kv (k, v) VALUES ('origin', ?)", url.origin);
