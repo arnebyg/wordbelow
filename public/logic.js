@@ -1930,7 +1930,14 @@ class Component extends DCLogic {
       var w = this.word(st.sel);
       v.sendOff = locked || st.sel.length < 1 || (kindOf(S.L) === "sett" && st.sel.length !== 3);
       v.sendLabel = this.cpuTurn() ? "Maskinens tur" : this.waitTurn() ? (st.online.status === "waiting" ? "Venter …" : st.online.oppName + " sin tur") : st.sel.length < 1 ? (kindOf(S.L) === "tall" ? "Send regnestykket" : kindOf(S.L) === "sett" ? "Send settet" : "Send ord") : "«" + w + "» · " + this.evaluate(st.sel).total + " p";
-      v.send = function () { if (!locked) self.playWord(); };
+      // A move that did not pass the check: the next tap on the button clears the tiles that were sent.
+      var selKey = st.sel.join(","), rejected = !!selKey && st.rejected === selKey;
+      if (rejected) { v.sendLabel = "Tøm"; v.sendOff = locked; }
+      v.send = function () {
+        if (locked) return;
+        if (rejected) { self.setState({ sel: [], jokerAs: {}, rejected: null }); return; }
+        if (self.playWord() === false && self.state.tone === "bad" && self.state.sel.join(",") === selKey) self.setState({ rejected: selKey });
+      };
       // One hint per game for each player.
       v.hintOff = locked || !!st.hint; v.hintLabel = st.hint ? "Hint brukt" : "Hint −5";
       v.hint = function () {
