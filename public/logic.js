@@ -1042,7 +1042,7 @@ class Component extends DCLogic {
         score: P[turn].score, pocket: P[turn].pocket, words: P[turn].words, hint: !!P[turn].hint, mode: "duel", opp: "online" });
       if (g.status === "waiting") next.msg = g.kind === "invite" ? "Venter på at noen blir med. Koden er " + g.code + "." : "Venter på en tilfeldig motspiller.";
       // Before the first move the board is named, with who chose it (the one who started the game).
-      else next.msg = (turn === g.you ? "Din tur. " : o.oppName + " sin tur. ") + (s && s.last ? s.last : "Dere spiller på " + layoutOf(base.lay).L.name + (g.you === 0 ? ", som du valgte." : ", valgt av " + (o.oppName || "motspilleren") + "."));
+      else next.msg = (turn === g.you ? "Din tur." : o.oppName + " sin tur.") + (s && s.log && s.log.length ? "" : " Dere spiller på " + layoutOf(base.lay).L.name + (g.you === 0 ? ", som du valgte." : ", valgt av " + (o.oppName || "motspilleren") + "."));
       if (g.status === "done" && s && s.result) {
         next.phase = "done";
         next.played = { duel: true, res: s.result.res || self.resultOf(P, Object.keys(base.letters).length - Object.keys(next.gone).length), left: s.result.left || 0, lay: g.layout, resigned: s.result.resigned, timeout: s.result.timeout };
@@ -1268,7 +1268,7 @@ class Component extends DCLogic {
     P[t] = { score: st.score, pocket: st.pocket, words: st.words, hint: !!st.hint };
     if (this.online()) {
       var last = st.msg;
-      this.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, hint: !!P[n].hint, sel: [], jokerAs: {}, picking: null, msg: this.turnSay(n) + " " + last, tone: "info" });
+      this.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, hint: !!P[n].hint, sel: [], jokerAs: {}, picking: null, msg: this.turnSay(n), tone: "info" });
       this.pushOnline({ P: P, gone: this.state.gone, passes: this.state.passes, last: last, log: this.state.log });
       return;
     }
@@ -1277,8 +1277,8 @@ class Component extends DCLogic {
       var s = self.state;
       if (s.phase !== "play") return;
       self.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, hint: !!P[n].hint, sel: [], jokerAs: {}, picking: null, busy: false,
-        // Against the machine the move's own message stays as it is, so it shows once; the score boxes say whose turn it is.
-        msg: s.opp === "cpu" ? s.msg : self.turnSay(n) + " " + s.msg, tone: s.opp === "cpu" ? s.tone : "info" });
+        // Only whose turn it is: the move just made shows in the score box (and in the move history).
+        msg: self.turnSay(n), tone: "info" });
       if (self.cpuTurn()) self.timers.push(setTimeout(function () { self.cpuMove(); }, 700));
     }, delay || 0));
   }
