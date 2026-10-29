@@ -21,7 +21,8 @@
   }
   // One person from the contacts, with Apple's own picker: the app sees only the person picked, and keeps nothing.
   var Contacts = C.Plugins && C.Plugins.Contacts;
-  if (Contacts && Contacts.pickContact) window.WB_CONTACT = {
+  // Only on the iPhone: on Android the plugin asks for the whole contact list (READ_CONTACTS), so the share sheet does it.
+  if (Contacts && Contacts.pickContact && C.getPlatform && C.getPlatform() === "ios") window.WB_CONTACT = {
     pick: function () {
       return Contacts.pickContact({ projection: { name: true, emails: true, phones: true } }).then(function (r) {
         var c = r && r.contact; if (!c) return Promise.reject();
@@ -34,7 +35,8 @@
   if (!AdMob) return;
   // The ad units are wordbelow's own in AdMob. While TEST is true the plugin swaps them for Google's test ads;
   // TEST goes false only for the build that is sent to App Review.
-  var TEST = false, IDS = { banner: "ca-app-pub-6230023114953568/8226377247", interstitial: "ca-app-pub-6230023114953568/6119088651" };
+  var ANDROID = C.getPlatform && C.getPlatform() === "android";
+  var TEST = false, IDS = ANDROID ? { banner: "ca-app-pub-6230023114953568/3609610859", interstitial: "ca-app-pub-6230023114953568/4444180375" } : { banner: "ca-app-pub-6230023114953568/8226377247", interstitial: "ca-app-pub-6230023114953568/6119088651" };
   var ready = false, wantBanner = false, bannerOn = false, fullReady = false;
   function prepFull() {
     fullReady = false;

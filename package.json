@@ -10,6 +10,7 @@
   "dependencies": {
     "@capacitor-community/admob": "^8.2.1",
     "@capacitor-community/contacts": "^8.0.0",
+    "@capacitor/android": "^8.6.0",
     "@capacitor/core": "^8.5.3",
     "@capacitor/ios": "^8.5.3",
     "@capgo/native-purchases": "^8.9.6"
