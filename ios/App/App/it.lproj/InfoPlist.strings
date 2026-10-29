@@ -1,3 +1,4 @@
 "NSUserTrackingUsageDescription" = "Serve solo a mostrarti annunci più adatti a te. Il gioco funziona allo stesso modo qualunque cosa tu risponda.";
 "NSCameraUsageDescription" = "Serve solo quando scatti una foto del profilo.";
 "NSPhotoLibraryUsageDescription" = "Serve solo quando scegli una foto del profilo.";
+"NSContactsUsageDescription" = "Serve solo quando scegli qualcuno da invitare. Nulla dei tuoi contatti viene salvato o inviato.";

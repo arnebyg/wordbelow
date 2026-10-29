@@ -19,6 +19,17 @@
       restore: function () { return IAP.restorePurchases().then(function () { return IAP.getPurchases(); }).then(owns); }
     };
   }
+  // One person from the contacts, with Apple's own picker: the app sees only the person picked, and keeps nothing.
+  var Contacts = C.Plugins && C.Plugins.Contacts;
+  if (Contacts && Contacts.pickContact) window.WB_CONTACT = {
+    pick: function () {
+      return Contacts.pickContact({ projection: { name: true, emails: true, phones: true } }).then(function (r) {
+        var c = r && r.contact; if (!c) return Promise.reject();
+        var em = (c.emails || [])[0], ph = (c.phones || [])[0];
+        return em && em.address ? { email: em.address } : ph && ph.number ? { tel: ph.number } : null;
+      });
+    }
+  };
   var AdMob = C.Plugins && C.Plugins.AdMob;
   if (!AdMob) return;
   // The ad units are wordbelow's own in AdMob. While TEST is true the plugin swaps them for Google's test ads;

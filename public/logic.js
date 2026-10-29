@@ -532,6 +532,36 @@ function wikiLook(lang, w) {
     return { first: r };
   }).catch(function (e) { delete WIKI_MEMO[key]; throw e; }));
 }
+// The bonus tags carry the first letter of what they double, in the app's language and for the game type:
+// a letter and the word in Bokstaver, a tile and the whole sum in Tall, the set in Sett (which has only that one).
+// In the code a bonus is "B" (one tile) or "O" (the whole move).
+var BONUS_TAGS = {
+  ord: { no: "BO", sv: "BO", nl: "LW", fi: "KS", fr: "LM", it: "LP", es: "LP", en: "LW" },
+  tall: { no: "BR", sv: "BU", nl: "SR", fi: "LS", fr: "TC", it: "TO", es: "FC", en: "TS" },
+  sett: { no: "BS", sv: "BS", nl: "SS", fi: "LS", fr: "TS", it: "TS", es: "FT", en: "TS" }
+};
+function bonusTag(t, kind) { var g = (BONUS_TAGS[kind] || BONUS_TAGS.ord)[UI] || "BO"; return t === "B" ? g[0] : g[1]; }
+// Invitations. The link always points to wordbelow.app (the iPhone app's own address is not one anyone else can open).
+function inviteText(c, from) {
+  var link = (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname) + "?join=" + c;
+  return (from ? "Bli med på WordBelow mot " + from + ". " : "Bli med på WordBelow. ") + "Åpne " + link + " – eller velg Kode på startsiden i appen og skriv " + c + ".";
+}
+function sendInvite(text, to, done) {
+  var t = tr(text);
+  if (to && to.email) { location.href = "mailto:" + encodeURIComponent(to.email) + "?subject=" + encodeURIComponent(tr("Bli med på WordBelow")) + "&body=" + encodeURIComponent(t); return done(false); }
+  if (to && to.tel) { location.href = "sms:" + encodeURIComponent(to.tel) + (/iPhone|iPad|Mac/.test(navigator.userAgent) ? "&" : "?") + "body=" + encodeURIComponent(t); return done(false); }
+  if (navigator.share) navigator.share({ title: tr("WordBelow"), text: t }).catch(function () {});
+  else if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { done(true); }, function () {});
+}
+// One person from the phone's contacts: the iPhone app's own picker (native.js), or the browser's (Chrome on Android).
+function contactsCan() { return !!(window.WB_CONTACT || (navigator.contacts && navigator.contacts.select)); }
+function pickContact() {
+  if (window.WB_CONTACT) return window.WB_CONTACT.pick();
+  return navigator.contacts.select(["email", "tel"], { multiple: false }).then(function (l) {
+    var c = l && l[0]; if (!c) return Promise.reject();
+    return c.email && c.email[0] ? { email: c.email[0] } : c.tel && c.tel[0] ? { tel: c.tel[0] } : null;
+  });
+}
 var REPORT_REASONS = ["Stygt brukernavn", "Stygge meldinger", "Juks", "Noe annet"];
 var REACTIONS = ["👏", "😮", "😅", "😂", "🔥", "🙈"];
 // The iPhone app is served from the phone itself, so it reaches the server by its full address.
@@ -971,24 +1001,25 @@ class Component extends DCLogic {
       else { self.setState({ phase: "home", ngMsg: "", homeMsg: "Du står i kø for en tilfeldig motspiller. Spillet starter når noen andre også velger Tilfeldig." }); self.refreshGames(); }
     }, function (e) { self.setState({ ngMsg: e.message }); });
   }
-  invite() {
+  // An invitation with a code. It goes out by the phone's share sheet, or straight to one address: an email
+  // address typed in, or a person picked from the contacts (email, else a text message). Nothing of the address is kept.
+  invite(to) {
     var self = this;
-    var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.invite(); }); return; }
+    var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.invite(to); }); return; }
     if (this.needAccount("invite")) return;
     api("/games", { method: "POST", body: { invite: true, layout: this.state.lay, lang: this.state.lang } }).then(function (d) {
-      var c = d.game.code, link = location.origin + location.pathname + "?join=" + c;
-      var text = "Bli med på WordBelow mot " + self.state.account.name + ". Åpne " + link + " – eller velg Kode på startsiden i appen og skriv " + c + ".";
+      var c = d.game.code, text = inviteText(c, self.state.account.name);
       self.setState({ phase: "home", homeMsg: "Invitasjonen har koden " + c + ". Den ligger under «Venter på motspiller» til noen blir med." });
       self.refreshGames();
-      if (navigator.share) navigator.share({ title: tr("WordBelow"), text: tr(text) }).catch(function () {});
-      else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ homeMsg: "Invitasjonen er kopiert. Koden er " + c + "." }); }, function () {});
-    }, function (e) { self.setState({ ngMsg: e.message }); });
+      sendInvite(text, to, function (copied) { if (copied) self.setState({ homeMsg: "Invitasjonen er kopiert. Koden er " + c + "." }); });
+    }, function (e) { self.setState({ ngMsg: e.message, friendsMsg: e.message }); });
+  }
+  inviteContact() {
+    var self = this;
+    pickContact().then(function (to) { if (to) self.invite(to); else self.setState({ friendsMsg: "Kontakten har verken e-postadresse eller telefonnummer." }); }, function () {});
   }
   shareCode(g) {
-    var link = location.origin + location.pathname + "?join=" + g.code;
-    var text = "Bli med på WordBelow. Åpne " + link + " – eller velg Kode på startsiden i appen og skriv " + g.code + ".";
-    if (navigator.share) navigator.share({ title: tr("WordBelow"), text: tr(text) }).catch(function () {});
-    else if (navigator.clipboard) navigator.clipboard.writeText(tr(text));
+    sendInvite(inviteText(g.code, null), null, function () {});
   }
   joinCode() {
     var self = this, c = (this.state.codeIn || "").trim().toUpperCase();
@@ -1718,6 +1749,16 @@ class Component extends DCLogic {
     if (st.phase === "friends") {
       v.friendsMsg = st.friendsMsg;
       v.friendRows = st.friends.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), pic: picOf(u.id, st), play: function () { self.startWith(u); } }; });
+      // Search by username, an invitation by email, or one picked from the contacts, all on this screen.
+      v.search = st.search; v.findMsg = st.findMsg;
+      v.onSearch = function (e) { self.doSearch(e.target.value); };
+      v.found = (st.search || "").trim().length >= 2 ? st.found.map(function (u) { return { name: u.name, initial: u.name[0].toUpperCase(), pic: picOf(u.id, st), play: function () { self.startWith(u); }, add: function () { self.addFriend(u); } }; }) : [];
+      v.mailIn = st.mailIn || "";
+      v.onMail = function (e) { self.state.mailIn = e.target.value; };
+      v.sendMail = function () { var a = (self.state.mailIn || "").trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a)) { self.setState({ friendsMsg: "Skriv en hel e-postadresse." }); return; } self.setState({ mailIn: "" }); self.invite({ email: a }); };
+      v.pickContact = contactsCan() ? function () { self.inviteContact(); } : null;
+      v.shareInvite = function () { self.invite(null); };
+      v.board = S.L.name;
       v.back = function () { self.setState({ phase: "home" }); };
       return v;
     }
@@ -1856,7 +1897,7 @@ class Component extends DCLogic {
       v.boardFit = S.box;
       v.boardBox = "position:absolute;left:0;top:0;width:" + (BOX_W / SCALE) + "px;height:" + (BOX_H / SCALE) + "px;transform:scale(" + SCALE + ");transform-origin:0 0";
       v.tiles = S.pos.filter(function (p) { return live[p.id]; }).map(function (p) {
-        var id = p.id, raw = st.letters[id], jk = raw === "*", ch = self.chOf(id), pts = self.ptsOf(raw), free = freeIn(S, id, live), b = st.bonus[id], bonus = b ? b.m + "×" + b.t : "";
+        var id = p.id, raw = st.letters[id], jk = raw === "*", ch = self.chOf(id), pts = self.ptsOf(raw), free = freeIn(S, id, live), b = st.bonus[id], bonus = b ? b.m + "×" + bonusTag(b.t, kindOf(S.L)) : "";
         var kd = kindOf(S.L), syms = kd === "sett" ? symsOf(raw) : null;
         if (free) nFree++;
         var x = S.offX + p.c * 49 - p.l * 4, y = S.offY + p.r * 60 - p.l * 7;

@@ -1,3 +1,4 @@
 "NSUserTrackingUsageDescription" = "Sert uniquement à afficher des publicités plus adaptées à toi. Le jeu fonctionne de la même façon, quelle que soit ta réponse.";
 "NSCameraUsageDescription" = "Sert uniquement à prendre une photo de profil.";
 "NSPhotoLibraryUsageDescription" = "Sert uniquement à choisir une photo de profil.";
+"NSContactsUsageDescription" = "Sert uniquement quand tu choisis quelqu’un à inviter. Rien de tes contacts n’est gardé ni envoyé.";

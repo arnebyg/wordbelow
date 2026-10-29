@@ -41,6 +41,8 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Used only when you take a profile picture.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Used only when you pick someone to invite. Nothing from your contacts is kept or sent anywhere.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Used only when you choose a profile picture.</string>
 	<key>NSUserTrackingUsageDescription</key>

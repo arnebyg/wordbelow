@@ -1,3 +1,4 @@
 "NSUserTrackingUsageDescription" = "Käytetään vain sinulle sopivampien mainosten näyttämiseen. Peli toimii samoin, vastasitpa mitä tahansa.";
 "NSCameraUsageDescription" = "Käytetään vain, kun otat profiilikuvan.";
 "NSPhotoLibraryUsageDescription" = "Käytetään vain, kun valitset profiilikuvan.";
+"NSContactsUsageDescription" = "Käytetään vain, kun valitset jonkun kutsuttavaksi. Yhteystiedoistasi ei tallenneta eikä lähetetä mitään.";

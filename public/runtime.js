@@ -226,7 +226,7 @@ var App = (function () {
         ["Ordbonus 2×O / 3×O", "ganger bokstavene"], ["Lengde", "+5 for hver bokstav over tre"],
         ["Rydder hele brettet", "+50"], ["Hint", "−5, én gang per spill"]]) +
         '<p class="fine">Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Treffer ordet 2×O, blir det 9 × 2 = 18, pluss 15 for seks bokstaver: 33 poeng.</p>') +
-      sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen virker som ellers. I Tall gjelder bonusene som for bokstaver. I Sett er hver brikke verdt 1, så der er det bare ordbonuser (2×O og 3×O).</p>' +
+      sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen virker som ellers. I Tall dobler eller tredobler 2×B og 3×B én brikke, og 2×R og 3×R hele regnestykket. I Sett er hver brikke verdt 1, så der er det bare 2×S og 3×S, som gjelder hele settet.</p>' +
         '<p><b>Tall:</b> bygg et regnestykke som går opp, for eksempel 9 × 2 = 18. Sifre ved siden av hverandre blir ett tall, og det må være minst ett regnetegn. «=»-knappen er gratis og brukes én gang. Vanlig regnerekkefølge, og deling må gå opp. Poeng: siffer 1, + 1, − 2, × 3, ÷ 4, +5 per brikke over tre.</p>' +
         '<p><b>Sett:</b> hver brikke har form, farge og antall. Tre brikker er et sett når hver egenskap enten er lik på alle tre eller ulik på alle tre. Poeng: 3, +2 for hver egenskap som er ulik på alle.</p>') +
       sec("Brettene", '<p>Brettene har ulike former: på noen er få brikker åpne hele spillet, på andre blir det flere etter hvert. Du kan også lage <b>egne brett</b> med opptil 100 brikker. Alle brett trekker bokstavene med samme fordeling: ' + v.vowPct + ' % vokaler og 2 % jokere. Før første ord kan du sveipe brettet sidelengs for å bytte.</p>') +
@@ -344,11 +344,21 @@ var App = (function () {
       }) + '</div></div></div></div>';
   }
   function friendsView(v) {
+    var found = '<div data-region="found">' + (v.findMsg && v.search ? '<div class="note">' + esc(v.findMsg) + '</div>' : '') +
+      (v.found.length ? '<div class="group">' + each(v.found, function (u) {
+        return '<div class="opt">' + av(u.initial, u.pic) + '<span class="ot"><span class="t" translate="no">' + esc(u.name) + '</span></span><button type="button" class="pill small"' + on(u.add) + '>Legg til venn</button><button type="button" class="act green go"' + on(u.play) + '>Spill</button></div>';
+      }) + '</div>' : '') + '</div>';
     return '<div class="screen sub">' + head("Venner", v.back) + '<div class="scroll">' +
+      '<input id="find" class="inp big" type="search" autocomplete="off" autocapitalize="none" placeholder="Søk etter brukernavn" value="' + esc(v.search || "") + '" data-input="onSearch">' + found +
       (v.friendsMsg ? '<div class="note">' + esc(v.friendsMsg) + '</div>' : '') +
-      '<div class="group">' + each(v.friendRows, function (u) {
+      (v.friendRows.length ? '<h2 class="sec">Vennene dine</h2><div class="group">' + each(v.friendRows, function (u) {
         return '<button type="button" class="opt"' + on(u.play) + '>' + av(u.initial, u.pic) + '<span class="ot"><span class="t" translate="no">' + esc(u.name) + '</span><span class="s">Start et spill</span></span><span class="chev">' + IC.chev + '</span></button>';
-      }) + '</div></div></div>';
+      }) + '</div>' : '') +
+      '<h2 class="sec">Inviter noen</h2><p class="fine">Invitasjonen gjelder et spill på ' + esc(v.board) + '.</p>' +
+      '<div class="coderow"><input id="mail" class="inp" type="email" autocomplete="email" autocapitalize="none" placeholder="E-postadresse" value="' + esc(v.mailIn) + '" data-input="onMail"><button type="button" class="pill"' + on(v.sendMail) + '>Send</button></div>' +
+      '<div class="cbtns">' + (v.pickContact ? '<button type="button" class="pill"' + on(v.pickContact) + '>Velg fra kontakter</button>' : '') +
+      '<button type="button" class="pill"' + on(v.shareInvite) + '>Del invitasjonen</button></div>' +
+      '</div></div>';
   }
   function settingsView(v) {
     return '<div class="screen sub">' + head("Innstillinger", v.back) + '<div class="scroll">' +

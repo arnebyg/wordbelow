@@ -1,3 +1,4 @@
 "NSUserTrackingUsageDescription" = "Brukes bare til å vise annonser som passer deg bedre. Spillet virker likt uansett hva du svarer.";
 "NSCameraUsageDescription" = "Brukes bare når du tar et profilbilde.";
 "NSPhotoLibraryUsageDescription" = "Brukes bare når du velger et profilbilde.";
+"NSContactsUsageDescription" = "Brukes bare når du velger noen å invitere. Ingenting fra kontaktene lagres eller sendes noe sted.";
