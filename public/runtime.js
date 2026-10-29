@@ -512,7 +512,7 @@ var App = (function () {
 
   // Scale the 390 × 844 game to the screen, inside the notch and home-bar insets.
   var probe = null;
-  var scaleNow = 1;
+  var scaleNow = 1, fullW = 0, fullH = 0;
   var useZoom = !!(window.CSS && CSS.supports && CSS.supports("zoom", "2"));
   function fit() {
     if (!probe) {
@@ -530,7 +530,12 @@ var App = (function () {
     // Only there: on Android screen.height also counts the system's navigation bar, and the buttons ended up beneath it.
     var ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
     var standalone = ios && (navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches));
-    var w = window.innerWidth, h = standalone && screen.width === w ? Math.max(window.innerHeight, screen.height) : window.innerHeight, s = Math.min(w / 390, (h - top - bot) / 640), H = Math.floor(h / s);
+    var w = window.innerWidth, h = standalone && screen.width === w ? Math.max(window.innerHeight, screen.height) : window.innerHeight;
+    // On Android the keyboard makes the window shorter; the scale is kept from the full height, so the page does not
+    // shrink to a narrow column while one types. Only the room above the keyboard gets shorter, and it scrolls.
+    var ae = document.activeElement, typing = !!ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable);
+    if (w !== fullW) { fullW = w; fullH = h; } else if (!typing || h > fullH) fullH = h;
+    var s = Math.min(w / 390, ((typing ? Math.max(h, fullH) : h) - top - bot) / 640), H = Math.floor(h / s);
     // iOS 26 draws a Liquid Glass blur over the top of an installed web app, about 38–40 pt below the status bar;
     // nothing in the page turns it off, so the content starts below it (24 pt was too little).
     // The iPhone app (native.js) has no such blur, so it starts right below the status bar.

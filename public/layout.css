@@ -30,7 +30,7 @@ body{background-color:var(--bg,#1E6550);color:#F4EFE2;font-family:'Bricolage Gro
 .act.gold{flex:0 0 96px;background:#D9A441;color:#3B2405;box-shadow:0 4px 0 #8E5E14}
 .act.green{background:#4FB58A;color:#072A1D;box-shadow:0 4px 0 #23704F}
 .act.red{background:#E06A5A;color:#2A0905;box-shadow:0 4px 0 #8F3328;padding:0 18px}
-.sub .cbtns{display:flex;gap:8px;align-items:center;margin:8px 0 4px}
+.sub .cbtns{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 4px}
 .opt.danger .t{color:#F2A094}
 html.light .opt.danger .t{color:#B23A2B}
 .act.send{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px}
