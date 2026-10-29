@@ -18,6 +18,8 @@ const err = (status, message) => json({ error: message }, status);
 const rid = (n) => { const a = new Uint8Array(n); crypto.getRandomValues(a); return Array.from(a, (b) => b.toString(16).padStart(2, "0")).join(""); };
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const code = () => { const a = new Uint8Array(6); crypto.getRandomValues(a); return Array.from(a, (b) => CODE_CHARS[b % CODE_CHARS.length]).join(""); };
+// The boards re-laid in the app (public/logic.js REBUILT): old id → new.
+const REBUILT = { fjellet: "fjellet-2", skredet: "skredet-2", klofta: "klofta-2", trappen: "trappen-2", bolgen: "bolgen-2", bikuben: "bikuben-2", lokket: "lokket-2", bakken: "bakken-2" };
 const NAME_RE = /^[A-Za-z0-9ÆØÅæøå_.-]{3,16}$/;
 const LANGS = ["no", "nl", "fi", "sv", "fr", "it", "es", "en"];
 const langOf = (body) => LANGS.includes(body && body.lang) ? body.lang : "no";
@@ -72,6 +74,10 @@ export class Hub extends DurableObject {
     try { this.sql.exec("ALTER TABLE games ADD COLUMN hid1 INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     // A profile picture: a small JPEG (96 × 96, made on the phone), base64, and when it was set (picv), so a new one is fetched.
     try { this.sql.exec("ALTER TABLE users ADD COLUMN pic TEXT"); } catch (e) { /* already there */ }
+    // A player shut out by whoever runs the server (the admin page): no new games, chat, friends, boards or picture.
+    try { this.sql.exec("ALTER TABLE users ADD COLUMN banned INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
+    // A report the admin has dealt with.
+    try { this.sql.exec("ALTER TABLE reports ADD COLUMN done INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     try { this.sql.exec("ALTER TABLE users ADD COLUMN picv INTEGER NOT NULL DEFAULT 0"); } catch (e) { /* already there */ }
     // The language the app on that phone is shown in; its push messages come in the same.
     try { this.sql.exec("ALTER TABLE subs ADD COLUMN lang TEXT NOT NULL DEFAULT 'no'"); } catch (e) { /* already there */ }
@@ -87,7 +93,7 @@ export class Hub extends DurableObject {
   userOf(request) {
     const h = request.headers.get("authorization") || "";
     const tok = h.startsWith("Bearer ") ? h.slice(7) : "";
-    return tok ? this.one("SELECT id, name FROM users WHERE token = ?", tok) : null;
+    return tok ? this.one("SELECT id, name, banned FROM users WHERE token = ?", tok) : null;
   }
   nameOf(id) { const u = id && this.one("SELECT name FROM users WHERE id = ?", id); return u ? u.name : id ? "Slettet spiller" : null; }
   summary(g, me) {
@@ -178,7 +184,8 @@ export class Hub extends DurableObject {
   async alarm() { this.expire(); await this.schedule(); }
   newGame(p0, p1, kind, body, status0) {
     const now = Date.now(), id = rid(8), seed = Math.floor(Math.random() * 1e9);
-    const layout = typeof body.layout === "string" && /^[a-z0-9]{2,20}$/.test(body.layout) ? body.layout : "lokket";
+    // A board that has been re-laid is started in its new form, also when an older app asks for the old one.
+    const raw = typeof body.layout === "string" && /^[a-z0-9-]{2,20}$/.test(body.layout) ? body.layout : "lokket-2", layout = REBUILT[raw] || raw;
     const status = status0 || (p1 ? "active" : "waiting"), c = kind === "invite" ? code() : null, lang = langOf(body);
     this.sql.exec("INSERT INTO games (id, p0, p1, layout, seed, lang, status, kind, code, turn, ver, state, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, NULL, ?, ?)",
       id, p0, p1 || null, layout, seed, lang, status, kind, c, now, now);
@@ -198,10 +205,40 @@ export class Hub extends DurableObject {
       return json({ id, name, token });
     }
 
-    if (path === "/admin/reports" && m === "GET") {
+    // The admin page (public/admin.html) with the ADMIN_KEY secret: reports, pictures, shutting a player out, and
+    // which account is told when a report comes in.
+    if (path.startsWith("/admin/")) {
       if (!this.env.ADMIN_KEY || request.headers.get("x-admin-key") !== this.env.ADMIN_KEY) return err(403, "Ingen tilgang.");
-      const rows = this.all("SELECT r.*, a.name AS reporter, b.name AS about_name FROM reports r LEFT JOIN users a ON a.id = r.uid LEFT JOIN users b ON b.id = r.about ORDER BY r.at DESC LIMIT 200");
-      return json({ reports: rows.map((r) => Object.assign(r, { chat: r.gid ? this.all("SELECT uid, at, text FROM chat WHERE gid = ? ORDER BY id", r.gid) : [] })) });
+      if (path === "/admin/reports" && m === "GET") {
+        const rows = this.all("SELECT r.*, a.name AS reporter, b.name AS about_name, b.banned AS about_banned, b.picv AS about_picv FROM reports r LEFT JOIN users a ON a.id = r.uid LEFT JOIN users b ON b.id = r.about ORDER BY r.done, r.at DESC LIMIT 200");
+        const owner = this.one("SELECT u.id, u.name FROM kv JOIN users u ON u.id = kv.v WHERE kv.k = 'owner'");
+        return json({ owner: owner || null, reports: rows.map((r) => Object.assign(r, { chat: r.gid ? this.all("SELECT c.uid, c.at, c.text, u.name FROM chat c LEFT JOIN users u ON u.id = c.uid WHERE c.gid = ? ORDER BY c.id", r.gid) : [] })) });
+      }
+      if (path === "/admin/done" && m === "POST") { this.sql.exec("UPDATE reports SET done = ? WHERE id = ?", body.done ? 1 : 0, Number(body.id) || 0); return json({ ok: true }); }
+      if (path === "/admin/pic" && m === "POST") { this.sql.exec("UPDATE users SET pic = NULL, picv = 0 WHERE id = ?", String(body.id || "")); return json({ ok: true }); }
+      if (path === "/admin/owner" && m === "POST") {
+        const u = this.one("SELECT id, name FROM users WHERE name = ?", String(body.name || "").trim());
+        if (!u) return err(404, "Fant ingen spiller med det navnet.");
+        this.sql.exec("INSERT OR REPLACE INTO kv (k, v) VALUES ('owner', ?)", u.id);
+        return json({ owner: u });
+      }
+      // Shutting a player out ends their running games as if they had resigned; the other player wins and is told.
+      if (path === "/admin/ban" && m === "POST") {
+        const u = this.one("SELECT id, name FROM users WHERE id = ?", String(body.id || ""));
+        if (!u) return err(404, "Fant ikke spilleren.");
+        if (!body.on) { this.sql.exec("UPDATE users SET banned = 0 WHERE id = ?", u.id); return json({ ok: true }); }
+        this.sql.exec("UPDATE users SET banned = 1, pic = NULL, picv = 0 WHERE id = ?", u.id);
+        for (const g of this.all("SELECT * FROM games WHERE (p0 = ? OR p1 = ?) AND status IN ('active', 'waiting', 'offer')", u.id, u.id)) {
+          if (g.status !== "active") { this.sql.exec("DELETE FROM games WHERE id = ?", g.id); continue; }
+          const you = g.p0 === u.id ? 0 : 1, st = g.state ? JSON.parse(g.state) : { P: [{ score: 0 }, { score: 0 }] };
+          st.result = { resigned: you, winner: 1 - you };
+          st.last = "Motspilleren er stengt ute.";
+          this.sql.exec("UPDATE games SET state = ?, status = 'done', ver = ver + 1, updated = ? WHERE id = ?", JSON.stringify(st), Date.now(), g.id);
+          this.notify(you === 0 ? g.p1 : g.p0, "Spillet er ferdig", "Motspilleren er stengt ute, og du vant.", g.id);
+        }
+        return json({ ok: true });
+      }
+      return err(404, "Ukjent.");
     }
     // Profile pictures are fetched as plain images (an <img> sends no token); a missing one is a 404 and the app shows the initial.
     const pm = path.match(/^\/avatar\/([A-Za-z0-9_-]{4,40})$/);
@@ -210,11 +247,6 @@ export class Hub extends DurableObject {
       const head = { "cache-control": "public, max-age=300" };
       if (!u || !u.pic) return new Response(null, { status: 404, headers: head });
       return new Response(Uint8Array.from(atob(u.pic), (c) => c.charCodeAt(0)), { headers: Object.assign({ "content-type": "image/jpeg" }, head) });
-    }
-    if (path === "/admin/pic" && m === "POST") {
-      if (!this.env.ADMIN_KEY || request.headers.get("x-admin-key") !== this.env.ADMIN_KEY) return err(403, "Ingen tilgang.");
-      this.sql.exec("UPDATE users SET pic = NULL, picv = 0 WHERE id = ?", String(body.id || ""));
-      return json({ ok: true });
     }
     const bm = path.match(/^\/boards\/([a-z0-9]{6})$/);
     if (bm && m === "GET") {
@@ -231,6 +263,8 @@ export class Hub extends DurableObject {
     return res;
   }
   async route(request, url, path, m, body, me) {
+    if (me.banned && m !== "GET" && (path === "/games" || path === "/join" || path === "/friends" || path === "/boards" || path === "/me/pic" || /^\/games\/[^/]+\/chat$/.test(path)))
+      return err(403, "Kontoen er stengt for spill mot andre.");
     if (path === "/push/key" && m === "GET") return json({ key: (await this.vapid()).pub });
     if (path === "/push/subscribe" && m === "POST") {
       const ep = String(body.endpoint || ""), k = body.keys || {};
@@ -283,6 +317,9 @@ export class Hub extends DurableObject {
       const reason = String(body.reason || "").slice(0, 40);
       if (!reason) return err(400, "Velg en grunn.");
       this.sql.exec("INSERT INTO reports (uid, about, gid, reason, note, at) VALUES (?, ?, ?, ?, ?, ?)", me.id, o.id, body.gid ? String(body.gid).slice(0, 20) : null, reason, String(body.note || "").slice(0, 300), Date.now());
+      // Whoever runs the server is told at once, on the account chosen on the admin page (raw: not translated).
+      const owner = this.one("SELECT v FROM kv WHERE k = 'owner'");
+      if (owner) this.notify(owner.v, "Ny rapport", me.name + " rapporterte " + this.nameOf(o.id) + ": " + reason, null, true);
       return json({ ok: true });
     }
     // Shared boards: the cells as the editor writes them ("2c.2r.layer"), up to 100 tiles.

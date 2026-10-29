@@ -908,6 +908,7 @@ class Component extends DCLogic {
   }
   answerOffer(g, yes) {
     var self = this;
+    this.setState({ offerAsk: null });
     api("/games/" + g.id + (yes ? "/accept" : "/decline"), { method: "POST" }).then(function () {
       if (yes) self.openOnline(g.id); else { self.setState({ homeMsg: "Du avslo utfordringen fra " + (g.opp ? g.opp.name : "motspilleren") + "." }); self.refreshGames(); }
     }, function (e) { self.setState({ homeMsg: e.message }); self.refreshGames(); });
@@ -950,8 +951,8 @@ class Component extends DCLogic {
   }
   resignFromList(g) {
     var self = this;
-    if (this.state.cardAsk !== g.id) { this.setState({ cardAsk: g.id, homeMsg: "Trykk «Gi opp – sikker?» for å gi opp spillet mot " + (g.opp ? g.opp.name : "motspilleren") + ". Motspilleren vinner." }); return; }
-    this.setState({ cardAsk: null, homeMsg: "" });
+    if (this.state.cardAsk !== g.id) { this.setState({ cardAsk: g.id, homeMsg: "Trykk «Gi opp – sikker?» for å gi opp spillet mot " + (g.opp ? g.opp.name : "motspilleren") + ". Motspilleren vinner.", homeAskCancel: true }); return; }
+    this.setState({ cardAsk: null, homeMsg: "", homeAskCancel: false });
     api("/games/" + g.id + "/resign", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: e.message }); });
   }
   hideGame(g) {
@@ -972,6 +973,8 @@ class Component extends DCLogic {
     api("/games/" + id).then(function (d) {
       var st = self.state, g = d.game, s = d.state;
       if (!st.online || st.online.id !== id) return;
+      // A challenge to you (opened from its notification) is answered first: yes or no, on the home screen.
+      if (g.status === "offer" && g.incoming) { self.goHome(); self.setState({ offerAsk: g }); return; }
       self.applyChat(id, d);
       if (quiet && st.online.ver === g.ver && st.online.status === g.status) return;
       if (g.board) sharedLayout(g.board.code, g.board.name, g.board.cells);
@@ -1475,6 +1478,13 @@ class Component extends DCLogic {
         line: today ? today.score + " poeng · " + (today.words || []).length + " ord" + (today.left ? "" : " · ryddet") : "Samme bokstaver for alle i dag",
         streakSay: streak ? streak + (streak === 1 ? " dag" : " dager") + " på rad" : "Start en rekke i dag",
         play: function () { self.startDaily(); }, share: function () { self.shareDaily(); } };
+      v.cancelAsk = st.homeAskCancel && st.cardAsk ? function () { self.setState({ cardAsk: null, homeMsg: "", homeAskCancel: false }); } : null;
+      if (st.offerAsk) {
+        var og = st.offerAsk, oL = LAYOUTS.filter(function (x) { return x.id === og.layout; })[0] || EXTRA[og.layout];
+        v.offerAsk = { who: og.opp ? og.opp.name : "Noen", initial: ((og.opp && og.opp.name) || "?")[0].toUpperCase(), pic: picOf(og.opp && og.opp.id, st),
+          board: oL ? oL.name : og.board ? og.board.name : og.layout, lang: og.lang && og.lang !== UI && LANGS[og.lang] ? LANGS[og.lang].name : null,
+          yes: function () { self.answerOffer(og, true); }, no: function () { self.answerOffer(og, false); }, later: function () { self.setState({ offerAsk: null }); } };
+      }
       v.offers = gs.filter(function (g) { return g.incoming; }).map(function (g) {
         var L = LAYOUTS.filter(function (x) { return x.id === g.layout; })[0] || EXTRA[g.layout];
         return { who: g.opp ? g.opp.name : "Noen", initial: ((g.opp && g.opp.name) || "?")[0].toUpperCase(), pic: picOf(g.opp && g.opp.id, st), line: "Vil spille på " + (L ? L.name : g.board ? g.board.name : g.layout) + " · " + ago(g.updated),

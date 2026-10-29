@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>wordbelow · Admin</title>
+<style>
+:root{--bg:#1E6550;--ink:#F4EFE2;--soft:#CFE0D9;--gold:#F2C46B;--card:rgba(0,0,0,.22);--red:#E8806E}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:24px;margin:0 0 16px}
+h2{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft);margin:28px 0 8px}
+.card{background:var(--card);border-radius:14px;padding:14px 16px;margin:0 0 12px}
+.card.done{opacity:.55}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.who{display:flex;gap:10px;align-items:center}
+.av{width:40px;height:46px;border-radius:7px;background:#FBF6EA;color:#1C2626;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;overflow:hidden;flex:none}
+.av img{width:100%;height:100%;object-fit:cover}
+.meta{color:var(--soft);font-size:14px}
+.reason{color:var(--gold);font-weight:700}
+.chat{margin:10px 0 0;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,.2);font-size:14px;max-height:220px;overflow:auto}
+.chat div{margin:2px 0}
+.chat b{color:var(--soft);font-weight:600}
+.chat .them{color:var(--gold)}
+button{height:40px;padding:0 14px;border-radius:20px;border:2px solid var(--ink);background:transparent;color:var(--ink);font:inherit;font-weight:700;cursor:pointer}
+button.red{border-color:var(--red);color:var(--red)}
+input{height:40px;padding:0 12px;border-radius:10px;border:0;font:inherit;min-width:0;flex:1}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.msg{color:var(--gold);margin:8px 0}
+.tag{font-size:12px;font-weight:800;padding:2px 8px;border-radius:8px;background:var(--red);color:#1C2626}
+</style>
+</head>
+<body>
+<main>
+<h1>wordbelow · Admin</h1>
+<div id="login" class="card" hidden>
+  <p>Skriv adminnøkkelen. Den lagres bare i denne nettleseren.</p>
+  <div class="row"><input id="key" type="password" autocomplete="off" placeholder="Adminnøkkel"><button id="go">Logg inn</button></div>
+  <p class="msg" id="lmsg"></p>
+</div>
+<div id="app" hidden>
+  <h2>Varsel ved nye rapporter</h2>
+  <div class="card">
+    <p class="meta" id="ownerSay"></p>
+    <div class="row"><input id="owner" placeholder="Brukernavnet ditt i spillet"><button id="setOwner">Varsle denne kontoen</button></div>
+    <p class="meta">Varselet kommer som «din tur»-varslene, på telefoner der kontoen har slått på varsler.</p>
+  </div>
+  <h2 id="head">Rapporter</h2>
+  <p class="msg" id="msg"></p>
+  <div id="list"></div>
+  <p><button id="out">Logg ut</button></p>
+</div>
+</main>
+<script>
+var KEY = "wb-admin-key", $ = function (id) { return document.getElementById(id); };
+function key() { try { return localStorage.getItem(KEY) || ""; } catch (e) { return ""; } }
+function call(path, body) {
+  return fetch("/api/admin" + path, { method: body ? "POST" : "GET", headers: { "content-type": "application/json", "x-admin-key": key() }, body: body ? JSON.stringify(body) : undefined })
+    .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { if (!r.ok) throw new Error(d.error || ("Feil " + r.status)); return d; }); });
+}
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+function when(t) { return new Date(t).toLocaleString("nb-NO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }); }
+function load() {
+  call("/reports").then(function (d) {
+    $("login").hidden = true; $("app").hidden = false;
+    $("ownerSay").textContent = d.owner ? "Nye rapporter varsles til «" + d.owner.name + "»." : "Ingen konto får varsel ennå.";
+    var open = d.reports.filter(function (r) { return !r.done; }).length;
+    $("head").textContent = "Rapporter · " + open + " åpne av " + d.reports.length;
+    $("list").innerHTML = d.reports.length ? d.reports.map(function (r) {
+      var gone = !r.about_name;
+      return '<div class="card' + (r.done ? ' done' : '') + '">' +
+        '<div class="row"><div class="who"><span class="av">' + esc((r.about_name || "?")[0].toUpperCase()) + (r.about_picv ? '<img alt="" src="/api/avatar/' + esc(r.about) + '?v=' + r.about_picv + '">' : '') + '</span>' +
+        '<div><b>' + esc(r.about_name || "Slettet spiller") + '</b> ' + (r.about_banned ? '<span class="tag">Stengt ute</span>' : '') +
+        '<div class="meta"><span class="reason">' + esc(r.reason) + '</span> · fra ' + esc(r.reporter || "slettet spiller") + ' · ' + when(r.at) + '</div></div></div></div>' +
+        (r.note ? '<p>' + esc(r.note) + '</p>' : '') +
+        (r.chat.length ? '<div class="chat">' + r.chat.map(function (c) { return '<div><b' + (c.uid === r.about ? ' class="them"' : '') + '>' + esc(c.name || "?") + ':</b> ' + esc(c.text) + '</div>'; }).join("") + '</div>' : '<p class="meta">Ingen chat i spillet.</p>') +
+        '<div class="acts">' +
+          '<button data-a="done" data-id="' + r.id + '" data-v="' + (r.done ? 0 : 1) + '">' + (r.done ? 'Åpne igjen' : 'Ferdig behandlet') + '</button>' +
+          (!gone && r.about_picv ? '<button data-a="pic" data-u="' + esc(r.about) + '">Fjern profilbildet</button>' : '') +
+          (!gone ? '<button class="red" data-a="ban" data-u="' + esc(r.about) + '" data-v="' + (r.about_banned ? 0 : 1) + '">' + (r.about_banned ? 'Opphev utestenging' : 'Steng ute') + '</button>' : '') +
+        '</div></div>';
+    }).join("") : '<p class="meta">Ingen rapporter.</p>';
+  }, function (e) { $("app").hidden = true; $("login").hidden = false; $("lmsg").textContent = key() ? e.message : ""; });
+}
+$("go").onclick = function () { try { localStorage.setItem(KEY, $("key").value.trim()); } catch (e) {} load(); };
+$("out").onclick = function () { try { localStorage.removeItem(KEY); } catch (e) {} location.reload(); };
+$("setOwner").onclick = function () { call("/owner", { name: $("owner").value }).then(function () { $("owner").value = ""; load(); }, function (e) { $("msg").textContent = e.message; }); };
+$("list").onclick = function (e) {
+  var b = e.target.closest("button[data-a]"); if (!b) return;
+  var a = b.getAttribute("data-a"), u = b.getAttribute("data-u");
+  if (a === "ban" && b.getAttribute("data-v") === "1" && !confirm("Steng ute denne spilleren? Spill som er i gang, avsluttes, og motspilleren vinner.")) return;
+  var p = a === "done" ? call("/done", { id: +b.getAttribute("data-id"), done: b.getAttribute("data-v") === "1" }) : a === "pic" ? call("/pic", { id: u }) : call("/ban", { id: u, on: b.getAttribute("data-v") === "1" });
+  p.then(load, function (e) { $("msg").textContent = e.message; });
+};
+load();
+</script>
+</body>
+</html>

@@ -462,3 +462,7 @@ html.light .stat.warn .v{color:#B3261E}
 .stat .avs{width:24px;height:24px;border-radius:5px;object-fit:cover;vertical-align:-6px;margin-right:6px}
 button.stat.tap{font:inherit;color:inherit;text-align:left;border:0;cursor:pointer}
 label.pill{cursor:pointer;display:inline-flex;align-items:center}
+.gopen .gtop .badge{white-space:normal;text-align:right;line-height:1.2;max-width:calc(100% - 50px)}
+.offerwho{display:flex;gap:14px;align-items:center;margin:4px 0 16px}
+.offerwho p{margin:4px 0 0}
+.helpbody .cbtns,.note .cbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}

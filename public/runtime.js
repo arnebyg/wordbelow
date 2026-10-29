@@ -151,7 +151,7 @@ var App = (function () {
         '<button type="button" class="ib" aria-label="Statistikk"' + on(v.openStats) + '>' + IC.stats + '</button>' +
         '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button></span></div>' +
       '<div class="scroll">' +
-      (v.homeMsg ? '<div class="note">' + esc(v.homeMsg) + '</div>' : '') +
+      (v.homeMsg ? '<div class="note">' + esc(v.homeMsg) + (v.cancelAsk ? '<div class="cbtns"><button type="button" class="pill small"' + on(v.cancelAsk) + '>Avbryt</button></div>' : '') + '</div>' : '') +
       '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="dtxt"><span class="dk">Dagens brett · ' + IC.fire + esc(v.daily.streakSay) + '</span>' +
         '<span class="dn">' + esc(v.daily.name) + '<small>' + esc(v.daily.line) + '</small></span></div>' +
         (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Se</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div>' +
@@ -258,6 +258,15 @@ var App = (function () {
   // A player's tile: the initial, with the picture over it when there is one.
   function av(initial, pic, cls) {
     return '<span class="av' + (cls ? ' ' + cls : '') + '">' + esc(initial) + (pic ? '<img class="avp" alt="" data-pic="' + esc(pic.id) + '" src="' + esc(pic.src) + '" onerror="wbPicMiss(this)">' : '') + '</span>';
+  }
+  // A challenge opened from its notification: who, which board, and yes or no.
+  function offerView(v) {
+    var o = v.offerAsk;
+    return '<div class="helpov" role="dialog" aria-modal="true" aria-label="Utfordring"><div class="helpsheet">' +
+      '<div class="helphead"><b>Utfordring</b><button type="button" class="x" aria-label="Lukk"' + on(o.later) + '>' + IC.close + '</button></div>' +
+      '<div class="scroll helpbody"><div class="who offerwho">' + av(o.initial, o.pic, 'big') + '<div><b translate="no">' + esc(o.who) + '</b><p>vil spille mot deg på ' + esc(o.board) + (o.lang ? ' (<span translate="no">' + esc(o.lang) + '</span>)' : '') + '.</p></div></div>' +
+      '<div class="cbtns"><button type="button" class="act green"' + on(o.yes) + '>Godta</button><button type="button" class="pill"' + on(o.no) + '>Avslå</button></div>' +
+      '<p class="fine">Du kan også svare senere under Utfordringer på startsiden.</p></div></div></div>';
   }
   function playerView(v) {
     var p = v.player;
@@ -421,7 +430,7 @@ var App = (function () {
     H = [];
     var v = comp.renderVals();
     var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
-    var html = (V[v.phase] || homeView)(v) + (v.phase === "done" && v.win ? winView(v) : "") + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "");
+    var html = (V[v.phase] || homeView)(v) + (v.phase === "done" && v.win ? winView(v) : "") + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "") + (v.offerAsk && v.phase === "home" ? offerView(v) : "");
     if (window.trHtml) html = trHtml(html);
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.
     if (focusId && lastPhase === v.phase && patch(html)) { lastPhase = v.phase; App.lastVals = v; fitBoard(); return; }
