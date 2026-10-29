@@ -643,6 +643,8 @@ function streakOf(done) {
   while (done[dayKey(d)]) { n++; d.setDate(d.getDate() - 1); }
   return n;
 }
+// The key under the squares, so whoever gets the result can read it.
+var SHARE_KEY = "⬜ 1–3 · 🟨 4–5 · 🟩 6–7 · 🟦 8+ bokstaver";
 function shareGrid(words) {
   var sq = function (w) { var n = w.w.length; return n >= 8 ? "🟦" : n >= 6 ? "🟩" : n >= 4 ? "🟨" : "⬜"; }, out = "";
   words.forEach(function (w, i) { out += sq(w) + ((i + 1) % 8 === 0 && i < words.length - 1 ? "\n" : ""); });
@@ -1153,7 +1155,7 @@ class Component extends DCLogic {
     if (!r) return;
     var longest = (r.words || []).reduce(function (b, w) { return Math.max(b, w.w.length); }, 0), d = key.split("-");
     var text = "WordBelow · Dagens brett " + (+d[2]) + "." + (+d[1]) + ". · " + D.name + "\n" + r.score + " poeng · " + (r.words || []).length + " ord · lengste " + longest + " bokstaver · " +
-      (r.left ? r.left + " brikker igjen" : "brettet ryddet") + "\n" + shareGrid(r.words || []) + "\n" + (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname);
+      (r.left ? r.left + " brikker igjen" : "brettet ryddet") + "\n" + shareGrid(r.words || []) + "\n" + SHARE_KEY + "\n" + (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname);
     var self = this;
     if (navigator.share) navigator.share({ text: tr(text) }).catch(function () {});
     else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ toastNote: "Resultatet er kopiert. Lim det inn der du vil dele det." }); }, function () {});
