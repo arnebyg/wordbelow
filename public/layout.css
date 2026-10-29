@@ -470,3 +470,5 @@ button.wlink{background:none;border:0;padding:0;font:inherit;color:inherit;text-
 .wdef h3{font-size:14px;letter-spacing:.04em;text-transform:uppercase;opacity:.75;margin:14px 0 4px}
 .wdef h3:first-child{margin-top:0}
 .wdef p{margin:0 0 6px}
+/* A Sett tile with a bonus band: the symbols sit below the band, a little closer together. */
+.tile .bn + .syms{top:13px;gap:2px}
