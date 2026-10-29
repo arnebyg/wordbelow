@@ -1477,7 +1477,8 @@ class Component extends DCLogic {
       score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
       ads: !st.premium, premium: !!st.premium, adFull: !st.premium && !!st.adFull, closeAd: function () { self.setState({ adFull: null }); },
       openPremium: function () { self.setState({ phase: "premium", premMsg: "", help: false }); },
-      hist: !!st.hist, openHist: function () { self.setState({ hist: true }); }, closeHist: function () { self.setState({ hist: false }); },
+      // Tall and Sett show no move history or missed moves: without the board in view they say little.
+      hist: !!st.hist && kindOf(S.L) === "ord", openHist: kindOf(S.L) === "ord" ? function () { self.setState({ hist: true }); } : null, closeHist: function () { self.setState({ hist: false }); },
       histRows: (st.log || []).slice().reverse().map(function (e) {
         var who = duel ? nm[e.p] : "Du";
         return { who: who, what: e.k === "w" ? "«" + e.w + "»" : e.k === "p" ? e.w + " i lommen" : "sto over", pts: e.k === "w" ? "+" + e.pts : "",
@@ -1958,7 +1959,7 @@ class Component extends DCLogic {
       v.winClose = function () { self.setState({ celeb: null }); };
       // The words you could have done better with: the biggest gaps first.
       var meIdx = online ? st.online.you : 0;
-      v.missed = (st.log || []).filter(function (e) { return e.k === "w" && e.best && (!duel || e.p === meIdx); })
+      v.missed = kindOf(S.L) !== "ord" ? [] : (st.log || []).filter(function (e) { return e.k === "w" && e.best && (!duel || e.p === meIdx); })
         .sort(function (a, b) { return (b.best.pts - b.pts) - (a.best.pts - a.pts); }).slice(0, 3)
         .map(function (e) { return { played: "«" + e.w + "» +" + e.pts, best: "«" + e.best.w + "» +" + e.best.pts, url: kindOf(S.L) === "ord" ? dictUrl(e.best.w) : null, look: kindOf(S.L) === "ord" ? function () { self.lookupWord(e.best.w, st.lang || "no", dictUrl(e.best.w)); } : null }; });
       if (rec.duel) {

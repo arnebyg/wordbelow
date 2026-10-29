@@ -21,7 +21,7 @@ var App = (function () {
   '<div class="top">' +
     '<button type="button" class="back" aria-label="Til menyen"' + on(v.toMenu) + '><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M13 4l-7 7 7 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>' +
     '<div class="title"><span class="t1">' + esc(v.kicker) + '</span>' + (v.lsub ? '<span class="t2">' + esc(v.lsub) + '</span>' : '') + '</div>' +
-    '<span class="topr">' + (v.chatBtn ? '<button type="button" class="qb chatb' + (v.chatUnread ? ' unread' : '') + '" aria-label="Reaksjoner og chat"' + on(v.openChat) + '>' + IC.chat + '</button>' : '') + '<button type="button" class="qb" aria-label="Trekkhistorikk"' + on(v.openHist) + '>' + IC.list + '</button><button type="button" class="qb" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
+    '<span class="topr">' + (v.chatBtn ? '<button type="button" class="qb chatb' + (v.chatUnread ? ' unread' : '') + '" aria-label="Reaksjoner og chat"' + on(v.openChat) + '>' + IC.chat + '</button>' : '') + (v.openHist ? '<button type="button" class="qb" aria-label="Trekkhistorikk"' + on(v.openHist) + '>' + IC.list + '</button>' : '') + '<button type="button" class="qb" aria-label="Slik spiller du"' + on(v.openHelp) + '>?</button>' +
     '<button type="button" class="hintb"' + (v.hintOff ? ' disabled' : '') + on(v.hint) + '>' + esc(v.hintLabel || "Hint −5") + '</button></span>' +
   '</div>' +
   '<div class="stats">' +
