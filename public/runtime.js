@@ -294,7 +294,7 @@ var App = (function () {
   function premiumView(v) {
     var li = function (t, s) { return '<div class="opt"><span class="tileic">' + IC.gem + '</span><span class="ot"><span class="t">' + t + '</span><span class="s">' + s + '</span></span></div>'; };
     return '<div class="screen sub">' + head("Premium", v.back) + '<div class="scroll">' +
-      '<div class="premhero">' + IC.gem + '<b>WordBelow Premium</b><span>Ett kjøp, for alltid.</span></div>' +
+      '<div class="premhero">' + IC.gem + '<b>WordBelow Premium</b><span>Ett kjøp, ingen reklame.</span></div>' +
       '<div class="group">' + li("Ingen reklame", "Verken banneret nederst eller reklamen etter hvert trekk.") + li("Full statistikk", "Resultater, rating over tid, beste ord og resultater mot hver motspiller.") + '</div>' +
       (v.premium ? '<div class="note">Du har Premium på denne telefonen.</div>' : '<button type="button" class="bigbtn"' + (v.busy ? ' disabled' : '') + on(v.buy) + '>' + IC.gem + '<span>Kjøp Premium</span>' + (v.price ? '<span class="price" translate="no">' + esc(v.price) + '</span>' : '') + '</button>') +
       (v.premium ? '' : '<button type="button" class="pill"' + (v.busy ? ' disabled' : '') + on(v.restore) + '>Gjenopprett kjøp</button>') +
