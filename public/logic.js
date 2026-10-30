@@ -492,6 +492,9 @@ seasonLoad();
 // The active player's score, pocket and words live in st.score, st.pocket and st.words, as in solo;
 // st.P holds both players and is brought up to date at the end of every turn.
 var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det beste" }, { id: "middels", name: "Middels", say: "gode ord, i snitt rundt 60 % av beste trekk" }, { id: "sterk", name: "Sterk", say: "sterke ord, i snitt rundt 70 % av beste trekk" }];
+// A game the server no longer has (withdrawn, expired, or tidied away): said plainly, and the list is fetched again.
+var GONE_SAY = "Spillet finnes ikke lenger. Det kan være trukket tilbake eller gått ut på tid.";
+function goneOr(e) { return e.status === 404 ? GONE_SAY : e.message; }
 var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1", CHAT_KEY = "ordspill/chat/v1";
 // Word meanings: Bokmålsordboka and Nynorskordboka at ordbokene.no (Språkrådet and the University of Bergen).
 function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase()); }
@@ -725,6 +728,13 @@ class Component extends DCLogic {
     this.poll = setInterval(function () { self.tick(); }, 5000);
     this.clock = setInterval(function () { self.soloTick(); }, 1000);
     document.addEventListener("visibilitychange", function () { if (!document.hidden) self.tick(true); });
+  }
+  // A message on the home screen goes by itself after 8 seconds, unless it is asking something (give up – sure?).
+  setState(o) {
+    var before = this.state.homeMsg;
+    super.setState(o);
+    var m = this.state.homeMsg, self = this;
+    if (m && m !== before) { clearTimeout(this.homeFade); this.homeFade = setTimeout(function () { if (self.state.homeMsg === m && !self.state.cardAsk) self.setState({ homeMsg: "" }); }, 8000); }
   }
   componentWillUnmount() { this.timers.forEach(clearTimeout); clearInterval(this.poll); if (this.unsub) this.unsub(); }
   // Every 5 s while the app is open: the home screen every 20 s, and an online game where it is the other player's turn.
@@ -1005,7 +1015,7 @@ class Component extends DCLogic {
     this.setState({ offerAsk: null });
     api("/games/" + g.id + (yes ? "/accept" : "/decline"), { method: "POST" }).then(function () {
       if (yes) self.openOnline(g.id); else { self.setState({ homeMsg: "Du avslo utfordringen fra " + (g.opp ? g.opp.name : "motspilleren") + "." }); self.refreshGames(); }
-    }, function (e) { self.setState({ homeMsg: e.message }); self.refreshGames(); });
+    }, function (e) { self.setState({ homeMsg: goneOr(e) }); self.refreshGames(); });
   }
   random() {
     var self = this;
@@ -1069,14 +1079,14 @@ class Component extends DCLogic {
     var self = this;
     if (this.state.cardAsk !== g.id) { this.setState({ cardAsk: g.id, homeMsg: "Trykk «Gi opp – sikker?» for å gi opp spillet mot " + (g.opp ? g.opp.name : "motspilleren") + ". Motspilleren vinner.", homeAskCancel: true }); return; }
     this.setState({ cardAsk: null, homeMsg: "", homeAskCancel: false });
-    api("/games/" + g.id + "/resign", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: e.message }); });
+    api("/games/" + g.id + "/resign", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: goneOr(e) }); self.refreshGames(); });
   }
   hideGame(g) {
     var self = this;
     this.setState({ games: (this.state.games || []).filter(function (x) { return x.id !== g.id; }) });
-    api("/games/" + g.id + "/hide", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: e.message }); self.refreshGames(); });
+    api("/games/" + g.id + "/hide", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: goneOr(e) }); self.refreshGames(); });
   }
-  cancelInvite(g) { var self = this; api("/games/" + g.id + "/cancel", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: e.message }); }); }
+  cancelInvite(g) { var self = this; api("/games/" + g.id + "/cancel", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: goneOr(e) }); self.refreshGames(); }); }
   // An online game: the board comes from its layout and seed, the rest from the state the phones store on the server.
   openOnline(id) {
     var self = this;
@@ -1107,7 +1117,12 @@ class Component extends DCLogic {
         self.statOnline({ id: g.id, you: g.you, layout: g.layout, opp: g.opp, result: Object.assign({}, s.result, { res: next.played.res }), scores: P.map(function (p) { return p.score; }) }, P[g.you].words || []);
       }
       self.setState(next);
-    }, function (e) { if (!quiet) self.setState({ msg: e.message, tone: "bad" }); });
+    }, function (e) {
+      if (quiet) return;
+      // Opened from a notification or a card, but the server no longer has it: back home, saying so.
+      if (e.status === 404 && self.state.online && self.state.online.id === id) { self.goHome(); self.setState({ homeMsg: GONE_SAY }); return; }
+      self.setState({ msg: e.message, tone: "bad" });
+    });
   }
   resultOf(P) {
     var bestOf = function (ws) { return (ws || []).reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null); };
@@ -1636,6 +1651,8 @@ class Component extends DCLogic {
       v.myTurns = mt ? (mt === 1 ? "1 venter på deg" : mt + " venter på deg") : "";
       v.noAccount = !st.account;
       v.homeMsg = st.homeMsg || st.gamesMsg;
+      // A tap on the message puts it away, except while it is asking something.
+      v.closeHomeMsg = st.cardAsk ? null : function () { self.setState({ homeMsg: "", gamesMsg: "" }); };
       v.inviteCard = st.inviteCard;
       v.closeInviteCard = function () { lsSet(INVITE_CARD_KEY, true); self.setState({ inviteCard: false }); };
       v.inviteNow = function () { self.invite(); };

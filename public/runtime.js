@@ -152,7 +152,7 @@ var App = (function () {
         '<button type="button" class="ib" aria-label="Statistikk"' + on(v.openStats) + '>' + IC.stats + '</button>' +
         '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button></span></div>' +
       '<div class="scroll">' +
-      (v.homeMsg ? '<div class="note">' + esc(v.homeMsg) + (v.cancelAsk ? '<div class="cbtns"><button type="button" class="pill small"' + on(v.cancelAsk) + '>Avbryt</button></div>' : '') + '</div>' : '') +
+      (v.homeMsg ? '<div class="note"' + (v.closeHomeMsg ? ' role="button" aria-label="Lukk meldingen"' + on(v.closeHomeMsg) : '') + '>' + esc(v.homeMsg) + (v.cancelAsk ? '<div class="cbtns"><button type="button" class="pill small"' + on(v.cancelAsk) + '>Avbryt</button></div>' : '') + '</div>' : '') +
       '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="dtxt"><span class="dk">Dagens brett · ' + IC.fire + esc(v.daily.streakSay) + '</span>' +
         '<span class="dn">' + esc(v.daily.name) + '<small>' + esc(v.daily.line) + '</small></span></div>' +
         (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Spill</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div>' +
