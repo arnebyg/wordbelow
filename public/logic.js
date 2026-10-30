@@ -1,7 +1,7 @@
 // The full-screen ad comes only in the iPhone app (native.js), where a real ad network fills it: after every second
 // move of your own in a game against another player, and after every fifth move in all other games.
 var AD_FULL_ON = !!window.WB_NATIVE, AD_EVERY = { online: 2, other: 5 };
-var LEN_BONUS = 5, JOKER_EAGER = 8;
+var LEN_BONUS = 5, JOKER_EAGER = 8, CLEAR_SOLO = 50, CLEAR_DUEL = 20;
 // The share of the best word the machine aims for at each move: Middels about 58 % on average, Sterk about 70 %.
 var AIM = { middels: [0.42, 0.72], sterk: [0.54, 0.84] };
 // Alone, a game lasts 10 minutes from the first tap on a tile; when the time is up the game is handed in.
@@ -1216,7 +1216,10 @@ class Component extends DCLogic {
     var before = this.live(), after = {};
     Object.keys(before).forEach(function (k) { if (sel.indexOf(k) < 0) after[k] = true; });
     var cleared = Object.keys(after).length === 0;
-    if (cleared) { s += 50; parts.push("ryddet brettet +50"); }
+    // Clearing the board: 50 alone, 20 in a duel. In a duel the board is shared and the bonus goes to whoever lays the
+    // last tiles; at 50 it turned the result in about a third of the duels that were cleared (simulation, 30 October 2026).
+    var cb = this.duel() ? CLEAR_DUEL : CLEAR_SOLO;
+    if (cleared) { s += cb; parts.push("ryddet brettet +" + cb); }
     return { total: s, parts: parts, cleared: cleared };
   }
   // Words the active player can lay now from the open tiles, their own pocket and any open jokers, best first.

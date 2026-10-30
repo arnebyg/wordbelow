@@ -16,7 +16,7 @@ Letters lie in layers, and every word you take uncovers new ones underneath. wor
 
 HOW IT PLAYS
 • Make words from the open tiles. Take the top ones away and new letters come up below.
-• Long words score more, bonus tiles double or triple, and clearing the whole board gives 50.
+• Long words score more, bonus tiles double or triple, and clearing the whole board gives 50 (20 in a duel).
 • Keep up to two tiles in your pocket for a better word later.
 
 PLAY YOUR WAY
@@ -55,7 +55,7 @@ Bokstavene ligger i lag, og hvert ord du tar, avdekker nye under. wordbelow er e
 
 SLIK SPILLER DU
 • Lag ord av de åpne brikkene. Ta bort de øverste, så kommer nye bokstaver fram under.
-• Lange ord gir mer, bonusbrikker dobler eller tredobler, og rydder du hele brettet, får du 50.
+• Lange ord gir mer, bonusbrikker dobler eller tredobler, og rydder du hele brettet, får du 50 (20 i duell).
 • Legg opptil to brikker i lommen og bruk dem i et bedre ord senere.
 
 SPILL SOM DU VIL

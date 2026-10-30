@@ -225,7 +225,7 @@ var App = (function () {
       sec("Poeng for et ord", '<p>Poengene regnes i denne rekkefølgen:</p>' + rows([
         ["Bokstaver", "tallet på hver brikke"], ["Bokstavbonus 2×B / 3×B", "dobler eller tredobler den bokstaven"],
         ["Ordbonus 2×O / 3×O", "ganger bokstavene"], ["Lengde", "+5 for hver bokstav over tre"],
-        ["Rydder hele brettet", "+50"], ["Hint", "−5, én gang per spill"]]) +
+        ["Rydder hele brettet", "+50 alene, +20 i duell"], ["Hint", "−5, én gang per spill"]]) +
         '<p class="fine">Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Treffer ordet 2×O, blir det 9 × 2 = 18, pluss 15 for seks bokstaver: 33 poeng.</p>') +
       sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen virker som ellers. I Tall dobler eller tredobler 2×B og 3×B én brikke, og 2×R og 3×R hele regnestykket. I Sett er hver brikke verdt 1, så der er det bare 2×S og 3×S, som gjelder hele settet.</p>' +
         '<p><b>Tall:</b> bygg et regnestykke som går opp, for eksempel 9 × 2 = 18. Sifre ved siden av hverandre blir ett tall, og det må være minst ett regnetegn. «=»-knappen er gratis og brukes én gang. Vanlig regnerekkefølge, og deling må gå opp. Poeng: siffer 1, + 1, − 2, × 3, ÷ 4, +5 per brikke over tre.</p>' +
