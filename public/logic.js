@@ -495,6 +495,9 @@ var DIFFS = [{ id: "lett", name: "Lett", say: "korte ord, tar ikke alltid det be
 // A game the server no longer has (withdrawn, expired, or tidied away): said plainly, and the list is fetched again.
 var GONE_SAY = "Spillet finnes ikke lenger. Det kan være trukket tilbake eller gått ut på tid.";
 function goneOr(e) { return e.status === 404 ? GONE_SAY : e.message; }
+// Online games whose wreath this phone has shown, so a won game cheers once, on whichever phone sees the end first.
+var WREATH_KEY = "ordspill/kranset/v1";
+function wreathOnce(id) { var l = lsGet(WREATH_KEY) || []; if (l.indexOf(id) >= 0) return false; lsSet(WREATH_KEY, l.concat([id]).slice(-200)); return true; }
 var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1", CHAT_KEY = "ordspill/chat/v1";
 // Word meanings: Bokmålsordboka and Nynorskordboka at ordbokene.no (Språkrådet and the University of Bergen).
 function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase()); }
@@ -1120,6 +1123,13 @@ class Component extends DCLogic {
         self.statOnline({ id: g.id, you: g.you, layout: g.layout, opp: g.opp, result: Object.assign({}, s.result, { res: next.played.res }), scores: P.map(function (p) { return p.score; }) }, P[g.you].words || []);
       }
       self.setState(next);
+      // The winner gets the wreath here too when the other player ended the game: the last word, giving up, or time.
+      if (next.phase === "done") {
+        var pr = next.played, rr = pr.res, w = pr.resigned !== undefined ? 1 - pr.resigned : pr.timeout !== undefined ? 1 - pr.timeout : rr[0].score === rr[1].score ? -1 : rr[0].score > rr[1].score ? 0 : 1;
+        // Only for a game that ended in the last week, so old won games do not cheer the first time after this update.
+        if (w === g.you && Date.now() - (g.updated || 0) < 7 * 864e5 && wreathOnce(g.id)) self.celebrate({ kind: "win", score: rr[w].score, head: "Du vant duellen",
+          sub: rr[w].score + " mot " + rr[1 - w].score + " · mot " + (o.oppName || "motspilleren") + (pr.resigned !== undefined ? " · " + (o.oppName || "motspilleren") + " ga opp" : pr.timeout !== undefined ? " · tiden gikk ut for " + (o.oppName || "motspilleren") : "") });
+      }
     }, function (e) {
       if (quiet) return;
       // Opened from a notification or a card, but the server no longer has it: back home, saying so.
@@ -1403,7 +1413,7 @@ class Component extends DCLogic {
       var res = this.resultOf(P), win = res[0].score === res[1].score ? -1 : res[0].score > res[1].score ? 0 : 1;
       this.setState({ phase: "done", P: P, played: { duel: true, res: res, left: left, bare: bare, lay: st.lay }, submitted: true, busy: false, sel: [] });
       var me = this.online() ? st.online.you : st.opp === "cpu" ? 0 : win;
-      if (win >= 0 && win === me) this.celebrate({ kind: "win", score: res[win].score, head: st.opp === "local" ? this.names()[win] + " vant duellen" : "Du vant duellen",
+      if (win >= 0 && win === me && (!this.online() || wreathOnce(st.online.id))) this.celebrate({ kind: "win", score: res[win].score, head: st.opp === "local" ? this.names()[win] + " vant duellen" : "Du vant duellen",
         sub: res[win].score + " mot " + res[1 - win].score + (this.online() ? " · mot " + st.online.oppName : st.opp === "cpu" ? " · mot maskinen" : "") });
       if (this.online()) {
         this.pushOnline({ P: P, gone: st.gone, passes: st.passes, last: st.msg, log: st.log, result: { res: res, left: left, bare: bare, winner: win } });
