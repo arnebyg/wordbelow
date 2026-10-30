@@ -1017,12 +1017,15 @@ class Component extends DCLogic {
       if (yes) self.openOnline(g.id); else { self.setState({ homeMsg: "Du avslo utfordringen fra " + (g.opp ? g.opp.name : "motspilleren") + "." }); self.refreshGames(); }
     }, function (e) { self.setState({ homeMsg: goneOr(e) }); self.refreshGames(); });
   }
-  random() {
+  // Someone waiting on the same board: the game starts. Someone waiting only on another board: the app asks first —
+  // play theirs (take), or wait for someone on yours (mine). Nobody waiting: you wait on your board.
+  random(opt) {
     var self = this;
-    var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.random(); }); return; }
+    var L = this.S().L; if (L.grp === "own" && !L.code) { this.ensureShared(function () { self.random(opt); }); return; }
     if (this.needAccount("random")) return;
-    this.setState({ ngMsg: "Leter etter en motspiller …" });
-    api("/games", { method: "POST", body: { random: true, layout: this.state.lay, lang: langPref() } }).then(function (d) {
+    this.setState({ ngMsg: "Leter etter en motspiller …", ngAsk: null });
+    api("/games", { method: "POST", body: Object.assign({ random: true, ask: true, layout: this.state.lay, lang: langPref() }, opt || {}) }).then(function (d) {
+      if (d.ask) { self.setState({ ngMsg: "", ngAsk: { game: d.ask, lay: self.state.lay } }); return; }
       if (d.matched) self.openOnline(d.game.id);
       else { self.setState({ phase: "home", ngMsg: "", homeMsg: "Du står i kø for en tilfeldig motspiller. Spillet starter når noen andre også velger Tilfeldig." }); self.refreshGames(); }
     }, function (e) { self.setState({ ngMsg: e.message }); });
@@ -1651,6 +1654,14 @@ class Component extends DCLogic {
       v.myTurns = mt ? (mt === 1 ? "1 venter på deg" : mt + " venter på deg") : "";
       v.noAccount = !st.account;
       v.homeMsg = st.homeMsg || st.gamesMsg;
+      // The question when the one waiting chose another board; gone once you pick another board.
+      if (st.ngAsk && st.ngAsk.lay === st.lay) {
+        var ag = st.ngAsk.game, aL = LAYOUTS.filter(function (x) { return x.id === ag.layout; })[0] || EXTRA[ag.layout],
+          theirs = aL ? aL.name : ag.board ? ag.board.name : ag.layout, mine = this.S().L.name, who = ag.opp ? ag.opp.name : "Noen";
+        v.ngAsk = { say: who + " venter på et spill på " + theirs + ". Vil du spille det, eller vente på noen som vil spille " + mine + "?",
+          take: "Spill " + theirs, wait: "Vent på " + mine,
+          goTake: function () { self.random({ take: ag.id }); }, goWait: function () { self.random({ mine: true }); } };
+      }
       // A tap on the message puts it away, except while it is asking something.
       v.closeHomeMsg = st.cardAsk ? null : function () { self.setState({ homeMsg: "", gamesMsg: "" }); };
       v.inviteCard = st.inviteCard;
@@ -1666,7 +1677,7 @@ class Component extends DCLogic {
       var PICKS = [
         { id: "cpu", grp: "off", name: "Maskinen", go: "Spill mot maskinen", run: function () { self.start("duel", "cpu"); } },
         { id: "friend", grp: "on", name: "Venn", go: "Velg venn", say: "Velg blant vennene dine, eller send en invitasjon med kode. Dere spiller på brettet du velger her.", run: function () { self.openFriends(); } },
-        { id: "random", grp: "on", name: "Tilfeldig", go: "Finn en motspiller", say: "Står noen alt og venter, spiller dere på brettet den personen valgte. Ellers blir det ditt.", run: function () { self.random(); } },
+        { id: "random", grp: "on", name: "Tilfeldig", go: "Finn en motspiller", say: "Venter noen på et annet brett, spør appen før dere starter.", run: function () { self.random(); } },
         { id: "code", grp: "on", name: "Har kode", go: "Bli med", say: "Skriv koden du har fått: en invitasjon til et spill, eller et brett noen har delt.", run: function () { self.joinCode(); } },
         { id: "local", grp: "off", name: "Én telefon", go: "Start på én telefon", say: "Send telefonen over bordet etter hvert trekk.", run: function () { self.start("duel", "local"); } },
         { id: "solo", grp: "off", name: "Alene", go: "Spill alene", say: "Så mange poeng du kan, toppliste per brett.", run: function () { self.start("solo"); } }

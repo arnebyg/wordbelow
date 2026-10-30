@@ -411,7 +411,17 @@ export class Hub extends DurableObject {
         const lay = typeof body.layout === "string" ? REBUILT[body.layout] || body.layout : "";
         const seek = (same) => this.one("SELECT * FROM games g WHERE status = 'waiting' AND kind = 'random' AND lang = ? AND p0 != ?" + (same ? " AND layout = ?" : "") + " AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.uid = g.p0 AND b.bid = ?) OR (b.uid = ? AND b.bid = g.p0)) ORDER BY created LIMIT 1",
           ...(same ? [langOf(body), me.id, lay, me.id, me.id] : [langOf(body), me.id, me.id, me.id]));
-        const w = seek(true) || seek(false);
+        // A newer app asks first when the one waiting chose another board (ask: true): the reply is that game, unjoined.
+        // It then sends take (that game's id: play it) or mine (wait on its own board). An older app joins as before.
+        const byId = (id) => this.one("SELECT * FROM games g WHERE id = ? AND status = 'waiting' AND kind = 'random' AND lang = ? AND p0 != ? AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.uid = g.p0 AND b.bid = ?) OR (b.uid = ? AND b.bid = g.p0))",
+          String(id || ""), langOf(body), me.id, me.id, me.id);
+        let w = seek(true);
+        if (!w && body.take) w = byId(body.take);
+        if (!w && !body.mine) {
+          const other = seek(false);
+          if (other && body.ask) return json({ ask: this.summary(other, me.id), matched: false });
+          w = other;
+        }
         if (w) {
           this.sql.exec("UPDATE games SET p1 = ?, status = 'active', updated = ? WHERE id = ?", me.id, Date.now(), w.id);
           this.notify(w.p0, "Din tur", me.name + " ble med i det tilfeldige spillet ditt.", w.id);

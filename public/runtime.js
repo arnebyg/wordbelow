@@ -161,6 +161,7 @@ var App = (function () {
       }) + '</div>' : '') +
       '<div class="ngpanel"><h2 class="sec">Nytt spill</h2>' +
         (v.ngMsg ? '<div class="note">' + esc(v.ngMsg) + '</div>' : '') +
+        (v.ngAsk ? '<div class="note">' + esc(v.ngAsk.say) + '<div class="cbtns"><button type="button" class="pill small"' + on(v.ngAsk.goWait) + '>' + esc(v.ngAsk.wait) + '</button><button type="button" class="pill solid small"' + on(v.ngAsk.goTake) + '>' + esc(v.ngAsk.take) + '</button></div></div>' : '') +
         '<div class="mo-grid" role="radiogroup" aria-label="Hvordan vil du spille?">' + each(v.modes, function (m) { return '<button type="button" class="mo-tile" role="radio" aria-checked="' + m.on + '"' + on(m.pick) + '><span class="mo-p" aria-hidden="true">' + m.p + '</span><span class="mo-k" aria-hidden="true">' + m.k + '</span><span class="mo-t">' + esc(m.t) + '</span><span class="mo-s">' + esc(m.s) + '</span></button>'; }) + '</div>' +
         extra +
         (v.pick !== "code" ? '<div class="boardpick">' +
