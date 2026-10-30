@@ -5,7 +5,9 @@ var LEN_BONUS = 5, JOKER_EAGER = 8, CLEAR_SOLO = 50, CLEAR_DUEL = 20;
 // The share of the best word the machine aims for at each move: Middels about 58 % on average, Sterk about 70 %.
 var AIM = { middels: [0.42, 0.72], sterk: [0.54, 0.84] };
 // Alone, a game lasts 10 minutes from the first tap on a tile; when the time is up the game is handed in.
+// A board can set its own (soloMin): the long-word boards have 15 (the owner, 30 October 2026).
 var SOLO_MS = 10 * 60e3;
+function soloMs(L) { return L && L.soloMin ? L.soloMin * 60e3 : SOLO_MS; }
 // The game languages. Each has its own tiles, points, vowels and word list; useLang() puts one in the globals
 // below (PTS, BAG, VOW, RARE, ALPHABET, WORDS, DICT, SEARCH) so the engine reads them as before.
 // Norwegian: the Norwegian Scrabble set with six consonants swapped for vowels: 100 tiles, two of them blank
@@ -227,10 +229,10 @@ function moundPts(layers) {
 }
 var LONG_X0 = [0, 1, 2.2, 3.2, 4.4, 5.4, 6.6], LONG_X1 = [0.5, 1.6, 2.7, 3.8, 4.9, 6.0];
 function longCols(xs, hs, cs) { return xs.map(function (x, i) { return [x, hs[i], cs[i]]; }); }
-LAYOUTS.push({ id: "galleriet", grp: "long", name: "Galleriet", asym: true, sub: "jevnt mange åpne · tre lag", start: 18, mean: 13,
+LAYOUTS.push({ id: "galleriet", grp: "long", name: "Galleriet", asym: true, sub: "jevnt mange åpne · tre lag", start: 18, mean: 13, soloMin: 15,
   pts: moundPts([longCols(LONG_X0, [5, 6, 7, 7, 7, 7, 6], [3.5, 3.25, 3.25, 3.5, 3.25, 3.25, 3.5]),
     longCols(LONG_X1, [5, 6, 7, 7, 6, 6], [3.5, 3.25, 3.5, 3.25, 3.25, 3.5]), [[1.05, 5, 3.4], [3.25, 7, 3.4], [5.45, 6, 3.4]]]) });
-LAYOUTS.push({ id: "vidda", grp: "long", name: "Vidda", asym: true, sub: "flat og bred · mange åpne fra start", start: 29, mean: 15,
+LAYOUTS.push({ id: "vidda", grp: "long", name: "Vidda", asym: true, sub: "flat og bred · mange åpne fra start", start: 29, mean: 15, soloMin: 15,
   pts: moundPts([longCols(LONG_X0, [6, 7, 7, 6, 7, 7, 6], [3.25, 3.5, 3.25, 3.5, 3.25, 3.5, 3.25]),
     longCols(LONG_X1, [6, 7, 7, 7, 7, 6], [3.25, 3.5, 3.25, 3.5, 3.25, 3.5]), [[2.15, 3, 3.0], [3.25, 2, 5.0], [4.35, 3, 3.0]]]) });
 // Boards taken out of the picker and the day's board (the owner, 26 October 2026). They stay in EXTRA, so a game,
@@ -773,7 +775,7 @@ class Component extends DCLogic {
   componentWillUnmount() { this.timers.forEach(clearTimeout); clearInterval(this.poll); if (this.unsub) this.unsub(); }
   // Every 5 s while the app is open: the home screen every 20 s, and an online game where it is the other player's turn.
   // Alone: the clock redraws each second and hands the game in when the 10 minutes are up.
-  soloLeft() { var st = this.state; return st.soloT0 ? Math.max(0, SOLO_MS - (Date.now() - st.soloT0)) : SOLO_MS; }
+  soloLeft() { var st = this.state, ms = soloMs(this.S().L); return st.soloT0 ? Math.max(0, ms - (Date.now() - st.soloT0)) : ms; }
   soloTick() {
     var st = this.state;
     if (st.phase !== "play" || this.duel() || !st.soloT0) return;
