@@ -84,6 +84,9 @@ var LANGS = {
 };
 var LANG_KEY = "ordspill/spillsprak/v1", LANG = null;
 var PTS, BAG, VOW, RARE, ALPHABET, WORDS, WORDSET, DICT = null, SEARCH = null, DICT_URL;
+// The longest word the hint looks for (raised from 9 to 12 on 30 October 2026, for the long-word boards). The machine
+// keeps to MACHINE_MAX, so its strength is what it was.
+var SEARCH_MAX = 12, MACHINE_MAX = 9;
 // Rare letters (6 points or more) give the rare-letter bonus: Æ Y W C in Norwegian.
 function useLang(c) {
   if (!LANGS[c]) c = "no";
@@ -129,7 +132,7 @@ function loadDict(cb, c) {
     t.split("\n").forEach(function (w) {
       w = w.trim(); if (!w) return;
       var u = w.toUpperCase(); d.add(u);
-      if (u.length <= 9 && L.re.test(u)) s.push(u);
+      if (u.length <= SEARCH_MAX && L.re.test(u)) s.push(u);
     });
     L.dictSet = d; L.search = s;
     if (LANG === c) { DICT = d; SEARCH = s; }
@@ -212,6 +215,24 @@ function openPts(rows, cols1, rows1, tops) {
  ["sett", "parene", "Parene", "tre lag · 46 brikker", openPts(4, [0.5, 1.6, 2.7, 3.8, 4.9], 3, [[2.7, 1.25], [2.7, 2.25], [4.9, 1.75]])],
  ["sett", "rutenettet", "Rutenettet", "tre lag · 63 brikker", openPts(5, [0.5, 1.6, 2.7, 3.8, 4.9, 6.0], 4, [[1.6, 1.5], [2.7, 2.5], [3.8, 1.5], [4.9, 2.5]])]
 ].forEach(function (b) { LAYOUTS.push({ id: b[1], kind: b[0], grp: "open", name: b[2], asym: false, sub: b[3], pts: b[4] }); });
+// Boards for long words (the owner, 30 October 2026). The bottom is columns in pairs with a gap, so nearly every tile
+// that comes uncovered is open; the middle layer's columns stand more than a tile apart, so each is open once its own
+// cover is gone. Each column is [x, height, centre row]; the heights and centres give the outline. "start" and "mean"
+// are the open tiles at the start and on average over 40 simulated games (a longest-word player and a Middels one,
+// the search up to 12 letters): about half the words had ten letters or more, against a fifth on Lokket.
+function moundPts(layers) {
+  var out = [];
+  layers.forEach(function (cols, l) { cols.forEach(function (k) { var top = k[2] - (k[1] - 1) / 2; for (var i = 0; i < k[1]; i++) out.push({ c: k[0], r: top + i, l: l }); }); });
+  return out;
+}
+var LONG_X0 = [0, 1, 2.2, 3.2, 4.4, 5.4, 6.6], LONG_X1 = [0.5, 1.6, 2.7, 3.8, 4.9, 6.0];
+function longCols(xs, hs, cs) { return xs.map(function (x, i) { return [x, hs[i], cs[i]]; }); }
+LAYOUTS.push({ id: "galleriet", grp: "long", name: "Galleriet", asym: true, sub: "jevnt mange åpne · tre lag", start: 18, mean: 13,
+  pts: moundPts([longCols(LONG_X0, [5, 6, 7, 7, 7, 7, 6], [3.5, 3.25, 3.25, 3.5, 3.25, 3.25, 3.5]),
+    longCols(LONG_X1, [5, 6, 7, 7, 6, 6], [3.5, 3.25, 3.5, 3.25, 3.25, 3.5]), [[1.05, 5, 3.4], [3.25, 7, 3.4], [5.45, 6, 3.4]]]) });
+LAYOUTS.push({ id: "vidda", grp: "long", name: "Vidda", asym: true, sub: "flat og bred · mange åpne fra start", start: 29, mean: 15,
+  pts: moundPts([longCols(LONG_X0, [6, 7, 7, 6, 7, 7, 6], [3.25, 3.5, 3.25, 3.5, 3.25, 3.5, 3.25]),
+    longCols(LONG_X1, [6, 7, 7, 7, 7, 6], [3.25, 3.5, 3.25, 3.5, 3.25, 3.5]), [[2.15, 3, 3.0], [3.25, 2, 5.0], [4.35, 3, 3.0]]]) });
 // Boards taken out of the picker and the day's board (the owner, 26 October 2026). They stay in EXTRA, so a game,
 // a challenge or a leaderboard that already uses one still opens.
 // The six fixed boards were rebuilt on 27 October 2026 with a spread-out top layer (no two tiles in it side by side or
@@ -220,7 +241,8 @@ function openPts(rows, cols1, rows1, tops) {
 // retired but still built, so games under way on them can be played out. "open" moved with the simulated change
 // (40 games a board, a Middels player, old against new).
 var REBUILT = { fjellet: "fjellet-2", skredet: "skredet-2", klofta: "klofta-2", trappen: "trappen-2", bolgen: "bolgen-2", bikuben: "bikuben-2", lokket: "lokket-2", bakken: "bakken-2" };
-var RETIRED = ["hakket", "skaret", "sletta", "trappa"].concat(Object.keys(REBUILT)), EXTRA = {};
+// Trappen (trappen-2) taken out on 30 October 2026 (the owner), when the two long-word boards came in.
+var RETIRED = ["hakket", "skaret", "sletta", "trappa", "trappen-2"].concat(Object.keys(REBUILT)), EXTRA = {};
 LAYOUTS = LAYOUTS.filter(function (L) { if (RETIRED.indexOf(L.id) < 0) return true; EXTRA[L.id] = L; return false; });
 // The library for Dagens brett (daily-boards.js) is built like any board but kept out of LAYOUTS, so it is never picked.
 if (typeof DAILY_LIB !== "undefined") DAILY_LIB.forEach(function (b) { EXTRA[b.id] = { id: b.id, grp: "daily", name: b.name, asym: true, sub: b.sub, open: b.open, cells: b.cells }; });
@@ -318,7 +340,7 @@ function tallAll(tiles, maxLen, limit) {
   });
   return found;
 }
-var GROUPS = [{ id: "daily", name: "Dagens brett", say: "bare som dagens brett" }, { id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }, { id: "season", name: "Sesong", say: "bare i sesongen" }, { id: "open", name: "Åpne brett", say: "laget for tall og sett" }, { id: "own", name: "Egne brett", say: "brett du har laget" }];
+var GROUPS = [{ id: "daily", name: "Dagens brett", say: "bare som dagens brett" }, { id: "tight", name: "Stramme", say: "få åpne hele veien" }, { id: "grow", name: "Åpner seg", say: "stadig flere åpne" }, { id: "long", name: "Lange ord", say: "mange åpne, for lange ord" }, { id: "season", name: "Sesong", say: "bare i sesongen" }, { id: "open", name: "Åpne brett", say: "laget for tall og sett" }, { id: "own", name: "Egne brett", say: "brett du har laget" }];
 // Boards the player has made in the editor: kept on this phone, played without the server.
 var OWN_KEY = "ordspill/egnebrett/v1", OWN_MAX = 100, OWN_MIN = 20;
 // Season boards: shown in the board list only in their season. Easter moves with the calendar (Meeus' rule).
@@ -471,7 +493,7 @@ function genBoard(S, seed) {
   put(on(top), "3×O"); put(on(1), "2×O"); put(on(0), "3×B"); put(on(0).concat(on(1)), "2×B"); put(on(0).concat(on(1)), "2×B"); put(on(2), "2×B");
   return { letters: letters, bonus: b };
 }
-function openSay(L) { if (L.grp === "open") return "mange åpne brikker hele veien"; if (L.grp === "own" || L.grp === "season") return "starter med " + L.start + " åpne"; return L.grp === "grow" ? "starter med " + L.start + " åpne, rundt " + L.peak + " midtveis" : "typisk " + L.open + " åpne hele veien"; }
+function openSay(L) { if (L.grp === "open") return "mange åpne brikker hele veien"; if (L.grp === "own" || L.grp === "season") return "starter med " + L.start + " åpne"; if (L.grp === "long") return "starter med " + L.start + " åpne, rundt " + L.mean + " i snitt"; return L.grp === "grow" ? "starter med " + L.start + " åpne, rundt " + L.peak + " midtveis" : "typisk " + L.open + " åpne hele veien"; }
 function cellsOf(list) { return list.map(function (p) { return (p.c * 2) + "." + (p.r * 2) + "." + p.l; }).join(" "); }
 function openAtStart(list) {
   var S = buildLayout({ id: "_", cells: cellsOf(list) }), all = {};
@@ -1335,7 +1357,7 @@ class Component extends DCLogic {
     if (!s2.sel.some(function (id) { return id[0] !== "p" && id !== "eq"; })) { this.setState({ msg: "Et ord må ha minst én brikke fra brettet.", tone: "bad" }); return false; }
     var ev = this.evaluate(s2.sel), gone = Object.assign({}, s2.gone), usedP = [];
     // For your own words, the best word there was, so the history and the result can show what you missed.
-    var top = human ? this.candidates(9, 80)[0] : null, missed = top && top.pts > ev.total && top.w !== w2 ? { w: top.w, pts: top.pts } : null;
+    var top = human ? this.candidates(null, 80)[0] : null, missed = top && top.pts > ev.total && top.w !== w2 ? { w: top.w, pts: top.pts } : null;
     // How good the move was: its points as a share of the best move there was.
     var pct = top ? Math.min(100, Math.round(100 * ev.total / Math.max(top.pts, ev.total, 1))) : null;
     var entry = { p: this.duel() ? s2.turn : 0, k: "w", w: w2, pts: ev.total, best: missed, pct: pct };
@@ -1415,7 +1437,7 @@ class Component extends DCLogic {
     var withJoker = function (c) { return c.filter(function (x) { return x.jokers; })[0] || null; };
     if (diff === "lett") { var c = this.candidates(4, 40); return withJoker(c) || (c.length ? c[Math.floor(Math.random() * Math.min(c.length, 12))] : null); }
     // Middels and Sterk aim each move at a share of the best word's points, drawn anew, and lay the word nearest it.
-    var c3 = this.candidates(), r = AIM[diff] || AIM.sterk, aim = c3.length ? c3[0].pts * (r[0] + Math.random() * (r[1] - r[0])) : 0;
+    var c3 = this.candidates(MACHINE_MAX), r = AIM[diff] || AIM.sterk, aim = c3.length ? c3[0].pts * (r[0] + Math.random() * (r[1] - r[0])) : 0;
     return c3.reduce(function (b, x) { return !b || Math.abs(x.pts - aim) < Math.abs(b.pts - aim) ? x : b; }, null);
   }
   finishGame() {
