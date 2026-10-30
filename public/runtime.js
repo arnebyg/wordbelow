@@ -155,7 +155,7 @@ var App = (function () {
       (v.homeMsg ? '<div class="note">' + esc(v.homeMsg) + (v.cancelAsk ? '<div class="cbtns"><button type="button" class="pill small"' + on(v.cancelAsk) + '>Avbryt</button></div>' : '') + '</div>' : '') +
       '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="dtxt"><span class="dk">Dagens brett · ' + IC.fire + esc(v.daily.streakSay) + '</span>' +
         '<span class="dn">' + esc(v.daily.name) + '<small>' + esc(v.daily.line) + '</small></span></div>' +
-        (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Se</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div>' +
+        (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Spill</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div>' +
       (v.offers.length ? '<h2 class="sec">Utfordringer</h2><div class="group">' + each(v.offers, function (o) {
         return '<div class="opt offer">' + av(o.initial, o.pic) + '<span class="ot"><span class="t">' + esc(o.who) + '</span><span class="s">' + esc(o.line) + '</span></span><button type="button" class="pill small"' + on(o.no) + '>Avslå</button><button type="button" class="act green go"' + on(o.yes) + '>Godta</button></div>';
       }) + '</div>' : '') +
