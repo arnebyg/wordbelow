@@ -702,6 +702,16 @@ class Component extends DCLogic {
     if (bcode) { try { history.replaceState(null, "", location.pathname); } catch (e) {} this.importBoard(bcode); }
     var gid = (location.search.match(/[?&]game=([0-9a-f]{16})/) || [])[1];
     if (gid) { try { history.replaceState(null, "", location.pathname); } catch (e) {} if (this.state.account) this.openOnline(gid); }
+    // Alone, the clock stops while the app is out of sight (another app, the phone locked) and goes on when it is back,
+    // on today's board too (the owner's choice, 30 October 2026: the leaderboard can be gamed this way, and that is accepted).
+    document.addEventListener("visibilitychange", function () {
+      var st = self.state;
+      if (st.phase !== "play" || self.duel() || !st.soloT0 || st.timeUp) { self.hiddenAt = null; return; }
+      if (document.hidden) { self.hiddenAt = Date.now(); return; }
+      if (!self.hiddenAt) return;
+      var away = Date.now() - self.hiddenAt; self.hiddenAt = null;
+      if (away >= 1000) self.setState({ soloT0: st.soloT0 + away, tone: "info", msg: "Klokka sto mens du var borte." });
+    });
     if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", function (e) { if (e.data && e.data.openGame && self.state.account) self.openOnline(e.data.openGame); });
     this.loadBlocked();
     try { if (sessionStorage.getItem("wb-reopen") === "settings") { sessionStorage.removeItem("wb-reopen"); this.openSettings(); } } catch (e) {}
