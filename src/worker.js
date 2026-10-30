@@ -87,6 +87,13 @@ export class Hub extends DurableObject {
     this.sql.exec(`CREATE TABLE IF NOT EXISTS daily (date TEXT NOT NULL, uid TEXT NOT NULL, score INTEGER NOT NULL, words INTEGER NOT NULL, best TEXT, left INTEGER NOT NULL, at INTEGER NOT NULL, PRIMARY KEY (date, uid));
       CREATE TABLE IF NOT EXISTS boards (code TEXT PRIMARY KEY, owner TEXT NOT NULL, name TEXT NOT NULL, cells TEXT NOT NULL, created INTEGER NOT NULL);`);
     this.sql.exec("CREATE TABLE IF NOT EXISTS ratings (uid TEXT NOT NULL, at INTEGER NOT NULL, r REAL NOT NULL, gid TEXT); CREATE INDEX IF NOT EXISTS ratings_uid ON ratings (uid, at);");
+    // Once, before launch (the owner, 30 October 2026): every account and everything tied to one is removed —
+    // games, friends, chat, ratings, today's lists, blocks, reports, push subscriptions, shared boards and the admin
+    // owner. The push keys (vapid) and the origin stay. The flag in kv keeps it from running again.
+    if (!this.one("SELECT v FROM kv WHERE k = 'wiped-2026-10-30'")) {
+      this.sql.exec("DELETE FROM chat; DELETE FROM ratings; DELETE FROM daily; DELETE FROM boards; DELETE FROM blocks; DELETE FROM reports; DELETE FROM subs; DELETE FROM friends; DELETE FROM games; DELETE FROM users; DELETE FROM kv WHERE k = 'owner'");
+      this.sql.exec("INSERT INTO kv (k, v) VALUES ('wiped-2026-10-30', ?)", String(Date.now()));
+    }
   }
   one(q, ...a) { const r = this.sql.exec(q, ...a).toArray(); return r[0] || null; }
   all(q, ...a) { return this.sql.exec(q, ...a).toArray(); }

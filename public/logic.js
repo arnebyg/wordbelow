@@ -582,7 +582,11 @@ function api(path, opts) {
   if (acc && acc.token) headers.authorization = "Bearer " + acc.token;
   return fetch(API + path, { method: opts.method || "GET", headers: headers, body: opts.body ? JSON.stringify(opts.body) : undefined }).then(function (r) {
     return r.json().catch(function () { return {}; }).then(function (d) {
-      if (!r.ok) { var e = new Error(d.error || ("Feil " + r.status)); e.status = r.status; throw e; }
+      if (!r.ok) {
+        // The account this phone holds is gone from the server: forget it here too, so a new username can be chosen.
+        if (r.status === 401 && acc && acc.token && window.WB_ACCOUNT_GONE) window.WB_ACCOUNT_GONE();
+        var e = new Error(d.error || ("Feil " + r.status)); e.status = r.status; throw e;
+      }
       return d;
     });
   }, function () { var e = new Error("Får ikke kontakt med serveren. Er du på nett?"); e.status = 0; throw e; });
@@ -728,6 +732,11 @@ class Component extends DCLogic {
       window.WB_IAP.price().then(function (p) { if (p) self.setState({ premPrice: p }); }, function () {});
     }
     this.refreshGames();
+    window.WB_ACCOUNT_GONE = function () {
+      if (!self.state.account) return;
+      lsSet(ACCOUNT_KEY, null);
+      self.setState({ account: null, games: null, friends: [], gamesMsg: "", sentOffer: null, homeMsg: "Kontoen din finnes ikke lenger på serveren. Velg et nytt brukernavn når du vil spille mot andre." });
+    };
     this.poll = setInterval(function () { self.tick(); }, 5000);
     this.clock = setInterval(function () { self.soloTick(); }, 1000);
     document.addEventListener("visibilitychange", function () { if (!document.hidden) self.tick(true); });
@@ -922,7 +931,7 @@ class Component extends DCLogic {
         self.setState({ sentOffer: null, homeMsg: !self.state.homeMsg || self.state.homeMsg === so.msg ? said : self.state.homeMsg });
       }
       d.games.forEach(function (g) { if (g.status === "done" && g.result) self.statOnline(g); });
-    }, function (e) { self.setState({ gamesMsg: e.status === 401 ? "Kontoen finnes ikke på serveren lenger." : e.message }); });
+    }, function (e) { self.setState({ gamesMsg: e.status === 401 ? "" : e.message }); });
   }
   statOnline(g, words) {
     var r = g.result, me = g.you, my = r.res ? r.res[me].score : g.scores[me], their = r.res ? r.res[1 - me].score : g.scores[1 - me];
