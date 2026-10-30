@@ -1103,7 +1103,7 @@ class Component extends DCLogic {
       else next.msg = (turn === g.you ? "Din tur." : o.oppName + " sin tur.") + (s && s.log && s.log.length ? "" : " Dere spiller på " + layoutOf(base.lay).L.name + (g.you === 0 ? ", som du valgte." : ", valgt av " + (o.oppName || "motspilleren") + "."));
       if (g.status === "done" && s && s.result) {
         next.phase = "done";
-        next.played = { duel: true, res: s.result.res || self.resultOf(P, Object.keys(base.letters).length - Object.keys(next.gone).length), left: s.result.left || 0, lay: g.layout, resigned: s.result.resigned, timeout: s.result.timeout };
+        next.played = { duel: true, res: s.result.res || self.resultOf(P, Object.keys(base.letters).length - Object.keys(next.gone).length), left: s.result.left || 0, bare: !!s.result.bare, lay: g.layout, resigned: s.result.resigned, timeout: s.result.timeout };
         self.statOnline({ id: g.id, you: g.you, layout: g.layout, opp: g.opp, result: Object.assign({}, s.result, { res: next.played.res }), scores: P.map(function (p) { return p.score; }) }, P[g.you].words || []);
       }
       self.setState(next);
@@ -1165,7 +1165,7 @@ class Component extends DCLogic {
     var self = this, st = this.state, key = st.daily, all = dailyDone();
     if (!key) return;
     var first = !all[key];
-    if (first) { all[key] = { score: rec.score, words: st.words, left: rec.left, lay: st.lay, at: Date.now() }; lsSet(DAILY_KEY, all); }
+    if (first) { all[key] = { score: rec.score, words: st.words, left: rec.left, bare: !!rec.bare, lay: st.lay, at: Date.now() }; lsSet(DAILY_KEY, all); }
     this.setState({ dailyTop: null, dailyFirst: first });
     if (st.account) api("/daily/" + key, first ? { method: "POST", body: { score: rec.score, words: st.words.length, best: rec.best ? rec.best.w : "", left: rec.left } } : {}).then(function (d) { self.setState({ dailyTop: d }); }, function () {});
   }
@@ -1174,7 +1174,7 @@ class Component extends DCLogic {
     if (!r) return;
     var longest = (r.words || []).reduce(function (b, w) { return Math.max(b, w.w.length); }, 0), d = key.split("-");
     var text = "WordBelow · Dagens brett " + (+d[2]) + "." + (+d[1]) + ". · " + D.name + "\n" + r.score + " poeng · " + (r.words || []).length + " ord · " + (longest ? "lengste " + longest + " bokstaver · " : "") +
-      (r.left ? r.left + " brikker igjen" : "brettet ryddet") + "\n" + ((r.words || []).length ? shareGrid(r.words) + "\n" + SHARE_KEY + "\n" : "") + (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname);
+      (r.left ? r.left + " brikker igjen" : r.bare ? "brettet tomt, ikke ryddet" : "brettet ryddet") + "\n" + ((r.words || []).length ? shareGrid(r.words) + "\n" + SHARE_KEY + "\n" : "") + (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname);
     var self = this;
     if (navigator.share) navigator.share({ text: tr(text) }).catch(function () {});
     else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ toastNote: "Resultatet er kopiert. Lim det inn der du vil dele det." }); }, function () {});
@@ -1309,7 +1309,8 @@ class Component extends DCLogic {
     var me = this.online() ? (s2.account ? s2.account.name : "Du") : this.names()[s2.turn];
     var who = this.duel() ? me + " tok " + ch + " i lommen." : ch + " ligger i lommen. Bruk den i et ord senere.";
     this.setState({ log: (s2.log || []).concat([{ p: this.duel() ? s2.turn : 0, k: "p", w: ch }]), gone: gone, sel: [], confirm: null, passes: 0, pocket: s2.pocket.concat([ch]), tone: "info", msg: who });
-    if (!Object.keys(this.live()).length) { this.finishGame(); return true; }
+    // The last tile into the pocket empties the board, but no word cleared it: no bonus, and not counted as cleared.
+    if (!Object.keys(this.live()).length) { this.setState({ msg: who + " Brettet er tomt, men ikke ryddet med et ord." }); this.finishGame(); return true; }
     this.endTurn(this.online() ? 0 : 900);
     if (human) this.adAfterMove();
     return true;
@@ -1376,28 +1377,30 @@ class Component extends DCLogic {
   finishGame() {
     var st = this.state;
     this.timers.forEach(clearTimeout); this.timers = [];
-    var left = Object.keys(this.live()).length;
+    var left = Object.keys(this.live()).length, lastK = (st.log || []).length ? st.log[st.log.length - 1].k : null;
+    // Empty, but not cleared: the last tile went into the pocket, so no word took the bonus.
+    var bare = left === 0 && lastK === "p";
     if (this.duel()) {
       var P = st.P.slice(); P[st.turn] = { score: st.score, pocket: st.pocket, words: st.words, hint: !!st.hint };
       var res = this.resultOf(P), win = res[0].score === res[1].score ? -1 : res[0].score > res[1].score ? 0 : 1;
-      this.setState({ phase: "done", P: P, played: { duel: true, res: res, left: left, lay: st.lay }, submitted: true, busy: false, sel: [] });
+      this.setState({ phase: "done", P: P, played: { duel: true, res: res, left: left, bare: bare, lay: st.lay }, submitted: true, busy: false, sel: [] });
       var me = this.online() ? st.online.you : st.opp === "cpu" ? 0 : win;
       if (win >= 0 && win === me) this.celebrate({ kind: "win", score: res[win].score, head: st.opp === "local" ? this.names()[win] + " vant duellen" : "Du vant duellen",
         sub: res[win].score + " mot " + res[1 - win].score + (this.online() ? " · mot " + st.online.oppName : st.opp === "cpu" ? " · mot maskinen" : "") });
       if (this.online()) {
-        this.pushOnline({ P: P, gone: st.gone, passes: st.passes, last: st.msg, log: st.log, result: { res: res, left: left, winner: win } });
+        this.pushOnline({ P: P, gone: st.gone, passes: st.passes, last: st.msg, log: st.log, result: { res: res, left: left, bare: bare, winner: win } });
         this.statOnline({ id: st.online.id, you: st.online.you, layout: st.lay, opp: { name: st.online.oppName }, result: { res: res, winner: win }, scores: res.map(function (r) { return r.score; }) }, P[st.online.you].words || []);
-      } else if (st.opp === "cpu") addStat({ mode: "cpu", diff: st.diff, won: win < 0 ? -1 : win === 0 ? 1 : 0, my: res[0].score, their: res[1].score, best: res[0].best, lay: st.lay, opp: "Maskinen (" + this.diffName() + ")", words: P[0].words || [], cleared: left === 0 });
+      } else if (st.opp === "cpu") addStat({ mode: "cpu", diff: st.diff, won: win < 0 ? -1 : win === 0 ? 1 : 0, my: res[0].score, their: res[1].score, best: res[0].best, lay: st.lay, opp: "Maskinen (" + this.diffName() + ")", words: P[0].words || [], cleared: left === 0 && !bare });
       else addStat({ mode: "local", won: -2, my: Math.max(res[0].score, res[1].score), their: Math.min(res[0].score, res[1].score), best: (res[0].best && res[1].best ? (res[0].best.pts >= res[1].best.pts ? res[0].best : res[1].best) : res[0].best || res[1].best) });
       return;
     }
     // Alone, the tiles still on the board when the game ends cost their points; the pocket costs nothing.
     var self = this, pen = Object.keys(this.live()).reduce(function (n, id) { return n + self.ptsOf(st.letters[id]); }, 0);
-    var rec = { lay: st.lay, timeUp: !!st.timeUp, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
-    addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 });
+    var rec = { lay: st.lay, timeUp: !!st.timeUp, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, bare: bare, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
+    addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 && !bare });
     this.setState({ phase: "done", played: rec, submitted: false });
     // The wreath only when the board is cleared; handed in with tiles left, the score stands without a cheer.
-    if (left === 0) this.celebrate({ kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" });
+    if (left === 0 && !bare) this.celebrate({ kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" });
     if (st.daily) this.dailyFinish(rec);
   }
   // Alone, when the board was not cleared: the score against the best on the board's list, without praise.
@@ -1607,7 +1610,7 @@ class Component extends DCLogic {
       };
       var D = dailyOf(dayKey()), dd = dailyDone(), today = dd[D.key], streak = streakOf(dd);
       v.daily = { name: D.name, done: !!today, score: today ? today.score : null, streak: streak,
-        line: today ? today.score + " poeng · " + (today.words || []).length + " ord" + (today.left ? "" : " · ryddet") : "Samme bokstaver for alle i dag",
+        line: today ? today.score + " poeng · " + (today.words || []).length + " ord" + (today.left || today.bare ? "" : " · ryddet") : "Samme bokstaver for alle i dag",
         streakSay: streak ? streak + (streak === 1 ? " dag" : " dager") + " på rad" : "Start en rekke i dag",
         play: function () { self.startDaily(); }, share: function () { self.shareDaily(); } };
       v.cancelAsk = st.homeAskCancel && st.cardAsk ? function () { self.setState({ cardAsk: null, homeMsg: "", homeAskCancel: false }); } : null;
@@ -2059,7 +2062,7 @@ class Component extends DCLogic {
         v.doneSub = (rec.timeout !== undefined ? (rec.timeout === you ? "Du brukte mer enn 72 timer" : nm[rec.timeout] + " brukte mer enn 72 timer") + " · " : rec.resigned !== undefined ? (rec.resigned === you ? "Du ga opp" : nm[rec.resigned] + " ga opp") + " · " : "") +
           (win < 0 ? "Uavgjort" : online ? (win === you ? "Du vant mot " + st.online.oppName : st.online.oppName + " vant") :
             st.opp === "cpu" ? (win === 0 ? "Du vant mot maskinen (" + this.diffName() + ")" : "Maskinen (" + this.diffName() + ") vant") : nm[win] + " vant") +
-          " · " + (rec.left ? rec.left + " brikker ble liggende" : "brettet ryddet");
+          " · " + (rec.left ? rec.left + " brikker ble liggende" : rec.bare ? "brettet tomt, ikke ryddet med et ord" : "brettet ryddet");
         var ord = online && you === 1 ? [1, 0] : [0, 1];
         v.duelRows = ord.map(function (i) {
           var x = r[i];
@@ -2074,8 +2077,8 @@ class Component extends DCLogic {
         return v;
       }
       v.score = rec.score;
-      v.doneSub = (rec.timeUp ? "Tiden gikk ut · " : "") + rec.words + " ord · " + (rec.left ? rec.left + " brikker ble liggende" + (rec.pen ? " (−" + rec.pen + " p)" : "") : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
-      v.praise = rec.left ? this.praiseSay(rec.score, (st.daily ? (st.dailyTop ? st.dailyTop.top : []) : st.board)) : null;
+      v.doneSub = (rec.timeUp ? "Tiden gikk ut · " : "") + rec.words + " ord · " + (rec.left ? rec.left + " brikker ble liggende" + (rec.pen ? " (−" + rec.pen + " p)" : "") : rec.bare ? "brettet tomt, ikke ryddet med et ord" : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
+      v.praise = rec.left || rec.bare ? this.praiseSay(rec.score, (st.daily ? (st.dailyTop ? st.dailyTop.top : []) : st.board)) : null;
       v.askName = !st.submitted && !!st.played;
       v.nameVal = st.name; v.onName = function (e) { self.state.name = e.target.value; self.setState({}); };
       v.submitOff = !(st.name || "").trim();
