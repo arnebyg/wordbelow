@@ -1339,8 +1339,9 @@ class Component extends DCLogic {
       if (s.phase !== "play") return;
       self.setState({ P: P, turn: n, score: P[n].score, pocket: P[n].pocket, words: P[n].words, hint: !!P[n].hint, sel: [], jokerAs: {}, picking: null, busy: false,
         // Only whose turn it is: the move just made shows in the score box (and in the move history). After the
-        // machine's move, its message stays in front of «Din tur.», so it can be read (it was gone after 0.9 s).
-        msg: st.opp === "cpu" && t === 1 && s.msg ? s.msg + (/[.!?]$/.test(s.msg) ? " " : ". ") + self.turnSay(n) : self.turnSay(n), tone: "info" });
+        // machine's move, its message stays as it is, same text and colour, so the toast is not shown a second
+        // time; whose turn it is shows in the score boxes.
+        msg: st.opp === "cpu" && t === 1 && s.msg ? s.msg : self.turnSay(n), tone: st.opp === "cpu" && t === 1 && s.msg ? s.tone : "info" });
       if (self.cpuTurn()) self.timers.push(setTimeout(function () { self.cpuMove(); }, 700));
     }, delay || 0));
   }
