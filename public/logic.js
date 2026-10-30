@@ -1964,7 +1964,9 @@ class Component extends DCLogic {
       v.rackEmpty = st.sel.length === 0;
       v.rackHint = this.cpuTurn() ? "Maskinen tenker …" : this.waitTurn() ? (st.online.status === "waiting" ? "Spillet starter når motspilleren er med." : "Venter på " + st.online.oppName + ". Du får se trekket her.") :
         st.pocket.length ? (duel ? nm[st.turn] + ": trykk en brikke i lommen for å bruke den." : (kd0 === "tall" ? "Trykk en brikke i lommen for å bruke den i et regnestykke." : kd0 === "sett" ? "Trykk en brikke i lommen for å bruke den i et sett." : "Trykk en brikke i lommen for å bruke den i et ord.")) : (duel ? (kd0 === "tall" ? "Legg et regnestykke, ta en brikke i lommen eller stå over." : kd0 === "sett" ? "Legg et sett, ta en brikke i lommen eller stå over." : "Legg et ord, ta en brikke i lommen eller stå over.") : (kd0 === "tall" ? "Lommen tar to brikker du kan bruke i et senere regnestykke." : kd0 === "sett" ? "Lommen tar to brikker du kan bruke i et senere sett." : "Lommen tar to brikker du kan bruke i et senere ord."));
-      v.pocket = st.pocket.map(function (ch, i) {
+      // Online, the pocket shown is always your own: while the other player is to move, st.pocket holds theirs.
+      var myPocket = st.online && st.turn !== st.online.you && st.P && st.P[st.online.you] ? (st.P[st.online.you].pocket || []) : st.pocket;
+      v.pocket = myPocket.map(function (ch, i) {
         var pid = "p" + i, on = st.sel.indexOf(pid) >= 0;
         var sy = kindOf(S.L) === "sett" ? symsOf(ch) : null;
         return { ch: sy ? "" : ch, syms: sy, p: sy ? "" : self.ptShow(ch), on: on ? "true" : "false", cls: "rk pk" + (on ? " on" : ""), label: (sy ? settSay(ch) : ch) + " i lommen" + (on ? ", i ordet" : ""), tap: function () {
@@ -1974,7 +1976,7 @@ class Component extends DCLogic {
           self.setState({ sel: s0 });
         } };
       });
-      v.slots = Array.from({ length: 2 - st.pocket.length }, function () { return {}; });
+      v.slots = Array.from({ length: Math.max(0, 2 - myPocket.length) }, function () { return {}; });
       var boardSel = st.sel.filter(function (id) { return id[0] !== "p"; });
       v.isTall = kindOf(S.L) === "tall";
       v.eqKey = function () { if (!locked && self.state.sel.indexOf("eq") < 0) self.setState({ sel: self.state.sel.concat(["eq"]) }); };
