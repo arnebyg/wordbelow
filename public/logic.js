@@ -1576,7 +1576,9 @@ class Component extends DCLogic {
           open: function () { if (g.status === "waiting" && g.kind === "invite") self.shareCode(g); else self.openOnline(g.id); },
           // Each card can be ended from the list: an invitation withdrawn, a game resigned (two taps), a finished one removed.
           end: g.status === "waiting" || g.status === "offer" ? (g.incoming ? null : { label: "Trekk", go: function () { self.cancelInvite(g); } }) :
-            g.status === "active" ? { label: st.cardAsk === g.id ? "Gi opp – sikker?" : "Gi opp", warn: st.cardAsk === g.id, go: function () { self.resignFromList(g); } } :
+            g.status === "active" ? { label: st.cardAsk === g.id ? "Gi opp – sikker?" : "Gi opp", warn: st.cardAsk === g.id, go: function () { self.resignFromList(g); },
+              // The question can be taken back on the card itself; the note above may be scrolled out of sight.
+              cancel: st.cardAsk === g.id ? function () { self.setState({ cardAsk: null, homeMsg: "", homeAskCancel: false }); } : null } :
             { label: "Fjern", go: function () { self.hideGame(g); } } };
       };
       var D = dailyOf(dayKey()), dd = dailyDone(), today = dd[D.key], streak = streakOf(dd);
