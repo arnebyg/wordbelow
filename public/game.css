@@ -21,7 +21,7 @@ a{color:#F2C46B}a:hover{color:#FFE2A6}
 .rk .ch{position:absolute;left:0;right:0;top:6px;text-align:center;font-size:24px;font-weight:800;line-height:1}
 .rk .pt{position:absolute;right:4px;bottom:3px;font-size:10px;font-weight:700;color:#7A4513}
 .act{height:52px;border:0;border-radius:14px;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer}
-.act:disabled{opacity:.4;cursor:default}
+.act:disabled{opacity:.35;filter:saturate(.4);box-shadow:none;cursor:default}
 .hintb{height:44px;padding:0 12px;border:0;border-radius:22px;background:#D9A441;color:#3B2405;font-family:inherit;font-size:14px;font-weight:700;box-shadow:0 3px 0 #8E5E14;cursor:pointer}
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:none}
 .chips::-webkit-scrollbar{display:none}

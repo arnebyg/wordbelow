@@ -26,7 +26,7 @@ body{background-color:var(--bg,#1E6550);color:#F4EFE2;font-family:'Bricolage Gro
 .word .rk{flex:0 1 38px;min-width:26px}
 .rackhint{font-size:13px;line-height:1.3;color:#C6DCD5;text-align:center}
 .actions{display:flex;gap:8px;flex:none}
-.act.grey{flex:0 0 96px;background:#6E7A76;color:#13201D;box-shadow:0 4px 0 #3F4846}
+.act.grey{flex:0 0 96px;background:#F4EFE2;color:#1C2626;box-shadow:0 4px 0 #B8AE93}
 .act.gold{flex:0 0 96px;background:#D9A441;color:#3B2405;box-shadow:0 4px 0 #8E5E14}
 .act.green{background:#4FB58A;color:#072A1D;box-shadow:0 4px 0 #23704F}
 .act.red{background:#E06A5A;color:#2A0905;box-shadow:0 4px 0 #8F3328;padding:0 18px}
