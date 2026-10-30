@@ -93,6 +93,8 @@ button.mode:active{background:rgba(0,0,0,.34)}
 .card.inv{background:#F4EFE2;color:#1C2626;box-shadow:0 4px 0 #C2702C}
 .card.inv .cs{color:#4E5C58}
 .card.inv .pill{border-color:#1C2626;color:#1C2626}
+.card.inv .ct{font-size:17px}
+.card.inv .pill{height:40px;padding:0 16px;font-size:15px}
 .card.inv .pill.solid{background:#1E6550;border-color:#1E6550;color:#F4EFE2}
 .card .ct{font-size:20px;font-weight:700;line-height:1.25;padding-right:36px}
 .card .cs{font-size:14px;line-height:1.4;color:#DDEBE6}
