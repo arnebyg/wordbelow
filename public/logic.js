@@ -1030,6 +1030,12 @@ class Component extends DCLogic {
   joinCode() {
     var self = this, c = (this.state.codeIn || "").trim().toUpperCase();
     if (!c) return;
+    // A shared board needs no account: without one, the code is tried as a board first, and only then is a username asked for.
+    if (!this.state.account && /^[A-Z0-9]{6}$/.test(c)) {
+      api("/boards/" + c.toLowerCase()).then(function () { self.setState({ codeIn: "", codePeek: null }); self.importBoard(c.toLowerCase()); },
+        function () { self.needAccount("join"); });
+      return;
+    }
     if (this.needAccount("join")) return;
     // First the invitation is shown (who and which board); the next tap joins.
     if (!this.state.codePeek || this.state.codePeek.code !== c) {
@@ -1626,7 +1632,7 @@ class Component extends DCLogic {
         { id: "cpu", grp: "off", name: "Maskinen", go: "Spill mot maskinen", run: function () { self.start("duel", "cpu"); } },
         { id: "friend", grp: "on", name: "Venn", go: "Velg venn", say: "Velg blant vennene dine, eller send en invitasjon med kode. Dere spiller på brettet du velger her.", run: function () { self.openFriends(); } },
         { id: "random", grp: "on", name: "Tilfeldig", go: "Finn en motspiller", say: "Står noen alt og venter, spiller dere på brettet den personen valgte. Ellers blir det ditt.", run: function () { self.random(); } },
-        { id: "code", grp: "on", name: "Har kode", go: "Bli med", say: "Skriv koden du har fått. Spillet bruker brettet den som inviterte valgte.", run: function () { self.joinCode(); } },
+        { id: "code", grp: "on", name: "Har kode", go: "Bli med", say: "Skriv koden du har fått: en invitasjon til et spill, eller et brett noen har delt.", run: function () { self.joinCode(); } },
         { id: "local", grp: "off", name: "Én telefon", go: "Start på én telefon", say: "Send telefonen over bordet etter hvert trekk.", run: function () { self.start("duel", "local"); } },
         { id: "solo", grp: "off", name: "Alene", go: "Spill alene", say: "Så mange poeng du kan, toppliste per brett.", run: function () { self.start("solo"); } }
       ];
