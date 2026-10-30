@@ -57,7 +57,7 @@ var App = (function () {
     '</div>' +
   '</div>' +
   '<div class="actions">' +
-    '<button type="button" class="act grey"' + (v.finishOff ? ' disabled' : '') + on(v.finish) + '>' + esc(v.finishLabel) + '</button>' +
+    '<button type="button" class="act grey' + (v.finishWarn ? ' warn' : '') + '"' + (v.finishOff ? ' disabled' : '') + on(v.finish) + '>' + esc(v.finishLabel) + '</button>' +
     '<button type="button" class="act gold"' + (v.pocketOff ? ' disabled' : '') + on(v.pocketIt) + '>I lommen</button>' +
     '<button type="button" class="act green send"' + (v.sendOff ? ' disabled' : '') + on(v.send) + '>' + esc(v.sendLabel) + '</button>' +
   '</div>' +

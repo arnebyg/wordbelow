@@ -409,6 +409,7 @@ body.typing{position:static}
 /* Word links, the sheet header's buttons */
 .wlink{color:inherit;text-decoration:underline;text-decoration-color:rgba(242,196,107,.7);text-underline-offset:3px}
 .hbtns{display:flex;align-items:center;gap:6px}
+.act.grey.warn{background:#E8875A;color:#fff;box-shadow:0 4px 0 #A9512C}
 .gx.warn{background:rgba(232,135,90,.9);color:#fff}
 
 /* New game as letter tiles (Meny-A): three to a row, the chosen one gold and lifted. */

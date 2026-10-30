@@ -1998,9 +1998,20 @@ class Component extends DCLogic {
         var b = self.bestWord();
         self.setState({ score: self.state.score - 5, hint: true, tone: "info", msg: b ? "Hint −5: prøv «" + b.w + "» (" + b.pts + " p)" + (b.jokers ? ", med jokeren som " + Object.keys(b.ja).map(function (k) { return b.ja[k]; }).join(" og ") : "") : "Hint −5: ingen ord nå. Prøv " + (duel ? "lommen eller stå over." : "lommen, eller lever.") });
       };
-      v.finishLabel = duel ? "Stå over" : "Ferdig";
+      v.finishLabel = duel ? "Stå over" : st.finishAsk ? "Sikker?" : "Ferdig";
+      v.finishWarn = !duel && !!st.finishAsk;
       v.finishOff = duel && locked;
-      v.finish = function () { if (duel) { if (!locked) self.pass(); } else self.finishGame(); };
+      // Alone, ending the game is asked once: the first tap says what happens, a second within five seconds ends it.
+      v.finish = function () {
+        if (duel) { if (!locked) self.pass(); return; }
+        if (!self.state.finishAsk) {
+          var n = Object.keys(self.live()).length;
+          self.setState({ finishAsk: true, tone: "info", msg: "Trykk én gang til for å avslutte." + (n ? " " + n + " brikker ligger igjen og trekkes fra." : "") });
+          clearTimeout(self.finishT); self.finishT = setTimeout(function () { if (self.state.finishAsk) self.setState({ finishAsk: false }); }, 5000);
+          return;
+        }
+        clearTimeout(self.finishT); self.setState({ finishAsk: false }); self.finishGame();
+      };
     }
     if (st.phase === "done") {
       var rec = st.played || { score: st.score, words: st.words.length, left: 0, best: null };
