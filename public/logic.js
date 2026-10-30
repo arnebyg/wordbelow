@@ -855,7 +855,10 @@ class Component extends DCLogic {
   shareBoard() {
     var self = this;
     this.ensureShared(function (L) {
-      var link = location.origin + location.pathname + "?board=" + L.code, text = "Prøv brettet «" + L.name + "» i WordBelow: " + link;
+      // From the apps the link points to wordbelow.app (their own address opens nothing for anyone else),
+      // and the code is there too, to type under Kode in the app.
+      var link = (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname) + "?board=" + L.code,
+        text = "Prøv brettet «" + L.name + "» i WordBelow: " + link + " – eller velg Kode på startsiden i appen og skriv " + L.code.toUpperCase() + ".";
       self.setState({ ngMsg: "Del lenken, så kan andre spille «" + L.name + "», også mot deg: " + link });
       if (navigator.share) navigator.share({ title: tr("WordBelow · " + L.name), text: tr(text) }).catch(function () {});
       else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ ngMsg: "Lenken er kopiert: " + link }); }, function () {});
