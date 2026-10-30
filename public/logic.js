@@ -915,6 +915,12 @@ class Component extends DCLogic {
     if (!this.state.account) return;
     api("/games").then(function (d) {
       self.setState({ games: d.games, gamesMsg: "" });
+      // A challenge you sent: when it is answered, the message saying it was sent gives way to the answer.
+      var so = self.state.sentOffer, sg = so && d.games.filter(function (g) { return g.id === so.id; })[0];
+      if (so && (!sg || sg.status !== "offer")) {
+        var said = !sg ? so.name + " sa nei takk til " + (so.rematch ? "omkampen." : "utfordringen.") : so.name + " godtok. Spillet er i gang.";
+        self.setState({ sentOffer: null, homeMsg: !self.state.homeMsg || self.state.homeMsg === so.msg ? said : self.state.homeMsg });
+      }
       d.games.forEach(function (g) { if (g.status === "done" && g.result) self.statOnline(g); });
     }, function (e) { self.setState({ gamesMsg: e.status === 401 ? "Kontoen finnes ikke på serveren lenger." : e.message }); });
   }
@@ -948,7 +954,8 @@ class Component extends DCLogic {
     this.ensureShared(function () {
       api("/games", { method: "POST", body: { to: u.id, layout: self.state.lay, lang: rematch ? self.state.lang : langPref(), rematch: !!rematch } }).then(function (d) {
         self.goHome();
-        self.setState({ homeMsg: (rematch ? "Omkampen" : "Utfordringen") + " er sendt til " + (d.game.opp ? d.game.opp.name : u.name || "motspilleren") + ". Spillet starter når " + (d.game.opp ? d.game.opp.name : "de") + " godtar." });
+        var sentTo = d.game.opp ? d.game.opp.name : u.name || "motspilleren", sentMsg = (rematch ? "Omkampen" : "Utfordringen") + " er sendt til " + sentTo + ". Spillet starter når " + (d.game.opp ? d.game.opp.name : "de") + " godtar.";
+        self.setState({ homeMsg: sentMsg, sentOffer: { id: d.game.id, name: sentTo, msg: sentMsg, rematch: !!rematch } });
       }, function (e) { self.setState({ phase: "home", ngMsg: e.message }); });
     });
   }
@@ -1092,7 +1099,7 @@ class Component extends DCLogic {
     this.setState({ games: (this.state.games || []).filter(function (x) { return x.id !== g.id; }) });
     api("/games/" + g.id + "/hide", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: goneOr(e) }); self.refreshGames(); });
   }
-  cancelInvite(g) { var self = this; api("/games/" + g.id + "/cancel", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: goneOr(e) }); self.refreshGames(); }); }
+  cancelInvite(g) { var self = this; if (this.state.sentOffer && this.state.sentOffer.id === g.id) this.setState({ sentOffer: null }); api("/games/" + g.id + "/cancel", { method: "POST" }).then(function () { self.refreshGames(); }, function (e) { self.setState({ homeMsg: goneOr(e) }); self.refreshGames(); }); }
   // An online game: the board comes from its layout and seed, the rest from the state the phones store on the server.
   openOnline(id) {
     var self = this;
