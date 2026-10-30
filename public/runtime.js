@@ -500,7 +500,21 @@ var App = (function () {
     if (t.classList.contains("adclose")) App.lastVals.closeAd(); else { App.lastVals.closeAd(); App.lastVals.openPremium(); }
   });
   // The board takes all the room the screen has left, scaled to where its tiles actually lie.
+  // A long board name in the picker (Regnestykket, Gresskaret) gets a smaller size instead of running under
+  // the arrow, down to 15 px, and only then breaks inside a word. A name of several words wraps between them first.
+  function fitNames() {
+    var els = view.querySelectorAll(".pvn");
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], px = 24;
+      el.style.fontSize = ""; el.style.whiteSpace = /\s/.test(el.textContent.trim()) ? "normal" : "nowrap";
+      el.style.overflowWrap = "normal";
+      while (el.scrollWidth > el.clientWidth && px > 15) el.style.fontSize = --px + "px";
+      el.style.overflowWrap = "";
+      if (el.scrollWidth > el.clientWidth) el.style.whiteSpace = "normal";
+    }
+  }
   function fitBoard() {
+    fitNames();
     var inner = view.querySelector(".board > .bfit");
     if (!inner) return;
     var bd = inner.parentNode, f = inner.getAttribute("data-fit").split(",").map(Number);

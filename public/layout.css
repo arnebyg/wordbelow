@@ -192,7 +192,7 @@ html.light .tone-info{color:#3E4C48}html.light .tone-good{color:#1F7A4D}html.lig
 .mt.l0{background:#D9CDB4}.mt.l1{background:#E8DDC6}.mt.l2{background:#F3EBDA}
 .pvinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .pvg{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#C6DCD5}
-.pvn{font-size:24px;font-weight:800;line-height:1.1}
+.pvn{display:block;font-size:24px;font-weight:800;line-height:1.1;overflow-wrap:anywhere}
 .pvs{font-size:13px;line-height:1.35;color:#DDEBE6}
 .pvar{position:absolute;top:50%;left:2px;margin-top:-26px;width:30px;height:52px;border:0;padding:0;border-radius:10px;background:rgba(244,239,226,.08);color:inherit;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .pvar.next{left:auto;right:2px}
