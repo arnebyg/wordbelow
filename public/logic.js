@@ -1998,7 +1998,7 @@ class Component extends DCLogic {
         var b = self.bestWord();
         self.setState({ score: self.state.score - 5, hint: true, tone: "info", msg: b ? "Hint −5: prøv «" + b.w + "» (" + b.pts + " p)" + (b.jokers ? ", med jokeren som " + Object.keys(b.ja).map(function (k) { return b.ja[k]; }).join(" og ") : "") : "Hint −5: ingen ord nå. Prøv " + (duel ? "lommen eller stå over." : "lommen, eller lever.") });
       };
-      v.finishLabel = duel ? "Stå over" : "Lever";
+      v.finishLabel = duel ? "Stå over" : "Ferdig";
       v.finishOff = duel && locked;
       v.finish = function () { if (duel) { if (!locked) self.pass(); } else self.finishGame(); };
     }

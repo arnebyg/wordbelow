@@ -220,7 +220,7 @@ var App = (function () {
       sec("Åpne brikker", '<p>En brikke er åpen når ingen brikke ligger oppå den, og den er fri på minst én side, til venstre eller til høyre. Sperrede brikker er mørkere og kan ikke trykkes.</p>') +
       sec("Et trekk", '<p><b>Legg et ord:</b> trykk brikkene i den rekkefølgen ordet staves. Trykk en valgt brikke igjen for å ta den tilbake, og trykk «Send ord».</p>' +
         '<p><b>I lommen:</b> i stedet for et ord kan du legge én åpen brikke i lommen. Lommen tar to brikker, og du kan bruke dem i et senere ord. Et ord må alltid ha minst én brikke fra brettet. Det som ligger igjen i lommen til slutt, koster ingenting.</p>' +
-        '<p><b>Stå over:</b> står begge over etter hverandre, er spillet slutt. Det er også slutt når brettet er ryddet. Alene trykker du «Lever» når du er ferdig.</p>' +
+        '<p><b>Stå over:</b> står begge over etter hverandre, er spillet slutt. Det er også slutt når brettet er ryddet. Alene trykker du «Ferdig» for å avslutte spillet.</p>' +
         '<p><b>Joker:</b> det ligger to jokere i brettet. Trykk en åpen joker og velg hvilken bokstav den skal være. Den gir 0 poeng, men bonusene for ordet gjelder.</p>') +
       sec("Poeng for et ord", '<p>Poengene regnes i denne rekkefølgen:</p>' + rows([
         ["Bokstaver", "tallet på hver brikke"], ["Bokstavbonus 2×B / 3×B", "dobler eller tredobler den bokstaven"],
