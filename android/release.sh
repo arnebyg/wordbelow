@@ -9,6 +9,7 @@ cd "$(dirname "$0")/.."
 export JAVA_HOME="${JAVA_HOME:-/opt/homebrew/opt/openjdk@21}"
 export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 [ -f android/local.properties ] || printf 'sdk.dir=%s\n' "$ANDROID_HOME" > android/local.properties
+node tools/strip.mjs > /dev/null   # the app carries the copy without comments (tools/strip.mjs)
 npx cap sync android > /dev/null
 N="$(git rev-list --count HEAD)"
 printf 'versionCode=%s\nversionName=1.0.%s\n' "$N" "$N" > android/version.properties

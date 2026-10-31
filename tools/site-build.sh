@@ -12,12 +12,15 @@
 # Once switched, deploy with this every time — `npm run deploy` would put the game back on the web.
 set -eu
 cd "$(dirname "$0")/.."
-OUT=dist-site
-rm -rf "$OUT"
-mkdir -p "$OUT"
-cp -R site/. "$OUT/"
-cp public/privacy.html public/admin.html public/app-ads.txt "$OUT/"
+OUT=dist-site RAW=.site-raw
+rm -rf "$OUT" "$RAW"
+mkdir -p "$RAW"
+cp -R site/. "$RAW/"
+cp public/privacy.html public/admin.html public/app-ads.txt "$RAW/"
+# Published without comments, like the game (tools/strip.mjs).
+node tools/strip.mjs "$RAW" "$OUT"
+rm -rf "$RAW"
 # The same configuration, serving dist-site/ instead of public/.
-sed 's#^directory = "./public"#directory = "./dist-site"#' wrangler.toml > wrangler.site.toml
+sed 's#^directory = "./dist-app"#directory = "./dist-site"#' wrangler.toml > wrangler.site.toml
 grep -q 'directory = "./dist-site"' wrangler.site.toml || { echo "site-build.sh: could not point the config at dist-site" >&2; exit 1; }
 echo "site-build.sh: $OUT/ ($(ls "$OUT" | tr '\n' ' ')) and wrangler.site.toml"

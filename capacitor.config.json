@@ -1,7 +1,7 @@
 {
   "appId": "app.wordbelow",
   "appName": "wordbelow",
-  "webDir": "public",
+  "webDir": "dist-app",
   "ios": {
     "contentInset": "never",
     "backgroundColor": "#1E6550"

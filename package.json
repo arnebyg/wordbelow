@@ -3,8 +3,10 @@
   "private": true,
   "description": "WordBelow: the web game (public/), its server (src/worker.js) and the iPhone app (ios/, Capacitor).",
   "scripts": {
-    "deploy": "wrangler deploy",
-    "ios:sync": "cap sync ios",
+    "strip": "node tools/strip.mjs",
+    "deploy": "node tools/strip.mjs && wrangler deploy",
+    "ios:sync": "node tools/strip.mjs && cap sync ios",
+    "ios:copy": "node tools/strip.mjs && cap copy ios",
     "ios:open": "cap open ios",
     "deploy:site": "sh tools/site-build.sh && wrangler deploy -c wrangler.site.toml"
   },
@@ -17,6 +19,9 @@
     "@capgo/native-purchases": "^8.9.6"
   },
   "devDependencies": {
-    "@capacitor/cli": "^8.5.3"
+    "@capacitor/cli": "^8.5.3",
+    "acorn": "^8.19.0",
+    "parse5": "^7.3.0",
+    "postcss": "^8.5.32"
   }
 }
