@@ -915,10 +915,21 @@ class Component extends DCLogic {
       // and the code is there too, to type under Kode in the app.
       var link = (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname) + "?board=" + L.code,
         text = "Prøv brettet «" + L.name + "» i WordBelow: " + link + " – eller velg Kode på startsiden i appen og skriv " + L.code.toUpperCase() + ".";
-      self.setState({ ngMsg: "Del lenken, så kan andre spille «" + L.name + "», også mot deg: " + link });
-      if (navigator.share) navigator.share({ title: tr("WordBelow · " + L.name), text: tr(text) }).catch(function () {});
-      else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ ngMsg: "Lenken er kopiert: " + link }); }, function () {});
+      // A box with the code and two buttons stays until it is closed, so the link can be sent again or copied.
+      self.setState({ ngMsg: "", shared: { name: L.name, code: L.code.toUpperCase(), text: text, copied: false } });
+      self.shareAgain();
     });
+  }
+  shareAgain() {
+    var sh = this.state.shared, self = this;
+    if (!sh) return;
+    if (navigator.share) navigator.share({ title: tr("WordBelow · " + sh.name), text: tr(sh.text) }).catch(function () {});
+    else this.copyShared();
+  }
+  copyShared() {
+    var sh = this.state.shared, self = this;
+    if (!sh || !navigator.clipboard) return;
+    navigator.clipboard.writeText(tr(sh.text)).then(function () { if (self.state.shared) self.setState({ shared: Object.assign({}, self.state.shared, { copied: true }) }); }, function () {});
   }
   importBoard(code) {
     var self = this;
@@ -926,7 +937,11 @@ class Component extends DCLogic {
       var id = "b" + b.code, have = LAYOUTS.filter(function (L) { return L.id === id; })[0];
       if (!have) { LAYOUTS.push(ownLayout({ id: id, name: b.name, cells: b.cells, code: b.code, by: b.by, start: openAtStart(b.cells.split(" ").map(function (t) { var a = t.split("."); return { c: a[0] / 2, r: a[1] / 2, l: +a[2] }; })) })); ownSave(); }
       lsSet("ordspill/klassiker/brett/v1", id);
-      self.setState(Object.assign(self.fresh(id), { phase: "home", homeMsg: "«" + b.name + "»" + (b.by ? " fra " + b.by : "") + " ligger nå under Egne brett." }));
+      // The code field gives way: the keyboard closes, Alene is chosen with the new board, and the page goes to the top,
+      // where the message says where the board is.
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      self.setState(Object.assign(self.fresh(id), { phase: "home", pick: "solo", codeIn: "", codePeek: null, ngMsg: "", homeMsg: "«" + b.name + "»" + (b.by ? " fra " + b.by : "") + " ligger nå under Egne brett, og er valgt." }));
+      setTimeout(function () { Array.prototype.forEach.call(document.querySelectorAll("#view .scroll"), function (el) { el.scrollTop = 0; }); }, 60);
     }, function (e) { self.setState({ homeMsg: e.message }); });
   }
   needAccount(after) { if (this.state.account) return false; this.setState({ phase: "account", after: after, acctMsg: "" }); return true; }
@@ -1704,6 +1719,9 @@ class Component extends DCLogic {
       v.myTurns = mt ? (mt === 1 ? "1 venter på deg" : mt + " venter på deg") : "";
       v.noAccount = !st.account;
       v.homeMsg = st.homeMsg || st.gamesMsg;
+      v.shared = st.shared ? { say: "«" + st.shared.name + "» er delt. Andre kan åpne lenken, eller skrive koden " + st.shared.code + " under Har kode.",
+        copied: st.shared.copied, again: function () { self.shareAgain(); }, copy: navigator.clipboard ? function () { self.copyShared(); } : null,
+        close: function () { self.setState({ shared: null }); } } : null;
       // The question when the one waiting chose another board; gone once you pick another board.
       if (st.ngAsk && st.ngAsk.lay === st.lay) {
         var ag = st.ngAsk.game, aL = LAYOUTS.filter(function (x) { return x.id === ag.layout; })[0] || EXTRA[ag.layout],
