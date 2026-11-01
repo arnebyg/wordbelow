@@ -279,11 +279,12 @@ html.light .sthead span:last-child,html.light .rchart text{color:#5D6B67;fill:#5
 html.light .rchart .gl{stroke:rgba(60,45,20,.18)}
 html.light .rchart .ln{stroke:#B7841F}html.light .rchart .pt{fill:#B7841F}
 /* Messages over the board for a moment, instead of a row of their own */
-.toast{position:absolute;left:50%;top:6px;transform:translateX(-50%);z-index:1900;max-width:calc(100% - 24px);box-sizing:border-box;padding:8px 14px;border-radius:14px;background:rgba(8,30,24,.88);box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:14px;line-height:1.35;text-align:center;pointer-events:none;animation:toast 8s ease forwards}
-.toast.seen{animation:none;opacity:0}
-@keyframes toast{0%{opacity:0;transform:translate(-50%,-6px)}3%,90%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+.toast{position:absolute;left:50%;top:6px;transform:translateX(-50%);z-index:1900;max-width:calc(100% - 24px);box-sizing:border-box;padding:8px 14px;border-radius:14px;background:rgba(8,30,24,.88);box-shadow:0 6px 18px rgba(0,0,0,.35);font-size:14px;line-height:1.35;text-align:center;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;animation:toast 8s ease forwards}
+.toast.seen{animation:none;opacity:0;visibility:hidden}
+.toast.gone{animation:none!important;opacity:0!important;pointer-events:none;transition:transform .2s ease,opacity .2s ease}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,-6px)}3%,90%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;visibility:hidden}}
 html.light .toast{background:rgba(255,253,247,.95)}
-@media (prefers-reduced-motion: reduce){.toast{animation:toast-still 8s linear forwards}@keyframes toast-still{0%,90%{opacity:1}100%{opacity:0}}}
+@media (prefers-reduced-motion: reduce){.toast{animation:toast-still 8s linear forwards}@keyframes toast-still{0%,90%{opacity:1}100%{opacity:0;visibility:hidden}}}
 /* Help: the rules over the open screen */
 .topr{display:flex;align-items:center;gap:8px;flex:none}
 .qb{width:36px;height:36px;border-radius:50%;border:2px solid rgba(244,239,226,.6);background:transparent;color:inherit;font-family:inherit;font-size:18px;font-weight:800;padding:0;cursor:pointer}

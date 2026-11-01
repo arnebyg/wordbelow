@@ -426,7 +426,7 @@ var App = (function () {
 
 
   // A message keeps its own clock across renders: a new text starts it, a repeat carries on where it was.
-  var toastText = null, toastAt = 0;
+  var toastText = null, toastAt = 0, toastDrag = null;
   function toastHtml(v) {
     if (v.toast !== toastText) { toastText = v.toast; toastAt = Date.now(); }
     var age = Date.now() - toastAt;
@@ -571,8 +571,38 @@ var App = (function () {
     fitBoard();
   }
 
+  // A tap or a swipe takes the message away at once; it follows the finger and fades the way it was pushed.
+  function toastGone(el, dx, dy) {
+    toastAt = Date.now() - 1e9;   // stays seen when the screen is drawn again
+    if (!el) return;
+    el.classList.add("gone");
+    el.style.transform = "translate(calc(-50% + " + (dx * 3) + "px), " + Math.min(dy * 3, 0) + "px)";
+  }
   function boot() {
     root = document.getElementById("app"); view = document.getElementById("view");
+    root.addEventListener("pointerdown", function (e) {
+      var el = e.target.closest && e.target.closest(".toast");
+      if (!el) return;
+      toastDrag = { x: e.clientX, y: e.clientY, el: el };
+      e.stopPropagation();
+    }, true);
+    window.addEventListener("pointermove", function (e) {
+      if (!toastDrag) return;
+      var dx = e.clientX - toastDrag.x, dy = Math.min(e.clientY - toastDrag.y, 0), el = toastDrag.el;
+      el.style.animation = "none"; el.style.opacity = String(Math.max(0.2, 1 - (Math.abs(dx) + Math.abs(dy)) / 160));
+      el.style.transform = "translate(calc(-50% + " + dx + "px), " + dy + "px)";
+    });
+    window.addEventListener("pointerup", function (e) {
+      if (!toastDrag) return;
+      var d = toastDrag; toastDrag = null;
+      noClickUntil = Date.now() + 300;
+      toastGone(d.el.isConnected ? d.el : view.querySelector(".toast"), e.clientX - d.x, e.clientY - d.y);
+    });
+    window.addEventListener("pointercancel", function () {
+      if (!toastDrag) return;
+      var d = toastDrag; toastDrag = null;
+      toastGone(d.el.isConnected ? d.el : view.querySelector(".toast"), 0, 0);
+    });
     // A sideways swipe on an element marked data-swipe calls that handler with +1 (finger to the left) or -1.
     root.addEventListener("pointerdown", function (e) {
       if (e.pointerType === "touch" && swipe && swipe.touch) return;
@@ -591,6 +621,7 @@ var App = (function () {
     // iPhone: read the same gesture from touch events, which arrive even when the browser takes the pointer.
     root.addEventListener("touchcancel", function () { swipe = null; if (pending) App.schedule(); }, { passive: true });
     root.addEventListener("touchstart", function (e) {
+      if (e.target.closest(".toast")) return;
       var el = e.target.closest("[data-swipe]"), t = e.touches[0];
       if (el && t && e.touches.length === 1) swipe = { x: t.clientX, y: t.clientY, k: el.getAttribute("data-swipe"), touch: true };
     }, { passive: true });
