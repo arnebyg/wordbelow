@@ -17,10 +17,16 @@ rm -rf "$OUT" "$RAW"
 mkdir -p "$RAW"
 cp -R site/. "$RAW/"
 cp public/privacy.html public/admin.html public/app-ads.txt "$RAW/"
+# One static page per language, from site/page.html and site/text.mjs.
+node tools/site-pages.mjs "$RAW"
 # Published without comments, like the game (tools/strip.mjs).
 node tools/strip.mjs "$RAW" "$OUT"
 rm -rf "$RAW"
+# Stops here if a page does not name all its languages, or names a file that is not there.
+node tools/site-check.mjs "$OUT"
 # The same configuration, serving dist-site/ instead of public/.
-sed 's#^directory = "./dist-app"#directory = "./dist-site"#' wrangler.toml > wrangler.site.toml
+# The Worker also serves /video/* (Safari needs byte ranges), and 404.html stands in for addresses the game once had.
+sed -e 's#^directory = "./dist-app"#directory = "./dist-site"\nnot_found_handling = "404-page"#' -e 's#^run_worker_first = \["/api/\*"\]#run_worker_first = ["/api/*", "/video/*"]#' wrangler.toml > wrangler.site.toml
 grep -q 'directory = "./dist-site"' wrangler.site.toml || { echo "site-build.sh: could not point the config at dist-site" >&2; exit 1; }
+grep -q '"/video/\*"' wrangler.site.toml || { echo "site-build.sh: could not route /video/* to the Worker" >&2; exit 1; }
 echo "site-build.sh: $OUT/ ($(ls "$OUT" | tr '\n' ' ')) and wrangler.site.toml"

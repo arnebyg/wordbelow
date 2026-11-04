@@ -42,9 +42,27 @@ export default {
       for (const k in cors) out.headers.set(k, cors[k]);
       return out;
     }
+    if (url.pathname.startsWith("/video/")) return videoAsset(request, env);
     return env.ASSETS.fetch(request);
   }
 };
+
+// The front page's videos. Static assets ignore Range, and Safari on an iPhone will not play a video without it,
+// so the Worker cuts the part asked for. The files are about half a megabyte; holding one in memory is nothing.
+async function videoAsset(request, env) {
+  const res = await env.ASSETS.fetch(new Request(request.url, { method: "GET" }));
+  if (!res.ok) return res;
+  const headers = new Headers(res.headers);
+  headers.set("accept-ranges", "bytes"); headers.set("cache-control", "public, max-age=604800");
+  const buf = await res.arrayBuffer(), size = buf.byteLength;
+  const m = /^bytes=(\d*)-(\d*)$/.exec(request.headers.get("range") || "");
+  if (!m || (m[1] === "" && m[2] === "")) { headers.set("content-length", String(size)); return new Response(request.method === "HEAD" ? null : buf, { status: 200, headers }); }
+  const from = m[1] === "" ? Math.max(0, size - Number(m[2])) : Number(m[1]);
+  const to = m[1] === "" || m[2] === "" ? size - 1 : Math.min(Number(m[2]), size - 1);
+  if (from >= size || from > to) { headers.set("content-range", "bytes */" + size); headers.delete("content-length"); return new Response(null, { status: 416, headers }); }
+  headers.set("content-range", "bytes " + from + "-" + to + "/" + size); headers.set("content-length", String(to - from + 1));
+  return new Response(request.method === "HEAD" ? null : buf.slice(from, to + 1), { status: 206, headers });
+}
 
 export class Hub extends DurableObject {
   constructor(ctx, env) {
