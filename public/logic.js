@@ -494,6 +494,11 @@ function genBoard(S, seed) {
   // still happens, so the word bonuses land where they always did.
   function put(list, s) { list = list.filter(function (p) { return !b[p.id]; }); var p = list[Math.floor(R() * list.length)]; if (p && !(kind === "sett" && s.slice(-1) === "B")) b[p.id] = { m: +s[0], t: s.slice(-1) }; }
   put(on(top), "3×O"); put(on(1), "2×O"); put(on(0), "3×B"); put(on(0).concat(on(1)), "2×B"); put(on(0).concat(on(1)), "2×B"); put(on(2), "2×B");
+  // Three of each (the owner, November 2026). These come after the first six, so the letters and those six stay where
+  // an earlier version of the app has them in a game under way. A board without the layer takes any tile.
+  function putAny(list, s) { put(list.filter(function (p) { return !b[p.id]; }).length ? list : S.pos.filter(function (p) { return letters[p.id] !== "*"; }), s); }
+  if (!on(2).length) putAny(on(0), "2×B");
+  putAny(on(top - 1), "3×O"); putAny(on(1), "3×O"); putAny(on(2), "2×O"); putAny(on(0), "2×O"); putAny(on(1), "3×B"); putAny(on(2), "3×B");
   return { letters: letters, bonus: b };
 }
 function openSay(L) { if (L.grp === "open") return "mange åpne brikker hele veien"; if (L.grp === "own" || L.grp === "season") return "starter med " + L.start + " åpne"; if (L.grp === "long") return "starter med " + L.start + " åpne, rundt " + L.mean + " i snitt"; return L.grp === "grow" ? "starter med " + L.start + " åpne, rundt " + L.peak + " midtveis" : "typisk " + L.open + " åpne hele veien"; }
@@ -1314,7 +1319,9 @@ class Component extends DCLogic {
       if (id[0] === "p") { base += self.ptsOf(st.pocket[+id.slice(1)]); return; }
       var raw = st.letters[id], p = self.ptsOf(raw), b = st.bonus[id];
       if (b && b.t === "B") p *= b.m;
-      if (b && b.t === "O") wm *= b.m;
+      // Several word bonuses in one word: the highest counts. Multiplied, 12 bonus tiles gave words of over 1000 points
+      // that decided a game alone (simulation, November 2026).
+      if (b && b.t === "O") wm = Math.max(wm, b.m);
       base += p;
     });
     // Sett: 3 for a set and 2 more for each property that differs on all three, instead of length.

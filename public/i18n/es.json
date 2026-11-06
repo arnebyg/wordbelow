@@ -1,4 +1,5 @@
 {
+"ganger bokstavene. Flere i samme ord: den høyeste teller.": "multiplica las letras. Varias en una palabra: cuenta la más alta.",
 "Nye bokstaver hver gang.": "Letras nuevas cada vez.",
 "Alle spiller de samme bokstavene i dag.": "Hoy todos juegan las mismas letras.",
 "Samme brett, nye bokstaver. Bare en ny personlig rekord lagres.": "Mismo tablero, letras nuevas. Solo se guarda una nueva marca personal.",
@@ -747,7 +748,6 @@
 "Hint brukt": "Pista usada",
 "Hint −5": "Pista −5",
 "−5, én gang per spill": "−5, una vez por partida",
-"ganger bokstavene": "multiplica las letras",
 "Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Treffer ordet 2×O, blir det 9 × 2 = 18, pluss 15 for seks bokstaver: 33 poeng.": "Ejemplo: SKOGEN tiene 1 + 2 + 2 + 2 + 1 + 1 = 9 puntos de letra. Si la palabra cae en 2×P, son 9 × 2 = 18, más 15 por seis letras: 33 puntos.",
 "De har egne, mer åpne brett, og lommen og bonusene virker som ellers.": "Tienen sus propios tableros, más abiertos, y el bolsillo y los bonus funcionan igual.",
 "Brettet er ryddet": "Tablero vaciado",

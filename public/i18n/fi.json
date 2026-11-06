@@ -1,4 +1,5 @@
 {
+"ganger bokstavene. Flere i samme ord: den høyeste teller.": "kertoo kirjaimet. Jos samassa sanassa on useita, korkein lasketaan.",
 "Nye bokstaver hver gang.": "Uudet kirjaimet joka kerta.",
 "Alle spiller de samme bokstavene i dag.": "Kaikilla on tänään samat kirjaimet.",
 "Samme brett, nye bokstaver. Bare en ny personlig rekord lagres.": "Sama lauta, uudet kirjaimet. Vain uusi oma ennätys tallennetaan.",
@@ -747,7 +748,6 @@
 "Hint brukt": "Vihje käytetty",
 "Hint −5": "Vihje −5",
 "−5, én gang per spill": "−5, kerran per peli",
-"ganger bokstavene": "kertoo kirjaimet",
 "Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Treffer ordet 2×O, blir det 9 × 2 = 18, pluss 15 for seks bokstaver: 33 poeng.": "Esimerkki: SKOGEN-sanan kirjainpisteet ovat 1 + 2 + 2 + 2 + 1 + 1 = 9. Jos sana osuu 2×S-ruutuun, tulos on 9 × 2 = 18, plus 15 kuudesta kirjaimesta: 33 pistettä.",
 "De har egne, mer åpne brett, og lommen og bonusene virker som ellers.": "Niillä on omat, avoimemmat laudat, ja tasku ja bonukset toimivat kuten muulloinkin.",
 "Brettet er ryddet": "Lauta on tyhjennetty",
