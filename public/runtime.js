@@ -223,7 +223,7 @@ var App = (function () {
         '<p><b>Joker:</b> det ligger to jokere i brettet. Trykk en åpen joker og velg hvilken bokstav den skal være. Den gir 0 poeng, men bonusene for ordet gjelder.</p>') +
       sec("Poeng for et ord", '<p>Poengene regnes i denne rekkefølgen:</p>' + rows([
         ["Bokstaver", "tallet på hver brikke"], ["Bokstavbonus 2×B / 3×B", "dobler eller tredobler den bokstaven"],
-        ["Ordbonus 2×O / 3×O", "ganger bokstavene"], ["Lengde", "+5 for hver bokstav over tre"],
+        ["Ordbonus 2×O / 3×O", "ganger bokstavene. Flere i samme ord: den høyeste teller."], ["Lengde", "+5 for hver bokstav over tre"],
         ["Rydder hele brettet", "+50 alene, +20 i duell"], ["Hint", "−5, én gang per spill"]]) +
         '<p class="fine">Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Treffer ordet 2×O, blir det 9 × 2 = 18, pluss 15 for seks bokstaver: 33 poeng.</p>') +
       sec("Tall og Sett", '<p>Under Innstillinger › Spilltype kan du bytte fra bokstaver til <b>Tall</b> eller <b>Sett</b>. De har egne, mer åpne brett, og lommen virker som ellers. I Tall dobler eller tredobler 2×B og 3×B én brikke, og 2×R og 3×R hele regnestykket. I Sett er hver brikke verdt 1, så der er det bare 2×S og 3×S, som gjelder hele settet.</p>' +

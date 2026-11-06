@@ -1,4 +1,5 @@
 {
+"ganger bokstavene. Flere i samme ord: den høyeste teller.": "multiplicerar bokstäverna. Flera i samma ord: den högsta räknas.",
 "Nye bokstaver hver gang.": "Nya bokstäver varje gång.",
 "Alle spiller de samme bokstavene i dag.": "Alla spelar samma bokstäver i dag.",
 "Samme brett, nye bokstaver. Bare en ny personlig rekord lagres.": "Samma bräde, nya bokstäver. Bara ett nytt personbästa sparas.",
@@ -747,7 +748,6 @@
 "Hint brukt": "Tips använt",
 "Hint −5": "Tips −5",
 "−5, én gang per spill": "−5, en gång per spel",
-"ganger bokstavene": "multiplicerar bokstäverna",
 "Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Treffer ordet 2×O, blir det 9 × 2 = 18, pluss 15 for seks bokstaver: 33 poeng.": "Exempel: SKOGEN har bokstavspoäng 1 + 2 + 2 + 2 + 1 + 1 = 9. Träffar ordet 2×O blir det 9 × 2 = 18, plus 15 för sex bokstäver: 33 poäng.",
 "De har egne, mer åpne brett, og lommen og bonusene virker som ellers.": "De har egna, öppnare bräden, och fickan och bonusarna fungerar som vanligt.",
 "Brettet er ryddet": "Brädet är rensat",

@@ -1,4 +1,5 @@
 {
+"ganger bokstavene. Flere i samme ord: den høyeste teller.": "vermenigvuldigt de letters. Meerdere in één woord: de hoogste telt.",
 "Nye bokstaver hver gang.": "Elke keer nieuwe letters.",
 "Alle spiller de samme bokstavene i dag.": "Iedereen speelt vandaag dezelfde letters.",
 "Samme brett, nye bokstaver. Bare en ny personlig rekord lagres.": "Zelfde bord, nieuwe letters. Alleen een nieuw persoonlijk record wordt bewaard.",
@@ -747,7 +748,6 @@
 "Hint brukt": "Hint gebruikt",
 "Hint −5": "Hint −5",
 "−5, én gang per spill": "−5, één keer per spel",
-"ganger bokstavene": "vermenigvuldigt de letters",
 "Eksempel: SKOGEN har bokstavpoeng 1 + 2 + 2 + 2 + 1 + 1 = 9. Treffer ordet 2×O, blir det 9 × 2 = 18, pluss 15 for seks bokstaver: 33 poeng.": "Voorbeeld: SKOGEN heeft letterpunten 1 + 2 + 2 + 2 + 1 + 1 = 9. Raakt het woord 2×W, dan is het 9 × 2 = 18, plus 15 voor zes letters: 33 punten.",
 "De har egne, mer åpne brett, og lommen og bonusene virker som ellers.": "Ze hebben eigen, opener borden, en het bakje en de bonussen werken zoals gewoonlijk.",
 "Brettet er ryddet": "Bord leeggespeeld",
