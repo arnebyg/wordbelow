@@ -1507,14 +1507,21 @@ class Component extends DCLogic {
     }
     // Alone, the tiles still on the board when the game ends cost their points; the pocket costs nothing.
     var self = this, pen = Object.keys(this.live()).reduce(function (n, id) { return n + self.ptsOf(st.letters[id]); }, 0);
-    var rec = { lay: st.lay, timeUp: !!st.timeUp, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, bare: bare, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
+    var rec = { lay: st.lay, top: st.board.reduce(function (m, r) { return Math.max(m, r.score || 0); }, 0), timeUp: !!st.timeUp, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, bare: bare, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
     addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 && !bare });
     this.setState({ phase: "done", played: rec, submitted: false });
+    if (!st.daily) this.saveBest();
     // The wreath only when the board is cleared; handed in with tiles left, the score stands without a cheer.
     if (left === 0 && !bare) this.celebrate({ kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" });
     if (st.daily) this.dailyFinish(rec);
   }
   // Alone, when the board was not cleared: the score against the best on the board's list, without praise.
+  // Alone, the list is your own, so the score is held against your own best before this game.
+  bestSay(score, top) {
+    var line = !top || score <= 0 ? "" : score > top ? "Du slo din beste på brettet (" + top + " p)." : score === top ? "Like din beste på brettet (" + top + " p)." :
+      Math.round(100 * score / top) + " % av din beste på brettet (" + top + " p).";
+    return line ? { head: "", line: line } : null;
+  }
   praiseSay(score, board) {
     var top = (board || []).reduce(function (m, r) { return Math.max(m, r.score || 0); }, 0);
     var line = !top || score <= 0 ? "" : score > top ? "Du slo toppscoren på brettet (" + top + " p)." : score === top ? "Like toppscoren på brettet (" + top + " p)." :
@@ -1527,10 +1534,10 @@ class Component extends DCLogic {
     this.setState({ celeb: Object.assign({ at: Date.now() }, c) });
     if (c.kind === "cheer") for (var i = 1; i <= 24; i++) this.timers.push(setTimeout(function () { self.setState({}); }, i * 100));
   }
-  async submit() {
-    var st = this.state, rec = st.played, name = (st.name || "").trim();
-    if (!rec || !name || rec.duel) return;
-    lsSet(NAME_KEY, name);
+  // A game alone keeps your best on this board by itself; the list is this phone's, so no name is asked for.
+  async saveBest() {
+    var st = this.state, rec = st.played, name = (st.account && st.account.name) || (st.name || "").trim() || "Du";
+    if (!rec || rec.duel || rec.score <= 0) return;
     var row = { name: name, score: rec.score, words: rec.words, best: rec.best ? rec.best.w : "", at: new Date().toISOString() };
     var mine = st.board.filter(function (r) { return (st.uid && r.id === st.uid) || r.id === "me"; })[0];
     if (mine && mine.score >= rec.score) { this.setState({ submitted: true, msg: "" }); return; }
@@ -2217,22 +2224,18 @@ class Component extends DCLogic {
       }
       v.score = rec.score;
       v.doneSub = (rec.timeUp ? "Tiden gikk ut · " : "") + rec.words + " ord · " + (rec.left ? rec.left + " brikker ble liggende" + (rec.pen ? " (−" + rec.pen + " p)" : "") : rec.bare ? "brettet tomt, ikke ryddet med et ord" : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
-      v.praise = rec.left || rec.bare ? this.praiseSay(rec.score, (st.daily ? (st.dailyTop ? st.dailyTop.top : []) : st.board)) : null;
-      v.askName = !st.submitted && !!st.played;
-      v.nameVal = st.name; v.onName = function (e) { self.state.name = e.target.value; self.setState({}); };
-      v.submitOff = !(st.name || "").trim();
-      v.submitScore = function () { self.submit(); };
+      v.praise = !(rec.left || rec.bare) ? null : st.daily ? this.praiseSay(rec.score, st.dailyTop ? st.dailyTop.top : []) : this.bestSay(rec.score, rec.top);
       v.board = st.board.map(function (r, i) {
         var mine = (st.uid && r.id === st.uid) || r.id === "me";
         return { rank: i + 1, name: r.name || "Ukjent", score: r.score, detail: r.words + " ord" + (r.best ? " · «" + r.best + "»" : ""), cls: mine ? "lrow me" : "lrow" };
       });
       v.boardEmpty = st.board.length === 0;
       v.boardSay = st.boardSrc === "db" ? "delt mellom alle som spiller" : st.boardSrc === "local" ? "bare denne telefonen" : "kobler til …";
-      v.again = function () { self.setState(self.fresh(self.state.lay, "Samme brett, nytt forsøk. Bare en ny personlig rekord sendes inn.", 0, self.state.lang)); };
+      v.again = function () { self.setState(self.fresh(self.state.lay, "Samme brett, nytt forsøk. Bare en ny personlig rekord lagres.", 0, self.state.lang)); };
       v.againLabel = "Spill igjen";
       if (st.daily) {
         var dt = st.dailyTop, dd2 = dailyDone(), streak2 = streakOf(dd2);
-        v.isDaily = true; v.askName = false;
+        v.isDaily = true;
         v.lname = "Dagens brett";
         v.dailySay = (st.dailyFirst === false ? "Dette forsøket teller ikke; det første i dag gjør. " : "") + (streak2 ? streak2 + (streak2 === 1 ? " dag" : " dager") + " på rad." : "");
         v.boardSay = dt ? dt.count + " har spilt i dag" + (dt.rank ? " · du er nr. " + dt.rank : "") : st.account ? (st.dailyErr ? "Ikke sendt ennå. Sendes når du har nett." : "henter dagens liste …") : "velg brukernavn for å komme på dagens liste";

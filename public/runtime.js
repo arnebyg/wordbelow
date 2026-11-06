@@ -74,9 +74,6 @@ var App = (function () {
     (v.praise ? '<span class="praise"' + (v.cheerAge !== null ? ' style="animation-delay:' + (900 - v.cheerAge) + 'ms"' : ' data-still="1"') + '>' + (v.praise.head ? '<b>' + esc(v.praise.head) + '</b>' : '') + (v.praise.line ? '<span>' + esc(v.praise.line) + '</span>' : '') + '</span>' : '') +
     '<span class="sub">' + esc(v.doneSub) + '</span>' +
   '</div>' +
-  (v.askName ? '<div class="namebox"><label for="nm">Navn på topplista</label><div class="namerow">' +
-    '<input id="nm" class="inp" type="text" maxlength="20" autocomplete="nickname" value="' + esc(v.nameVal) + '" data-input="onName">' +
-    '<button type="button" class="act green"' + (v.submitOff ? ' disabled' : '') + on(v.submitScore) + '>Send inn</button></div></div>' : '') +
   (v.duelRows ? '<div class="lb"><div class="lblist">' + each(v.duelRows, function (r) {
     return '<div class="' + r.cls + '"><span class="rk-n"></span><span class="who"><span class="nm" translate="no">' + esc(r.name) + '</span><span class="det">' + esc(r.detail) + '</span></span><span class="sc">' + esc(r.score) + '</span></div>';
   }) + '</div></div>' :
