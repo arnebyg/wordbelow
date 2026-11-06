@@ -81,9 +81,9 @@ var App = (function () {
     return '<div class="' + r.cls + '"><span class="rk-n"></span><span class="who"><span class="nm" translate="no">' + esc(r.name) + '</span><span class="det">' + esc(r.detail) + '</span></span><span class="sc">' + esc(r.score) + '</span></div>';
   }) + '</div></div>' :
   '<div class="lb">' +
-    '<div class="lbhead"><h2>' + (v.isDaily ? 'Dagens liste' : 'Toppliste · ' + esc(v.lname)) + '</h2><span>' + esc(v.isDaily ? v.boardSay : 'bare denne telefonen') + '</span></div>' +
+    '<div class="lbhead"><h2>' + (v.isDaily ? 'Dagens liste' : 'Din beste · ' + esc(v.lname)) + '</h2><span>' + esc(v.isDaily ? v.boardSay : 'bare denne telefonen') + '</span></div>' +
     '<div class="lblist">' +
-      (v.boardEmpty ? '<span class="empty">Ingen har levert på dette brettet ennå. Du kan bli først.</span>' : '') +
+      (v.boardEmpty ? '<span class="empty">' + (v.isDaily ? 'Ingen har spilt i dag ennå.' : 'Du har ikke levert på dette brettet ennå.') + '</span>' : '') +
       each(v.board, function (b) {
         return '<div class="' + b.cls + '"><span class="rk-n">' + esc(b.rank) + '</span><span class="who"><span class="nm">' + esc(b.name) + '</span><span class="det">' + esc(b.detail) + '</span></span><span class="sc">' + esc(b.score) + '</span></div>';
       }) +
@@ -153,9 +153,9 @@ var App = (function () {
         '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button></span></div>' +
       '<div class="scroll">' +
       (v.homeMsg ? '<div class="note"' + (v.closeHomeMsg ? ' role="button" aria-label="Lukk meldingen"' + on(v.closeHomeMsg) : '') + '>' + esc(v.homeMsg) + (v.cancelAsk ? '<div class="cbtns"><button type="button" class="pill small"' + on(v.cancelAsk) + '>Avbryt</button></div>' : '') + '</div>' : '') +
-      '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="dtxt"><span class="dk">Dagens brett · ' + IC.fire + esc(v.daily.streakSay) + '</span>' +
+      '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="drow"><div class="dtxt"><span class="dk">Dagens brett · ' + IC.fire + esc(v.daily.streakSay) + '</span>' +
         '<span class="dn">' + esc(v.daily.name) + '<small>' + esc(v.daily.line) + '</small></span></div>' +
-        (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Spill</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div>' +
+        (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Spill</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div><button type="button" class="dsee"' + on(v.daily.list) + '>Se listen ›</button></div>' +
       (v.offers.length ? '<h2 class="sec">Utfordringer</h2><div class="group">' + each(v.offers, function (o) {
         return '<div class="opt offer">' + av(o.initial, o.pic) + '<span class="ot"><span class="t">' + esc(o.who) + '</span><span class="s">' + esc(o.line) + '</span></span><button type="button" class="pill small"' + on(o.no) + '>Avslå</button><button type="button" class="act green go"' + on(o.yes) + '>Godta</button></div>';
       }) + '</div>' : '') +
@@ -399,6 +399,22 @@ var App = (function () {
       (v.delMsg ? '<div class="note">' + esc(v.delMsg) + '</div>' : '') +
       '</div></div>';
   }
+  function dailyListView(v) {
+    return '<div class="screen sub">' + head('Dagens liste', v.back) + '<div class="scroll">' +
+      '<div class="lb"><div class="lbhead"><h2 translate="no">' + esc(v.dlName) + '</h2><span>' + esc(v.dlSay) + '</span></div>' +
+      (v.dlPending ? '<div class="note">Ikke sendt ennå. Sendes når du har nett.</div>' : '') +
+      '<div class="lblist">' +
+        (v.dlErr ? '<span class="empty">Får ikke kontakt med serveren. Er du på nett?</span>' : '') +
+        (v.dlEmpty ? '<span class="empty">Ingen har spilt i dag ennå.</span>' : '') +
+        each(v.board, function (b) {
+          return '<div class="' + b.cls + '"><span class="rk-n">' + esc(b.rank) + '</span><span class="who"><span class="nm" translate="no">' + esc(b.name) + '</span>' + (b.detail ? '<span class="det">' + esc(b.detail) + '</span>' : '') + '</span><span class="sc">' + esc(b.score) + '</span></div>';
+        }) +
+      '</div></div>' +
+      (v.dlHidden ? '<p class="fine dsay">Ordene vises når du har spilt.</p>' : '') +
+      (v.dlAccount ? '<button type="button" class="act grey wide"' + on(v.dlAccount) + '>velg brukernavn for å komme på dagens liste</button>' : '') +
+      (v.dlPlay ? '<button type="button" class="act gold wide"' + on(v.dlPlay) + '>Spill</button>' : '') +
+      '</div></div>';
+  }
   function statsView(v) {
     var rows = function (list) { return '<div class="group statg">' + each(list, function (r) { return '<div class="srow"><span>' + esc(r.k) + '</span><b>' + esc(r.v) + '</b></div>'; }) + '</div>'; };
     var c = v.chart;
@@ -453,7 +469,7 @@ var App = (function () {
     view.querySelectorAll("[data-keep]").forEach(function (el) { keep[el.getAttribute("data-keep")] = el.scrollLeft; });
     H = [];
     var v = comp.renderVals();
-    var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, play: playView, done: doneView };
+    var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, dailylist: dailyListView, play: playView, done: doneView };
     var html = (V[v.phase] || homeView)(v) + (v.phase === "done" && v.win ? winView(v) : "") + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "") + (v.offerAsk && v.phase === "home" ? offerView(v) : "") + (v.lookup ? lookupView(v) : "");
     if (window.trHtml) html = trHtml(html);
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.

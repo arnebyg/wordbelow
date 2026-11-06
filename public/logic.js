@@ -764,6 +764,8 @@ class Component extends DCLogic {
     this.poll = setInterval(function () { self.tick(); }, 5000);
     this.clock = setInterval(function () { self.soloTick(); }, 1000);
     document.addEventListener("visibilitychange", function () { if (!document.hidden) self.tick(true); });
+    window.addEventListener("online", function () { self.dailyFlush(); });
+    this.dailyFlush();
   }
   // A message on the home screen goes by itself after 8 seconds, unless it is asking something (give up – sure?).
   setState(o) {
@@ -785,6 +787,7 @@ class Component extends DCLogic {
     if (document.hidden) return;
     var st = this.state;
     this.ticks = (this.ticks || 0) + 1;
+    if (now || this.ticks % 4 === 0) this.dailyFlush();
     if (st.phase === "home" && (now || this.ticks % 4 === 0)) this.refreshGames();
     // On your own turn too, every 15 s, so reactions and messages arrive.
     if ((st.phase === "play" || st.phase === "done") && st.online && (now || st.online.status === "waiting" || (st.phase === "play" && st.turn !== st.online.you) || this.ticks % 3 === 0)) this.loadOnline(st.online.id, true);
@@ -953,6 +956,7 @@ class Component extends DCLogic {
       lsSet(ACCOUNT_KEY, d);
       var after = self.state.after;
       self.setState({ account: d, acctMsg: "", after: null, phase: "home" });
+      self.dailyFlush();
       if (after === "join") self.joinCode(); else if (after === "invite") self.invite(); else if (after === "random") self.random();
       else if (after === "find") self.setState({ phase: "find" }); else if (after === "friends") self.openFriends();
       self.refreshGames();
@@ -1248,9 +1252,33 @@ class Component extends DCLogic {
     var self = this, st = this.state, key = st.daily, all = dailyDone();
     if (!key) return;
     var first = !all[key];
-    if (first) { all[key] = { score: rec.score, words: st.words, left: rec.left, bare: !!rec.bare, lay: st.lay, at: Date.now() }; lsSet(DAILY_KEY, all); }
-    this.setState({ dailyTop: null, dailyFirst: first });
-    if (st.account) api("/daily/" + key, first ? { method: "POST", body: { score: rec.score, words: st.words.length, best: rec.best ? rec.best.w : "", left: rec.left } } : {}).then(function (d) { self.setState({ dailyTop: d }); }, function () {});
+    if (first) { all[key] = { score: rec.score, words: st.words, best: rec.best ? rec.best.w : "", left: rec.left, bare: !!rec.bare, lay: st.lay, at: Date.now() }; lsSet(DAILY_KEY, all); }
+    this.setState({ dailyTop: null, dailyFirst: first, dailyErr: false });
+    if (st.account) this.dailyLoad(key);
+  }
+  // Today's list from the server. A first attempt the server has not got yet goes with it: sent names the account
+  // that delivered it, so a score played before there was an account, or while offline, still counts that day.
+  // The server keeps the first score it gets for a day and account, so sending twice changes nothing.
+  dailyLoad(key) {
+    var self = this, acc = this.state.account, all = dailyDone(), r = all[key], pend = !!(acc && r && r.sent !== acc.id);
+    if (pend && this.dailyBusy) return;
+    if (pend) this.dailyBusy = true;
+    return api("/daily/" + key, pend ? { method: "POST", body: { score: r.score, words: (r.words || []).length, best: r.best || "", left: r.left } } : {}).then(function (d) {
+      if (pend) { self.dailyBusy = false; var a = dailyDone(); if (a[key]) { a[key].sent = acc.id; lsSet(DAILY_KEY, a); } }
+      self.setState({ dailyTop: d, dailyErr: false });
+    }, function () { if (pend) self.dailyBusy = false; self.setState({ dailyErr: true }); });
+  }
+  // Tried again as the app runs and after a username is chosen; only today's, as the list is the day's.
+  dailyFlush() {
+    var acc = this.state.account, key = dayKey(), r = dailyDone()[key];
+    if (acc && r && r.sent !== acc.id && !this.dailyBusy) this.dailyLoad(key);
+  }
+  // The list on its own, without playing. Without an account: the public five, names and scores only.
+  openDailyList() {
+    var self = this, key = dayKey();
+    this.setState({ phase: "dailylist", dailyTop: null, dailyPub: null, dailyErr: false });
+    if (this.state.account) this.dailyLoad(key);
+    else api("/public/daily/" + key).then(function (d) { self.setState({ dailyPub: d, dailyErr: false }); }, function () { self.setState({ dailyErr: true }); });
   }
   shareDaily() {
     var key = this.state.daily || dayKey(), r = dailyDone()[key], D = dailyOf(key);
@@ -1695,7 +1723,7 @@ class Component extends DCLogic {
       v.daily = { name: D.name, done: !!today, score: today ? today.score : null, streak: streak,
         line: today ? today.score + " poeng · " + (today.words || []).length + " ord" + (today.left || today.bare ? "" : " · ryddet") : "Samme bokstaver for alle i dag",
         streakSay: streak ? streak + (streak === 1 ? " dag" : " dager") + " på rad" : "Start en rekke i dag",
-        play: function () { self.startDaily(); }, share: function () { self.shareDaily(); } };
+        play: function () { self.startDaily(); }, share: function () { self.shareDaily(); }, list: function () { self.openDailyList(); } };
       v.cancelAsk = st.homeAskCancel && st.cardAsk ? function () { self.setState({ cardAsk: null, homeMsg: "", homeAskCancel: false }); } : null;
       if (st.offerAsk) {
         var og = st.offerAsk, oL = LAYOUTS.filter(function (x) { return x.id === og.layout; })[0] || EXTRA[og.layout];
@@ -1945,6 +1973,21 @@ class Component extends DCLogic {
       v.back = function () { self.setState({ pushMsg: "" }); self.goHome(); };
       return v;
     }
+    if (st.phase === "dailylist") {
+      // Words give the board's letters away, so someone who has not played today sees names and scores only.
+      var dlD = dailyOf(dayKey()), dlMine = dailyDone()[dlD.key], dl = st.account ? st.dailyTop : st.dailyPub;
+      v.dlName = dlD.name;
+      v.dlSay = dl ? dl.count + " har spilt i dag" + (dl.rank ? " · du er nr. " + dl.rank : "") : st.dailyErr ? "" : "henter dagens liste …";
+      v.dlErr = !dl && !!st.dailyErr;
+      v.dlPending = !!(st.account && dlMine && dlMine.sent !== st.account.id);
+      v.dlEmpty = !!dl && dl.top.length === 0;
+      v.board = dl ? dl.top.map(function (r, i) { return { rank: i + 1, name: r.name, score: r.score, detail: dlMine && r.words !== undefined ? r.words + " ord" + (r.best ? " · «" + r.best + "»" : "") + (r.left ? "" : " · ryddet") : "", cls: r.me ? "lrow me" : "lrow" }; }) : [];
+      v.dlHidden = !dlMine && !!dl && dl.top.length > 0 && !!st.account;
+      v.dlAccount = !st.account ? function () { self.setState({ phase: "account", after: null }); } : null;
+      v.dlPlay = dlMine ? null : function () { self.startDaily(); };
+      v.back = function () { self.goHome(); };
+      return v;
+    }
     if (st.phase === "stats") {
       var all = lsGet(STATS_KEY) || [], sm = st.statMode || "all", sl = st.statLay || "all", srv = st.srvStats;
       var R = all.filter(function (x) { return (sm === "all" || x.mode === sm) && (sl === "all" || x.lay === sl); });
@@ -2192,7 +2235,7 @@ class Component extends DCLogic {
         v.isDaily = true; v.askName = false;
         v.lname = "Dagens brett";
         v.dailySay = (st.dailyFirst === false ? "Dette forsøket teller ikke; det første i dag gjør. " : "") + (streak2 ? streak2 + (streak2 === 1 ? " dag" : " dager") + " på rad." : "");
-        v.boardSay = dt ? dt.count + " har spilt i dag" + (dt.rank ? " · du er nr. " + dt.rank : "") : st.account ? "henter dagens liste …" : "velg brukernavn for å komme på dagens liste";
+        v.boardSay = dt ? dt.count + " har spilt i dag" + (dt.rank ? " · du er nr. " + dt.rank : "") : st.account ? (st.dailyErr ? "Ikke sendt ennå. Sendes når du har nett." : "henter dagens liste …") : "velg brukernavn for å komme på dagens liste";
         v.board = dt ? dt.top.map(function (r, i) { return { rank: i + 1, name: r.name, score: r.score, detail: r.words + " ord" + (r.best ? " · «" + r.best + "»" : "") + (r.left ? "" : " · ryddet"), cls: r.me ? "lrow me" : "lrow" }; }) : [];
         v.boardEmpty = !!dt && dt.top.length === 0;
         v.share = function () { self.shareDaily(); };
