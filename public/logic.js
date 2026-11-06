@@ -483,7 +483,8 @@ function dealRamp(S, R) {
   });
   return m;
 }
-// The same layout always deals the same letters; an online game adds its own seed so each game is new.
+// A seed gives the letters: an online game and today's board carry their own, and a game on this phone gets a new one
+// each time (fresh). The same layout and seed always deal the same letters.
 function genBoard(S, seed) {
   var R = rng(strSeed("klassiker/" + S.L.id + (seed ? "/" + seed : "")));
   var kind = kindOf(S.L), letters = kind === "tall" ? dealTall(S, R) : kind === "sett" ? dealSett(S, R) : S.L.grp === "tight" || S.L.grp === "daily" ? deal(S, R) : dealRamp(S, R), b = {};
@@ -716,6 +717,7 @@ class Component extends DCLogic {
     var f = this.freshRaw(id, msg, seed, lang); if (!msg) f.introMsg = f.msg; return f;
   }
   freshRaw(id, msg, seed, lang) {
+    if (seed === undefined || seed === null) seed = 1 + Math.floor(Math.random() * 1e9);
     useLang(lang || langPref());
     var S = layoutOf(id), g = genBoard(S, seed), duel = this.state && this.state.mode === "duel", self = this, c = LANG;
     if (kindOf(S.L) === "ord" && !DICT && !LANGS[c].failed) loadDict(function (ok) {
@@ -2231,7 +2233,7 @@ class Component extends DCLogic {
       });
       v.boardEmpty = st.board.length === 0;
       v.boardSay = st.boardSrc === "db" ? "delt mellom alle som spiller" : st.boardSrc === "local" ? "bare denne telefonen" : "kobler til …";
-      v.again = function () { self.setState(self.fresh(self.state.lay, "Samme brett, nytt forsøk. Bare en ny personlig rekord lagres.", 0, self.state.lang)); };
+      v.again = function () { self.setState(self.fresh(self.state.lay, "Samme brett, nye bokstaver. Bare en ny personlig rekord lagres.", undefined, self.state.lang)); };
       v.againLabel = "Spill igjen";
       if (st.daily) {
         var dt = st.dailyTop, dd2 = dailyDone(), streak2 = streakOf(dd2);

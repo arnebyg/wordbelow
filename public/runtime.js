@@ -93,7 +93,7 @@ var App = (function () {
     '<button type="button" class="act grey wide"' + on(v.toPicker) + '>' + esc(v.pickerLabel) + '</button>' +
     '<button type="button" class="act gold grow"' + on(v.again) + '>' + esc(v.againLabel) + '</button>' +
   '</div>' +
-  '<span class="foot">Hvert brett har faste bokstaver.</span>' +
+  '<span class="foot">' + (v.isDaily ? 'Alle spiller de samme bokstavene i dag.' : 'Nye bokstaver hver gang.') + '</span>' +
 '</div>';
   }
 
