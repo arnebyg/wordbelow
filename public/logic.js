@@ -1748,7 +1748,7 @@ class Component extends DCLogic {
         { id: "random", grp: "on", name: "Tilfeldig", go: "Finn en motspiller", say: "Venter noen på et annet brett, spør appen før dere starter.", run: function () { self.random(); } },
         { id: "code", grp: "on", name: "Har kode", go: "Bli med", say: "Skriv koden du har fått: en invitasjon til et spill, eller et brett noen har delt.", run: function () { self.joinCode(); } },
         { id: "local", grp: "off", name: "Én telefon", go: "Start på én telefon", say: "Send telefonen over bordet etter hvert trekk.", run: function () { self.start("duel", "local"); } },
-        { id: "solo", grp: "off", name: "Alene", go: "Spill alene", say: "Så mange poeng du kan, toppliste per brett.", run: function () { self.start("solo"); } }
+        { id: "solo", grp: "off", name: "Alene", go: "Spill alene", say: "Så mange poeng du kan, din beste per brett.", run: function () { self.start("solo"); } }
       ];
       var P = PICKS.filter(function (p) { return p.id === st.pick; })[0] || PICKS[0];
       v.pick = P.id; v.pickSay = P.id === "cpu" ? null : P.say; v.goLabel = P.id === "code" ? (st.codePeek && st.codePeek.code === (st.codeIn || "").trim() ? "Bli med" : "Se invitasjonen") : P.go + " · " + S.L.name; v.go = P.run;
@@ -1760,7 +1760,7 @@ class Component extends DCLogic {
       // Two tabs as in proposal C, each remembering its last pick.
       var choose = function (id) { var by = Object.assign({}, st.pickBy); PICKS.forEach(function (p) { if (p.id === id) by[p.grp] = id; }); lsSet(PICK_KEY, id); lsSet(PICK_BY_KEY, by); self.setState({ pick: id, pickBy: by, ngMsg: "" }); };
       // The six ways to start, as letter tiles (Meny-A), each with its letter's value in the Norwegian bag. The machine's level shows under them when M is chosen.
-      var TILE = { cpu: ["M", 2, "Lett til sterk"], random: ["T", 1, "Finn en motspiller"], solo: ["A", 1, "Toppliste per brett"],
+      var TILE = { cpu: ["M", 2, "Lett til sterk"], random: ["T", 1, "Finn en motspiller"], solo: ["A", 1, "Din beste per brett"],
         friend: ["V", 4, "Velg eller inviter"], local: ["E", 1, "Over bordet"], code: ["K", 2, "Bli med i et spill"] };
       // In another language the tile carries the first letter of the mode's name there, and its value in that language's bag.
       var TILE_L = { en: { cpu: "C", random: "R", solo: "S", friend: "F", local: "O", code: "H" },
