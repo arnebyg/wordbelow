@@ -547,10 +547,17 @@ var App = (function () {
   function fit() {
     if (!probe) {
       probe = document.createElement("div");
-      probe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)";
+      probe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)";
       document.body.appendChild(probe);
+      // The insets can arrive after the first layout, or change without a resize (the first start in the iPhone
+      // Duo simulator laid the page out with no home-bar inset, and the banner covered the big button).
+      // The probe's size is its padding, so a change in any inset resizes it.
+      if (window.ResizeObserver) new ResizeObserver(function () { fit(); }).observe(probe, { box: "border-box" });
     }
     var cs = getComputedStyle(probe), top = parseFloat(cs.paddingTop) || 0, bot = parseFloat(cs.paddingBottom) || 0;
+    // Left and right: the iPhone Duo's outer screen keeps its status bar and camera in a band down the right side
+    // (84 pt), and nothing of the game may lie under it.
+    var lft = parseFloat(cs.paddingLeft) || 0, rgt = parseFloat(cs.paddingRight) || 0;
     // The game is 390 wide and as tall as the screen allows: it fills the width of a phone, and the board
     // takes whatever height is left. Only a short, wide window (a tablet, a phone on its side) caps it at 640.
     // The background runs under the status bar and the home bar; the content keeps clear of both, and of the
@@ -565,7 +572,7 @@ var App = (function () {
     // shrink to a narrow column while one types. Only the room above the keyboard gets shorter, and it scrolls.
     var ae = document.activeElement, typing = !!ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA" || ae.isContentEditable);
     if (w !== fullW) { fullW = w; fullH = h; } else if (!typing || h > fullH) fullH = h;
-    var s = Math.min(w / 390, ((typing ? Math.max(h, fullH) : h) - top - bot) / 640), H = Math.floor(h / s);
+    var s = Math.min((w - lft - rgt) / 390, ((typing ? Math.max(h, fullH) : h) - top - bot) / 640), H = Math.floor(h / s);
     // iOS 26 draws a Liquid Glass blur over the top of an installed web app, about 38–40 pt below the status bar;
     // nothing in the page turns it off, so the content starts below it (24 pt was too little).
     // The iPhone app (native.js) has no such blur, so it starts right below the status bar.
@@ -575,7 +582,7 @@ var App = (function () {
     root.style.setProperty("--sb", Math.round(bot / s) + "px");
     root.style.setProperty("--sbar", Math.round(top / s) + "px");
     root.classList.toggle("edge", EDGE > 0);
-    var x = Math.round(Math.max(0, (w - 390 * s) / 2)), y = 0;
+    var x = Math.round(lft + Math.max(0, (w - lft - rgt - 390 * s) / 2)), y = 0;
     scaleNow = s;
     // zoom lays the page out again at the new size, so text is drawn sharp; a transform shrinks a picture of it,
     // and Safari showed the part above the scrolling list blurred. A zoomed element's own left and top are zoomed too.

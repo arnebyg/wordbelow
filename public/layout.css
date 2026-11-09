@@ -320,10 +320,10 @@ body{position:fixed;inset:0}
 html.native .adslot{visibility:hidden}
 .adslot{width:320px;height:50px;display:flex;align-items:center;justify-content:center;font-size:13px;border:1.5px dashed rgba(60,45,20,.25);box-sizing:border-box}
 .adtag{position:absolute;left:6px;top:3px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7A8682}
-#adfull{position:fixed;inset:0;z-index:9000;background:#101614;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(env(safe-area-inset-top,0px) + 56px) 16px calc(env(safe-area-inset-bottom,0px) + 8px);font-family:'Bricolage Grotesque',sans-serif}
-#adfull .adtag{left:16px;top:calc(env(safe-area-inset-top,0px) + 18px);color:#A9B5B1}
+#adfull{position:fixed;inset:0;z-index:9000;background:#101614;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:calc(env(safe-area-inset-top,0px) + 56px) calc(env(safe-area-inset-right,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 8px) calc(env(safe-area-inset-left,0px) + 16px);font-family:'Bricolage Grotesque',sans-serif}
+#adfull .adtag{left:calc(env(safe-area-inset-left,0px) + 16px);top:calc(env(safe-area-inset-top,0px) + 18px);color:#A9B5B1}
 .adslot.big{width:100%;flex:1;max-height:75%;border-color:rgba(255,255,255,.25);color:#A9B5B1;font-size:16px;border-radius:12px}
-.adclose{position:absolute;right:12px;top:calc(env(safe-area-inset-top,0px) + 6px);width:44px;height:44px;border-radius:22px;border:0;background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;animation:adclose 0s 5s forwards;cursor:pointer}
+.adclose{position:absolute;right:calc(env(safe-area-inset-right,0px) + 12px);top:calc(env(safe-area-inset-top,0px) + 6px);width:44px;height:44px;border-radius:22px;border:0;background:rgba(255,255,255,.14);color:#fff;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;animation:adclose 0s 5s forwards;cursor:pointer}
 @keyframes adclose{to{opacity:1;pointer-events:auto}}
 .adprem{border:0;background:transparent;color:#F2C46B;font-family:inherit;font-size:15px;font-weight:700;padding:10px;cursor:pointer}
 .card.prem{background:#F2C46B;color:#3B2405}
