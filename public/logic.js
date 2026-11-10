@@ -1292,7 +1292,7 @@ class Component extends DCLogic {
     if (!r) return;
     var longest = (r.words || []).reduce(function (b, w) { return Math.max(b, w.w.length); }, 0), d = key.split("-");
     var text = "WordBelow · Dagens brett " + (+d[2]) + "." + (+d[1]) + ". · " + D.name + "\n" + r.score + " poeng · " + (r.words || []).length + " ord · " + (longest ? "lengste " + longest + " bokstaver · " : "") +
-      (r.left ? r.left + " brikker igjen" : r.bare ? "brettet tomt, ikke ryddet" : "brettet ryddet") + "\n" + ((r.words || []).length ? shareGrid(r.words) + "\n" + SHARE_KEY + "\n" : "") + (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname);
+      (r.left ? r.left + (r.left === 1 ? " brikke igjen" : " brikker igjen") : r.bare ? "brettet tomt, ikke ryddet" : "brettet ryddet") + "\n" + ((r.words || []).length ? shareGrid(r.words) + "\n" + SHARE_KEY + "\n" : "") + (window.WB_NATIVE ? "https://wordbelow.app/" : location.origin + location.pathname);
     var self = this;
     if (navigator.share) navigator.share({ text: tr(text) }).catch(function () {});
     else if (navigator.clipboard) navigator.clipboard.writeText(tr(text)).then(function () { self.setState({ toastNote: "Resultatet er kopiert. Lim det inn der du vil dele det." }); }, function () {});
@@ -2190,7 +2190,7 @@ class Component extends DCLogic {
         if (duel) { if (!locked) self.pass(); return; }
         if (!self.state.finishAsk) {
           var n = Object.keys(self.live()).length;
-          self.setState({ finishAsk: true, tone: "info", msg: "Trykk én gang til for å avslutte." + (n ? " " + n + " brikker ligger igjen og trekkes fra." : "") });
+          self.setState({ finishAsk: true, tone: "info", msg: "Trykk én gang til for å avslutte." + (n ? " " + n + (n === 1 ? " brikke ligger igjen og trekkes fra." : " brikker ligger igjen og trekkes fra.") : "") });
           clearTimeout(self.finishT); self.finishT = setTimeout(function () { if (self.state.finishAsk) self.setState({ finishAsk: false }); }, 5000);
           return;
         }
@@ -2217,7 +2217,7 @@ class Component extends DCLogic {
         v.doneSub = (rec.timeout !== undefined ? (rec.timeout === you ? "Du brukte mer enn 72 timer" : nm[rec.timeout] + " brukte mer enn 72 timer") + " · " : rec.resigned !== undefined ? (rec.resigned === you ? "Du ga opp" : nm[rec.resigned] + " ga opp") + " · " : "") +
           (win < 0 ? "Uavgjort" : online ? (win === you ? "Du vant mot " + st.online.oppName : st.online.oppName + " vant") :
             st.opp === "cpu" ? (win === 0 ? "Du vant mot maskinen (" + this.diffName() + ")" : "Maskinen (" + this.diffName() + ") vant") : nm[win] + " vant") +
-          " · " + (rec.left ? rec.left + " brikker ble liggende" : rec.bare ? "brettet tomt, ikke ryddet med et ord" : "brettet ryddet");
+          " · " + (rec.left ? rec.left + (rec.left === 1 ? " brikke ble liggende" : " brikker ble liggende") : rec.bare ? "brettet tomt, ikke ryddet med et ord" : "brettet ryddet");
         var ord = online && you === 1 ? [1, 0] : [0, 1];
         v.duelRows = ord.map(function (i) {
           var x = r[i];
@@ -2232,7 +2232,7 @@ class Component extends DCLogic {
         return v;
       }
       v.score = rec.score;
-      v.doneSub = (rec.timeUp ? "Tiden gikk ut · " : "") + rec.words + " ord · " + (rec.left ? rec.left + " brikker ble liggende" + (rec.pen ? " (−" + rec.pen + " p)" : "") : rec.bare ? "brettet tomt, ikke ryddet med et ord" : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
+      v.doneSub = (rec.timeUp ? "Tiden gikk ut · " : "") + rec.words + " ord · " + (rec.left ? rec.left + (rec.left === 1 ? " brikke ble liggende" : " brikker ble liggende") + (rec.pen ? " (−" + rec.pen + " p)" : "") : rec.bare ? "brettet tomt, ikke ryddet med et ord" : "brettet ryddet") + (rec.best ? " · beste «" + rec.best.w + "» " + rec.best.pts + " p" : "");
       v.praise = !(rec.left || rec.bare) ? null : st.daily ? this.praiseSay(rec.score, st.dailyTop ? st.dailyTop.top : []) : this.bestSay(rec.score, rec.top);
       v.board = st.board.map(function (r, i) {
         var mine = (st.uid && r.id === st.uid) || r.id === "me";

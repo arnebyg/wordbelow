@@ -787,5 +787,10 @@
 "Skriv koden du har fått: en invitasjon til et spill, eller et brett noen har delt.": "Escribe el código que te han dado: una invitación a una partida o un tablero que alguien ha compartido.",
 "Klokka sto mens du var borte.": "El reloj se detuvo mientras no estabas.",
 "ryddet brettet +20": "vació el tablero +20",
-"+50 alene, +20 i duell": "+50 solo, +20 en duelo"
+"+50 alene, +20 i duell": "+50 solo, +20 en duelo",
+"1 ord": "1 palabra",
+"1 poeng": "1 punto",
+"brikke igjen": "ficha restante",
+"brikke ble liggende": "ficha quedó",
+"brikke ligger igjen og trekkes fra.": "ficha queda y se resta."
 }

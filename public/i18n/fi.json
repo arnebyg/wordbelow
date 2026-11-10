@@ -787,5 +787,10 @@
 "Skriv koden du har fått: en invitasjon til et spill, eller et brett noen har delt.": "Kirjoita saamasi koodi: kutsu peliin tai jonkun jakama lauta.",
 "Klokka sto mens du var borte.": "Kello oli pysähdyksissä, kun olit poissa.",
 "ryddet brettet +20": "tyhjensi laudan +20",
-"+50 alene, +20 i duell": "+50 yksin, +20 kaksinpelissä"
+"+50 alene, +20 i duell": "+50 yksin, +20 kaksinpelissä",
+"1 ord": "1 sana",
+"1 poeng": "1 piste",
+"brikke igjen": "laatta jäljellä",
+"brikke ble liggende": "laatta jäi",
+"brikke ligger igjen og trekkes fra.": "laatta jää jäljelle ja vähennetään."
 }

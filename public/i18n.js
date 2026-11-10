@@ -33,8 +33,13 @@ function tr(s) {
   else {
     out = I18N.re ? s.replace(I18N.re, function (k, at) {
       if (LETTER.test(k[0]) && at > 0 && LETTER.test(s[at - 1])) return k;
+      // "1 ord" inside "11 ord": the 1 stays, the rest is translated as usual.
+      if (/\d/.test(k[0]) && at > 0 && /[\d.,]/.test(s[at - 1])) return k[0] + tr(k.slice(1));
       var end = at + k.length;
       if (LETTER.test(k[k.length - 1]) && end < s.length && LETTER.test(s[end])) return k;
+      // After the number 1 a count word takes its singular, where the catalogue has one ("1 ord": "1 word").
+      var one = I18N.cat["1 " + k];
+      if (one && /(^|[^\d.,])1 $/.test(s.slice(Math.max(0, at - 3), at))) return one.replace(/^1 /, "");
       return I18N.cat[k];
     }) : s;
     if (/[æøå]| (og|er|på|som|ikke|det|du|har|til|med) /.test(out)) I18N.missing.add(core);

@@ -787,5 +787,10 @@
 "Skriv koden du har fått: en invitasjon til et spill, eller et brett noen har delt.": "Type the code you were given: an invitation to a game, or a board someone has shared.",
 "Klokka sto mens du var borte.": "The clock stood still while you were away.",
 "ryddet brettet +20": "cleared the board +20",
-"+50 alene, +20 i duell": "+50 alone, +20 in a duel"
+"+50 alene, +20 i duell": "+50 alone, +20 in a duel",
+"1 ord": "1 word",
+"1 poeng": "1 point",
+"brikke igjen": "tile left",
+"brikke ble liggende": "tile was left",
+"brikke ligger igjen og trekkes fra.": "tile is left and counts against you."
 }

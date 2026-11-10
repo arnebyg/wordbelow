@@ -519,6 +519,9 @@ var App = (function () {
   // A long board name in the picker (Regnestykket, Gresskaret) gets a smaller size instead of running under
   // the arrow, down to 15 px, and only then breaks inside a word. A name of several words wraps between them first.
   function fitNames() {
+    // The big button keeps its label on one line: a long one ("Play the computer · The Mountain") gets a smaller size, down to 14 px.
+    var bb = view.querySelectorAll(".bigbtn > span");
+    for (var j = 0; j < bb.length; j++) { var sp = bb[j], fs = 20; sp.style.fontSize = ""; while (sp.scrollWidth > sp.clientWidth && fs > 14) sp.style.fontSize = --fs + "px"; }
     var els = view.querySelectorAll(".pvn");
     for (var i = 0; i < els.length; i++) {
       var el = els[i], px = 24;
