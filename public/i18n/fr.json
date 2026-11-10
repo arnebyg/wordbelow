@@ -824,5 +824,22 @@
 "Ny i WordBelow?": "Nouveau sur WordBelow ?",
 "Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.": "Joue une partie d'essai sans chrono. L'app te montre chaque étape pendant que tu joues.",
 "Spill øvingsrunden": "Jouer la partie d'essai",
-"Spill øvingsrunden med veiledning": "Jouer la partie d'essai guidée"
+"Spill øvingsrunden med veiledning": "Jouer la partie d'essai guidée",
+"Tidligere dager ›": "Jours précédents ›",
+"Tidligere dager": "Jours précédents",
+"I går": "Hier",
+"Den dagen:": "Ce jour-là :",
+"Ikke spilt den dagen": "Pas joué ce jour-là",
+"din beste:": "ton record :",
+"De siste 30 dagenes brett, med de samme bokstavene som den dagen. De teller ikke på dagens liste eller i rekken.": "Les plateaux des 30 derniers jours, avec les mêmes lettres que ce jour-là. Ils ne comptent ni dans le classement du jour ni dans la série.",
+"Gårsdagens brett er gratis. Med Premium får du de siste 30 dagene.": "Le plateau d'hier est gratuit. Avec Premium, tu as les 30 derniers jours.",
+"Dagens brett fra": "Plateau du jour du",
+"Det teller ikke på listen eller i rekken; din beste på det lagres her.": "Il ne compte ni dans le classement ni dans la série ; ton record y est gardé ici.",
+"Den dagen": "Ce jour-là",
+"ditt første forsøk": "ton premier essai",
+"Fra arkivet": "Des archives",
+"din beste": "ton record",
+"De samme bokstavene som den dagen.": "Les mêmes lettres que ce jour-là.",
+"Tidligere dagsbrett": "Plateaux du jour précédents",
+"Spill dagens brett fra hver av de siste 30 dagene, så ofte du vil.": "Joue le plateau du jour de chacun des 30 derniers jours, autant que tu veux."
 }

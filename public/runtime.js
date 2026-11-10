@@ -96,7 +96,7 @@ var App = (function () {
     '<button type="button" class="act grey wide"' + on(v.toPicker) + '>' + esc(v.pickerLabel) + '</button>' +
     '<button type="button" class="act gold grow"' + on(v.again) + '>' + esc(v.againLabel) + '</button>' +
   '</div>' +
-  '<span class="foot">' + (v.isDaily ? 'Alle spiller de samme bokstavene i dag.' : 'Nye bokstaver hver gang.') + '</span>' +
+  '<span class="foot">' + (v.isDaily ? 'Alle spiller de samme bokstavene i dag.' : v.isArch ? 'De samme bokstavene som den dagen.' : 'Nye bokstaver hver gang.') + '</span>' +
 '</div>';
   }
 
@@ -156,7 +156,7 @@ var App = (function () {
       (v.tutorCard ? '<div class="card inv tutcard"><span class="ct">Ny i WordBelow?</span><span class="cs">Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.tutorCard.go) + '>Spill øvingsrunden</button><button type="button" class="pill"' + on(v.tutorCard.no) + '>Ikke nå</button></div></div>' : '') +
       '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="drow"><div class="dtxt"><span class="dk">Dagens brett · ' + IC.fire + esc(v.daily.streakSay) + '</span>' +
         '<span class="dn">' + esc(v.daily.name) + '<small>' + esc(v.daily.line) + '</small></span></div>' +
-        (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Spill</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div><button type="button" class="dsee"' + on(v.daily.list) + '>Se listen ›</button></div>' +
+        (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Spill</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div><span class="dlinks"><button type="button" class="dsee"' + on(v.daily.list) + '>Se listen ›</button><button type="button" class="dsee"' + on(v.daily.archive) + '>Tidligere dager ›</button></span></div>' +
       (v.offers.length ? '<h2 class="sec">Utfordringer</h2><div class="group">' + each(v.offers, function (o) {
         return '<div class="opt offer">' + av(o.initial, o.pic) + '<span class="ot"><span class="t">' + esc(o.who) + '</span><span class="s">' + esc(o.line) + '</span></span><button type="button" class="pill small"' + on(o.no) + '>Avslå</button><button type="button" class="act green go"' + on(o.yes) + '>Godta</button></div>';
       }) + '</div>' : '') +
@@ -298,7 +298,7 @@ var App = (function () {
     var li = function (t, s) { return '<div class="opt"><span class="tileic">' + IC.gem + '</span><span class="ot"><span class="t">' + t + '</span><span class="s">' + s + '</span></span></div>'; };
     return '<div class="screen sub">' + head("Premium", v.back) + '<div class="scroll">' +
       '<div class="premhero">' + IC.gem + '<b>WordBelow Premium</b><span>Ett kjøp, ingen reklame.</span></div>' +
-      '<div class="group">' + li("Ingen reklame", "Verken banneret nederst eller reklamen etter hvert trekk.") + li("Full statistikk", "Resultater, rating over tid, beste ord og resultater mot hver motspiller.") + '</div>' +
+      '<div class="group">' + li("Ingen reklame", "Verken banneret nederst eller reklamen etter hvert trekk.") + li("Full statistikk", "Resultater, rating over tid, beste ord og resultater mot hver motspiller.") + li("Tidligere dagsbrett", "Spill dagens brett fra hver av de siste 30 dagene, så ofte du vil.") + '</div>' +
       (v.premium ? '<div class="note">Du har Premium på denne telefonen.</div>' : '<button type="button" class="bigbtn"' + (v.busy ? ' disabled' : '') + on(v.buy) + '>' + IC.gem + '<span>Kjøp Premium</span>' + (v.price ? '<span class="price" translate="no">' + esc(v.price) + '</span>' : '') + '</button>') +
       (v.premium ? '' : '<button type="button" class="pill"' + (v.busy ? ' disabled' : '') + on(v.restore) + '>Gjenopprett kjøp</button>') +
       (v.premMsg ? '<div class="note">' + esc(v.premMsg) + '</div>' : '') +
@@ -406,6 +406,13 @@ var App = (function () {
       (v.delMsg ? '<div class="note">' + esc(v.delMsg) + '</div>' : '') +
       '</div></div>';
   }
+  // Earlier days' boards, newest first; a locked day opens Premium.
+  function archiveView(v) {
+    return '<div class="screen sub">' + head('Tidligere dager', v.back) + '<div class="scroll">' +
+      '<p class="fine">' + esc(v.archSay) + '</p><div class="group">' + each(v.archRows, function (r) {
+        return '<button type="button" class="opt' + (r.lock ? ' locked' : '') + '"' + on(r.go) + '><span class="ot"><span class="t">' + esc(r.date) + ' · <span translate="no">' + esc(r.name) + '</span></span><span class="s">' + esc(r.line) + '</span></span><span class="chev">' + (r.lock ? IC.gem : IC.chev) + '</span></button>';
+      }) + '</div></div></div>';
+  }
   function dailyListView(v) {
     return '<div class="screen sub">' + head('Dagens liste', v.back) + '<div class="scroll">' +
       '<div class="lb"><div class="lbhead"><h2 translate="no">' + esc(v.dlName) + '</h2><span>' + esc(v.dlSay) + '</span></div>' +
@@ -476,7 +483,7 @@ var App = (function () {
     view.querySelectorAll("[data-keep]").forEach(function (el) { keep[el.getAttribute("data-keep")] = el.scrollLeft; });
     H = [];
     var v = comp.renderVals();
-    var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, dailylist: dailyListView, play: playView, done: doneView };
+    var V = { home: homeView, premium: premiumView, editor: editorView, account: accountView, find: findView, friends: friendsView, settings: settingsView, stats: statsView, dailylist: dailyListView, archive: archiveView, play: playView, done: doneView };
     var html = (V[v.phase] || homeView)(v) + (v.phase === "done" && v.win ? winView(v) : "") + (v.help ? helpView(v) : "") + (v.hist && !v.help ? histView(v) : "") + (v.chatOpen && v.phase === "play" ? chatView(v) : "") + (v.player ? playerView(v) : "") + (v.offerAsk && v.phase === "home" ? offerView(v) : "") + (v.lookup ? lookupView(v) : "");
     if (window.trHtml) html = trHtml(html);
     // While a text field has focus on the same screen, keep the field (and the phone's keyboard) and update the rest in place.

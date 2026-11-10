@@ -682,6 +682,11 @@ function dailyOf(key) {
   return { key: key, lay: L.id, name: L.name, seed: +key.replace(/-/g, "") };
 }
 function dailyDone() { return lsGet(DAILY_KEY) || {}; }
+// Earlier days' boards: the same board and letters as that day, played as often as you like. They count neither on the
+// day's list nor in the streak; this phone keeps your best on each. Yesterday's is free, the 30 days before need Premium.
+var ARCH_KEY = "ordspill/dagensarkiv/v1", ARCH_DAYS = 30, ARCH_FREE = 1;
+function archDays() { var out = []; for (var d = 1; d <= ARCH_DAYS; d++) { var t = new Date(); t.setDate(t.getDate() - d); out.push({ d: d, key: dayKey(t) }); } return out; }
+function archDate(key) { var p = key.split("-"); return (+p[2]) + "." + (+p[1]) + "."; }
 // The reminder about today's board (the app only, native.js): on or off, and the hour. One message a day for the
 // week ahead, made again each time the app opens and when the board is played, so a day already played has none.
 var REMIND_KEY = "ordspill/paminnelse/v1", REMIND_HOURS = [8, 12, 17, 20];
@@ -752,7 +757,7 @@ class Component extends DCLogic {
     }, c);
     return { lay: S.L.id, seed: seed || 0, lang: LANG, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], hint: false, soloT0: null, pop: null,
       turn: 0, passes: 0, busy: false, P: [{ score: 0, pocket: [], words: [] }, { score: 0, pocket: [], words: [] }], log: [], daily: null,
-      phase: "play", played: null, submitted: false, confirm: null, introMsg: null, tutor: false, tutorEnd: false,
+      phase: "play", played: null, submitted: false, confirm: null, introMsg: null, tutor: false, tutorEnd: false, archive: null,
       msg: msg || (duel ? this.turnSay(0) + " " : "") + S.L.name + ".", tone: "info" };
   }
   componentDidMount() {
@@ -1322,6 +1327,13 @@ class Component extends DCLogic {
     this.timers.forEach(clearTimeout); this.timers = [];
     this.setState(Object.assign(this.fresh(L.id, ""), { tutor: true, tutorEnd: false, help: false }));
   }
+  openArchive() { this.setState({ phase: "archive" }); }
+  startArchive(key) {
+    var D = dailyOf(key), st = this.state;
+    st.mode = "solo"; st.online = null;
+    this.timers.forEach(clearTimeout); this.timers = [];
+    this.setState(Object.assign(this.fresh(D.lay, "Dagens brett fra " + archDate(key) + ": " + D.name + ". Det teller ikke på listen eller i rekken; din beste på det lagres her.", D.seed, "no"), { archive: key }));
+  }
   tutorDone() { lsSet(TUTOR_KEY, true); this.setState({ tutor: false, tutorEnd: false }); }
   startDaily() {
     var D = dailyOf(dayKey()), st = this.state, played = dailyDone()[D.key];
@@ -1597,7 +1609,8 @@ class Component extends DCLogic {
     if (st.tutor) lsSet(TUTOR_KEY, true);
     addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 && !bare });
     this.setState({ phase: "done", played: rec, submitted: false });
-    if (!st.daily) this.saveBest();
+    if (st.archive) { var A = lsGet(ARCH_KEY) || {}, old = A[st.archive]; if (rec.words && (!old || rec.score > old.score)) { A[st.archive] = { score: rec.score, words: rec.words, left: rec.left, at: Date.now() }; lsSet(ARCH_KEY, A); } rec.archTop = old ? old.score : null; }
+    else if (!st.daily) this.saveBest();
     // The wreath only when the board is cleared; handed in with tiles left, the score stands without a cheer.
     if (left === 0 && !bare) this.celebrate({ kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" });
     if (st.daily) this.dailyFinish(rec);
@@ -1746,7 +1759,7 @@ class Component extends DCLogic {
       dictHost: DICT_URL.split("/")[2].replace(/^www\./, ""),
       rareSay: Array.from(RARE).sort(function (a, b) { return PTS[a] - PTS[b]; }).join(", "),
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : "",
-      kicker: online ? "Spill · " + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : "") : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : st.tutor ? "Øvingsrunde · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : ""),
+      kicker: online ? "Spill · " + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : "") : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : st.tutor ? "Øvingsrunde · " + S.L.name : st.archive ? "Dagens brett " + archDate(st.archive) + " · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : ""),
       score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
       ads: !st.premium, premium: !!st.premium, adFull: !st.premium && !!st.adFull, closeAd: function () { self.setState({ adFull: null }); },
       openPremium: function () { self.setState({ phase: "premium", premMsg: "", help: false }); },
@@ -1818,7 +1831,7 @@ class Component extends DCLogic {
       v.daily = { name: D.name, done: !!today, score: today ? today.score : null, streak: streak,
         line: today ? today.score + " poeng · " + (today.words || []).length + " ord" + (today.left || today.bare ? "" : " · ryddet") : "Samme bokstaver for alle i dag",
         streakSay: streak ? streak + (streak === 1 ? " dag" : " dager") + " på rad" : "Start en rekke i dag",
-        play: function () { self.startDaily(); }, share: function () { self.shareDaily(); }, list: function () { self.openDailyList(); } };
+        play: function () { self.startDaily(); }, share: function () { self.shareDaily(); }, list: function () { self.openDailyList(); }, archive: function () { self.openArchive(); } };
       v.cancelAsk = st.homeAskCancel && st.cardAsk ? function () { self.setState({ cardAsk: null, homeMsg: "", homeAskCancel: false }); } : null;
       if (st.offerAsk) {
         var og = st.offerAsk, oL = LAYOUTS.filter(function (x) { return x.id === og.layout; })[0] || EXTRA[og.layout];
@@ -1968,7 +1981,7 @@ class Component extends DCLogic {
           function () { self.setState({ premBusy: false, premMsg: "Kunne ikke nå App Store. Prøv igjen om litt." }); });
       };
       v.testOn = iap ? null : function () { self.setPremium(!st.premium); };
-      v.back = function () { self.setState({ phase: st.after === "stats" || st.after === "settings" ? st.after : "home", after: null }); };
+      v.back = function () { self.setState({ phase: st.after === "stats" || st.after === "settings" || st.after === "archive" ? st.after : "home", after: null }); };
       return v;
     }
     if (st.phase === "editor") {
@@ -2078,6 +2091,18 @@ class Component extends DCLogic {
       v.pushOn = st.push === "off" && st.account ? function () { self.pushOn(); } : null;
       v.pushOff = st.push === "on" ? function () { self.pushOff(); } : null;
       v.back = function () { self.setState({ pushMsg: "" }); self.goHome(); };
+      return v;
+    }
+    if (st.phase === "archive") {
+      var done0 = dailyDone(), arch = lsGet(ARCH_KEY) || {};
+      v.archRows = archDays().map(function (x) {
+        var D = dailyOf(x.key), f = done0[x.key], b = arch[x.key], open = !!st.premium || x.d <= ARCH_FREE;
+        return { date: x.d === 1 ? "I går" : archDate(x.key), name: D.name, lock: !open,
+          line: (f ? "Den dagen: " + f.score + " p" : "Ikke spilt den dagen") + (b ? " · din beste: " + b.score + " p" : ""),
+          go: function () { if (open) self.startArchive(x.key); else self.setState({ phase: "premium", after: "archive", premMsg: "" }); } };
+      });
+      v.archSay = st.premium ? "De siste 30 dagenes brett, med de samme bokstavene som den dagen. De teller ikke på dagens liste eller i rekken." : "Gårsdagens brett er gratis. Med Premium får du de siste 30 dagene.";
+      v.back = function () { self.goHome(); };
       return v;
     }
     if (st.phase === "dailylist") {
@@ -2346,6 +2371,15 @@ class Component extends DCLogic {
       v.boardSay = st.boardSrc === "db" ? "delt mellom alle som spiller" : st.boardSrc === "local" ? "bare denne telefonen" : "kobler til …";
       v.again = function () { self.setState(self.fresh(self.state.lay, "Samme brett, nye bokstaver. Bare en ny personlig rekord lagres.", undefined, self.state.lang)); };
       v.againLabel = "Spill igjen";
+      if (st.archive) {
+        var ak = st.archive, first = dailyDone()[ak], best = (lsGet(ARCH_KEY) || {})[ak];
+        v.lname = "Dagens brett " + archDate(ak); v.isArch = true;
+        v.praise = !(rec.left || rec.bare) ? null : this.bestSay(rec.score, rec.archTop);
+        v.board = [first ? { rank: "", name: "Den dagen", score: first.score, detail: "ditt første forsøk", cls: "lrow" } : null,
+          best ? { rank: "", name: "Fra arkivet", score: best.score, detail: "din beste", cls: "lrow me" } : null].filter(Boolean);
+        v.boardEmpty = !v.board.length;
+        v.again = function () { self.startArchive(ak); };
+      }
       if (st.daily) {
         var dt = st.dailyTop, dd2 = dailyDone(), streak2 = streakOf(dd2);
         v.isDaily = true;

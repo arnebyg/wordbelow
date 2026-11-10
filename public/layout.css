@@ -493,3 +493,7 @@ button.wlink{background:none;border:0;padding:0;font:inherit;color:inherit;text-
 .tile.tut{animation:tutpulse 1.4s ease-in-out infinite}
 @keyframes tutpulse{0%,100%{filter:none}50%{filter:brightness(1.18) drop-shadow(0 0 6px rgba(242,196,107,.9))}}
 @media (prefers-reduced-motion:reduce){.tile.tut{animation:none;filter:drop-shadow(0 0 5px rgba(242,196,107,.9))}}
+
+/* Today's board: the two links under it side by side; a locked day in the archive is dimmed. */
+.daily .dlinks{display:flex;gap:16px;flex-wrap:wrap}
+.opt.locked .ot{opacity:.6}

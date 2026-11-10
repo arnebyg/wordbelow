@@ -824,5 +824,22 @@
 "Ny i WordBelow?": "Uusi WordBelow'ssa?",
 "Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.": "Pelaa harjoituskierros ilman kelloa. Sovellus näyttää jokaisen vaiheen pelatessasi.",
 "Spill øvingsrunden": "Pelaa harjoituskierros",
-"Spill øvingsrunden med veiledning": "Pelaa opastettu harjoituskierros"
+"Spill øvingsrunden med veiledning": "Pelaa opastettu harjoituskierros",
+"Tidligere dager ›": "Aiemmat päivät ›",
+"Tidligere dager": "Aiemmat päivät",
+"I går": "Eilen",
+"Den dagen:": "Sinä päivänä:",
+"Ikke spilt den dagen": "Ei pelattu sinä päivänä",
+"din beste:": "paras tuloksesi:",
+"De siste 30 dagenes brett, med de samme bokstavene som den dagen. De teller ikke på dagens liste eller i rekken.": "Viimeisten 30 päivän laudat samoilla kirjaimilla kuin sinä päivänä. Ne eivät näy päivän listalla eivätkä kasvata putkea.",
+"Gårsdagens brett er gratis. Med Premium får du de siste 30 dagene.": "Eilinen lauta on ilmainen. Premiumilla saat viimeiset 30 päivää.",
+"Dagens brett fra": "Päivän lauta",
+"Det teller ikke på listen eller i rekken; din beste på det lagres her.": "Se ei näy listalla eikä kasvata putkea; paras tuloksesi tallennetaan tähän.",
+"Den dagen": "Sinä päivänä",
+"ditt første forsøk": "ensimmäinen yrityksesi",
+"Fra arkivet": "Arkistosta",
+"din beste": "paras tuloksesi",
+"De samme bokstavene som den dagen.": "Samat kirjaimet kuin sinä päivänä.",
+"Tidligere dagsbrett": "Aiemmat päivän laudat",
+"Spill dagens brett fra hver av de siste 30 dagene, så ofte du vil.": "Pelaa päivän lauta jokaiselta viimeiseltä 30 päivältä niin usein kuin haluat."
 }
