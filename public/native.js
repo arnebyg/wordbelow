@@ -31,6 +31,55 @@
       });
     }
   };
+  // Push when it is your turn, through Apple's own service. Only on the iPhone: Android would need Firebase, which is
+  // not set up. enable() asks the phone and resolves to the device token, which logic.js gives the server (/push/native).
+  var PN = C.Plugins && C.Plugins.PushNotifications;
+  if (PN && C.getPlatform && C.getPlatform() === "ios") {
+    var tokenWait = null, opened = null, openedGame = null;
+    PN.addListener("registration", function (t) { if (tokenWait) { tokenWait.ok(t.value); tokenWait = null; } });
+    PN.addListener("registrationError", function (e) { if (tokenWait) { tokenWait.no(new Error((e && e.error) || "registration")); tokenWait = null; } });
+    // A tap on a message opens its game; one tapped before the game had started is kept until it asks.
+    PN.addListener("pushNotificationActionPerformed", function (a) {
+      var g = a && a.notification && a.notification.data && a.notification.data.game;
+      if (!g) return; if (opened) opened(g); else openedGame = g;
+    });
+    var register = function () { return new Promise(function (ok, no) { tokenWait = { ok: ok, no: no }; PN.register().catch(no); }); };
+    window.WB_PUSH = {
+      // "granted", "denied" or "prompt".
+      state: function () { return PN.checkPermissions().then(function (p) { return p.receive; }); },
+      enable: function () {
+        return PN.requestPermissions().then(function (p) { if (p.receive !== "granted") throw new Error(p.receive); return register(); });
+      },
+      // At start, when already allowed: the token again (it can change), so the server has the current one.
+      again: function () { return PN.checkPermissions().then(function (p) { return p.receive === "granted" ? register() : null; }); },
+      onOpen: function (fn) { opened = fn; if (openedGame) { var g = openedGame; openedGame = null; fn(g); } }
+    };
+  }
+  // The reminder about today's board is made by the phone itself (no server): one message a day for the week ahead,
+  // each naming that day's board, and none on a day the board has been played.
+  var LN = C.Plugins && C.Plugins.LocalNotifications;
+  if (LN) {
+    var REMIND_IDS = [9101, 9102, 9103, 9104, 9105, 9106, 9107, 9108];
+    var remindTap = null, remindTapped = false;
+    LN.addListener("localNotificationActionPerformed", function (a) {
+      if (!(a && a.notification && REMIND_IDS.indexOf(a.notification.id) >= 0)) return;
+      if (remindTap) remindTap(); else remindTapped = true;
+    });
+    window.WB_REMIND = {
+      state: function () { return LN.checkPermissions().then(function (p) { return p.display; }); },
+      allow: function () { return LN.requestPermissions().then(function (p) { return p.display; }); },
+      // list: [{ at: Date, title, body }]; replaces whatever was set before.
+      set: function (list) {
+        return LN.cancel({ notifications: REMIND_IDS.map(function (id) { return { id: id }; }) }).catch(function () {}).then(function () {
+          if (!list.length) return;
+          return LN.schedule({ notifications: list.slice(0, REMIND_IDS.length).map(function (n, i) {
+            return { id: REMIND_IDS[i], title: n.title, body: n.body, schedule: { at: n.at, allowWhileIdle: true } };
+          }) });
+        });
+      },
+      onTap: function (fn) { remindTap = fn; if (remindTapped) { remindTapped = false; fn(); } }
+    };
+  }
   var AdMob = C.Plugins && C.Plugins.AdMob;
   if (!AdMob) return;
   // The ad units are wordbelow's own in AdMob. While TEST is true the plugin swaps them for Google's test ads;

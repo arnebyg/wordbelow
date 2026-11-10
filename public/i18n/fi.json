@@ -798,5 +798,18 @@
 "Vibrasjon": "Värinä",
 "På: et klikk for hver brikke og en tone når ordet går inn. Følger lydløsbryteren.": "Päällä: napsahdus jokaisesta laatasta ja ääni, kun sana hyväksytään. Noudattaa äänetöntä tilaa.",
 "På: telefonen svarer når du legger brikker og ord.": "Päällä: puhelin reagoi, kun asetat laattoja ja sanoja.",
-"Av.": "Pois."
+"Av.": "Pois.",
+"dager på rad. Spill i dag for å holde rekken.": "päivää putkeen. Pelaa tänään, niin putki jatkuu.",
+"Du spilte i går. Spill i dag, så har du to dager på rad.": "Pelasit eilen. Pelaa tänään, niin putkessa on kaksi päivää.",
+"Samme bokstaver for alle i dag. Bare det første forsøket teller.": "Samat kirjaimet kaikille tänään. Vain ensimmäinen yritys lasketaan.",
+"Varsler er på.": "Ilmoitukset ovat päällä.",
+"Varsler når det er din tur kommer i en senere versjon av appen på Android. Påminnelsen om dagens brett virker.": "Ilmoitukset vuorostasi tulevat Android-sovelluksen myöhempään versioon. Päivän laudan muistutus toimii.",
+"Påminnelse om dagens brett": "Muistutus päivän laudasta",
+"På: en melding kl.": "Päällä: viesti klo",
+"de dagene du ikke har spilt dagens brett ennå.": "päivinä, joina et ole vielä pelannut päivän lautaa.",
+"Av. Få en melding de dagene du ikke har spilt ennå.": "Pois. Saat viestin päivinä, joina et ole vielä pelannut.",
+"Tidspunkt": "Aika",
+"Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "Haluatko muistutuksen päivän laudasta klo 17 päivinä, joina et ole pelannut? Voit vaihtaa ajan Asetuksissa.",
+"Ja takk": "Kyllä kiitos",
+"Nei": "Ei"
 }

@@ -797,6 +797,19 @@
 "Lyd": "Son",
 "Vibrasjon": "Vibration",
 "På: et klikk for hver brikke og en tone når ordet går inn. Følger lydløsbryteren.": "Activé : un clic pour chaque tuile et une note quand le mot est accepté. Suit le mode silencieux.",
-"På: telefonen svarer når du legger brikker og ord.": "Activé : le téléphone réagit quand vous posez des tuiles et des mots.",
-"Av.": "Désactivé."
+"På: telefonen svarer når du legger brikker og ord.": "Activé : le téléphone réagit quand tu poses des tuiles et des mots.",
+"Av.": "Désactivé.",
+"dager på rad. Spill i dag for å holde rekken.": "jours d'affilée. Joue aujourd'hui pour garder ta série.",
+"Du spilte i går. Spill i dag, så har du to dager på rad.": "Tu as joué hier. Joue aujourd'hui pour deux jours d'affilée.",
+"Samme bokstaver for alle i dag. Bare det første forsøket teller.": "Les mêmes lettres pour tous aujourd'hui. Seul le premier essai compte.",
+"Varsler er på.": "Les notifications sont activées.",
+"Varsler når det er din tur kommer i en senere versjon av appen på Android. Påminnelsen om dagens brett virker.": "Les notifications quand c'est ton tour arriveront dans une prochaine version de l'app Android. Le rappel du plateau du jour fonctionne.",
+"Påminnelse om dagens brett": "Rappel du plateau du jour",
+"På: en melding kl.": "Activé : un message à",
+"de dagene du ikke har spilt dagens brett ennå.": "les jours où tu n'as pas encore joué le plateau du jour.",
+"Av. Få en melding de dagene du ikke har spilt ennå.": "Désactivé. Reçois un message les jours où tu n'as pas encore joué.",
+"Tidspunkt": "Heure",
+"Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "Veux-tu un rappel du plateau du jour à 17 h les jours où tu n'as pas joué ? Tu peux changer l'heure dans les Réglages.",
+"Ja takk": "Oui, merci",
+"Nei": "Non"
 }

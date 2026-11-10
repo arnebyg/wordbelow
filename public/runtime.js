@@ -87,6 +87,7 @@ var App = (function () {
     '</div>' +
   '</div>') +
   (v.dailySay ? '<p class="fine dsay">' + esc(v.dailySay) + '</p>' : '') +
+  (v.remindAsk ? '<div class="note remindask"><span>Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.</span><span class="cbtns"><button type="button" class="pill solid small"' + on(v.remindAsk.yes) + '>Ja takk</button><button type="button" class="pill small"' + on(v.remindAsk.no) + '>Nei</button></span></div>' : '') +
   (v.missed && v.missed.length ? '<div class="missed"><h2 class="sec">Ord du kunne lagt</h2>' + each(v.missed, function (m) { return '<div class="mrow"><span>' + esc(m.played) + '</span><span class="arr">→</span>' + (m.look ? '<button type="button" class="wlink"' + on(m.look) + '><b>' + esc(m.best) + '</b></button>' : '<b>' + esc(m.best) + '</b>') + '</div>'; }) + '<button type="button" class="pill small"' + on(v.openHist) + '>Se alle trekk</button></div>' : '') +
   '<div class="actions">' +
     (v.share ? '<button type="button" class="act green"' + on(v.share) + '>Del</button>' : '') +
@@ -384,6 +385,9 @@ var App = (function () {
       '<h2 class="sec">Varsler</h2><div class="group"><div class="opt"><span class="ot"><span class="t">Når det er din tur</span><span class="s">' + esc(v.pushSay) + '</span></span>' +
         (v.pushOn ? '<button type="button" class="act green go"' + on(v.pushOn) + '>Slå på</button>' : '') + (v.pushOff ? '<button type="button" class="pill small"' + on(v.pushOff) + '>Slå av</button>' : '') + '</div></div>' +
       (v.pushMsg ? '<div class="note">' + esc(v.pushMsg) + '</div>' : '') +
+      (v.remind ? '<div class="group"><div class="opt"><span class="ot"><span class="t">Påminnelse om dagens brett</span><span class="s">' + esc(v.remind.say) + '</span></span><button type="button" class="pill small"' + on(v.remind.toggle) + '>' + (v.remind.on ? 'Slå av' : 'Slå på') + '</button></div>' +
+        (v.remind.on ? '<div class="opt"><div class="chips" role="radiogroup" aria-label="Tidspunkt">' + each(v.remind.hours, function (c) { return '<button type="button" class="' + c.cls + '" role="radio" aria-checked="' + c.on + '"' + on(c.pick) + '>' + esc(c.name) + '</button>'; }) + '</div></div>' : '') + '</div>' +
+        (v.remind.msg ? '<div class="note">' + esc(v.remind.msg) + '</div>' : '') : '') +
       '<p class="fine">Mot andre har hver spiller 72 timer på et trekk. Går tiden ut, er spillet over og den andre vinner.</p>' +
       '<h2 class="sec">Premium</h2><div class="group"><button type="button" class="opt"' + on(v.openPremiumSet) + '><span class="tileic">' + IC.gem + '</span><span class="ot"><span class="t">' + (v.premium ? 'Du har Premium' : 'WordBelow Premium') + '</span><span class="s">' + (v.premium ? 'Uten reklame, med full statistikk.' : 'Ingen reklame og full statistikk, med ett kjøp.') + '</span></span><span class="chev">' + IC.chev + '</span></button></div>' +
       '<h2 class="sec">Personvern</h2><div class="group"><a class="opt" href="https://wordbelow.app/privacy" target="_blank" rel="noopener"><span class="ot"><span class="t">Personvernerklæring</span><span class="s">Hva som lagres, og hvor.</span></span><span class="chev">' + IC.chev + '</span></a>' +

@@ -798,5 +798,18 @@
 "Vibrasjon": "Vibration",
 "På: et klikk for hver brikke og en tone når ordet går inn. Følger lydløsbryteren.": "On: a click for each tile and a chime when the word is taken. Follows the silent switch.",
 "På: telefonen svarer når du legger brikker og ord.": "On: the phone responds as you place tiles and words.",
-"Av.": "Off."
+"Av.": "Off.",
+"dager på rad. Spill i dag for å holde rekken.": "days in a row. Play today to keep the streak.",
+"Du spilte i går. Spill i dag, så har du to dager på rad.": "You played yesterday. Play today for two days in a row.",
+"Samme bokstaver for alle i dag. Bare det første forsøket teller.": "Same letters for everyone today. Only the first try counts.",
+"Varsler er på.": "Notifications are on.",
+"Varsler når det er din tur kommer i en senere versjon av appen på Android. Påminnelsen om dagens brett virker.": "Notifications when it is your turn come in a later version of the Android app. The reminder about today's board works.",
+"Påminnelse om dagens brett": "Reminder about today's board",
+"På: en melding kl.": "On: a message at",
+"de dagene du ikke har spilt dagens brett ennå.": "on the days you have not played today's board yet.",
+"Av. Få en melding de dagene du ikke har spilt ennå.": "Off. Get a message on the days you have not played yet.",
+"Tidspunkt": "Time",
+"Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "Would you like a reminder about today's board at 17:00 on the days you have not played? You can change the time in Settings.",
+"Ja takk": "Yes please",
+"Nei": "No"
 }

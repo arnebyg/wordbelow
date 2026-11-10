@@ -530,6 +530,7 @@ function goneOr(e) { return e.status === 404 ? GONE_SAY : e.message; }
 // Online games whose wreath this phone has shown, so a won game cheers once, on whichever phone sees the end first.
 var WREATH_KEY = "ordspill/kranset/v1";
 function wreathOnce(id) { var l = lsGet(WREATH_KEY) || []; if (l.indexOf(id) >= 0) return false; lsSet(WREATH_KEY, l.concat([id]).slice(-200)); return true; }
+var PUSH_TOKEN_KEY = "ordspill/varseltoken/v1", PUSH_OFF_KEY = "ordspill/varselav/v1";
 var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1", CHAT_KEY = "ordspill/chat/v1";
 // Word meanings: Bokmålsordboka and Nynorskordboka at ordbokene.no (Språkrådet and the University of Bergen).
 function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase()); }
@@ -679,6 +680,23 @@ function dailyOf(key) {
   return { key: key, lay: L.id, name: L.name, seed: +key.replace(/-/g, "") };
 }
 function dailyDone() { return lsGet(DAILY_KEY) || {}; }
+// The reminder about today's board (the app only, native.js): on or off, and the hour. One message a day for the
+// week ahead, made again each time the app opens and when the board is played, so a day already played has none.
+var REMIND_KEY = "ordspill/paminnelse/v1", REMIND_HOURS = [8, 12, 17, 20];
+function remindPref() { var r = lsGet(REMIND_KEY); return r && typeof r === "object" ? { on: !!r.on, h: REMIND_HOURS.indexOf(r.h) >= 0 ? r.h : 17, asked: !!r.asked } : { on: false, h: 17, asked: false }; }
+function remindPlan() {
+  if (!window.WB_REMIND) return Promise.resolve();
+  var R = remindPref(), done = dailyDone(), list = [];
+  if (R.on) for (var d = 0; d < 8; d++) {
+    var at = new Date(); at.setDate(at.getDate() + d); at.setHours(R.h, 0, 0, 0);
+    if (at.getTime() <= Date.now() + 60e3) continue;
+    var key = dayKey(at); if (done[key]) continue;
+    var D = dailyOf(key), streak = d === 0 ? streakOf(done) : 0;
+    list.push({ at: at, title: tr("Dagens brett: ") + D.name,
+      body: tr(streak > 1 ? "Du har " + streak + " dager på rad. Spill i dag for å holde rekken." : streak === 1 ? "Du spilte i går. Spill i dag, så har du to dager på rad." : "Samme bokstaver for alle i dag. Bare det første forsøket teller.") });
+  }
+  return window.WB_REMIND.set(list).catch(function () {});
+}
 function streakOf(done) {
   var d = new Date(), n = 0;
   if (!done[dayKey(d)]) d.setDate(d.getDate() - 1);
@@ -759,6 +777,8 @@ class Component extends DCLogic {
     this.loadBlocked();
     try { if (sessionStorage.getItem("wb-reopen") === "settings") { sessionStorage.removeItem("wb-reopen"); this.openSettings(); } } catch (e) {}
     this.pushCheck();
+    if (window.WB_PUSH) window.WB_PUSH.onOpen(function (g) { if (self.state.account) self.openOnline(g); });
+    if (window.WB_REMIND) { remindPlan(); window.WB_REMIND.onTap(function () { self.startDaily(); }); document.addEventListener("visibilitychange", function () { if (!document.hidden) remindPlan(); }); }
     // In the iPhone app the App Store says whether Premium is bought (also on a new phone), and gives the price.
     if (window.WB_IAP) {
       window.WB_IAP.owned().then(function (own) { if (own !== !!self.state.premium) { lsSet(PREMIUM_KEY, own); self.setState({ premium: own }); } }, function () {});
@@ -867,8 +887,19 @@ class Component extends DCLogic {
   setPremium(on, msg) { lsSet(PREMIUM_KEY, on); this.setState({ premium: on, adFull: null, premMsg: msg || (on ? "Premium er på for denne telefonen." : "Premium er av.") }); }
   // Push messages when it is your turn
   pushCheck() {
-    // The iPhone app cannot take the web page's notifications (they need the phone's own, APNs), so it does not offer them.
-    var self = this, can = window.WB_NATIVE ? "app" : pushCan();
+    var self = this;
+    // The iPhone app: Apple's own push (native.js). Turned off in the app, the phone may still allow it; the app then keeps quiet.
+    if (window.WB_PUSH) {
+      window.WB_PUSH.state().then(function (p) {
+        if (p === "denied") { self.setState({ push: "denied" }); return; }
+        if (p !== "granted" || lsGet(PUSH_OFF_KEY)) { self.setState({ push: "off" }); return; }
+        self.setState({ push: "on" });
+        return window.WB_PUSH.again().then(function (t) { if (t) { lsSet(PUSH_TOKEN_KEY, t); if (self.state.account) return api("/push/native", { method: "POST", body: { token: t, lang: UI } }); } });
+      }).catch(function () {});
+      return;
+    }
+    // The Android app has no push yet (it would need Firebase).
+    var can = window.WB_NATIVE ? "app" : pushCan();
     if (can !== "ok") { this.setState({ push: can }); return; }
     navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
       self.setState({ push: sub ? "on" : "off" });
@@ -878,6 +909,17 @@ class Component extends DCLogic {
   pushOn() {
     var self = this;
     if (this.needAccount(null)) return;
+    if (window.WB_PUSH) {
+      this.setState({ pushMsg: "Slår på varsler …" });
+      window.WB_PUSH.enable().then(function (t) {
+        lsSet(PUSH_TOKEN_KEY, t); lsSet(PUSH_OFF_KEY, false); lsSet(PUSH_CARD_KEY, true);
+        self.setState({ push: "on", pushCard: false, pushMsg: "Varsler er på." });
+        return api("/push/native", { method: "POST", body: { token: t, lang: UI } }).then(function (d) { if (d && d.ready) return api("/push/test", { method: "POST" }).then(function () { self.setState({ pushMsg: "Varsler er på. Du skal ha fått et prøvevarsel nå." }); }); }, function () {});
+      }, function (e) {
+        self.setState({ push: e && e.message === "denied" ? "denied" : "off", pushMsg: e && e.message === "denied" ? "Telefonen sa nei til varsler. Slå dem på for WordBelow i telefonens innstillinger." : "Varsler ble ikke slått på." });
+      });
+      return;
+    }
     if (pushCan() !== "ok") { this.pushCheck(); return; }
     this.setState({ pushMsg: "Slår på varsler …" });
     Notification.requestPermission().then(function (p) {
@@ -893,16 +935,31 @@ class Component extends DCLogic {
   }
   pushOff() {
     var self = this;
+    if (window.WB_PUSH) {
+      var t = lsGet(PUSH_TOKEN_KEY); lsSet(PUSH_OFF_KEY, true);
+      if (t) api("/push/unsubscribe", { method: "POST", body: { endpoint: "apns:" + t } }).catch(function () {});
+      this.setState({ push: "off", pushMsg: "Varsler er av." });
+      return;
+    }
     navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sub) {
       if (!sub) return;
       return api("/push/unsubscribe", { method: "POST", body: { endpoint: sub.endpoint } }).catch(function () {}).then(function () { return sub.unsubscribe(); });
     }).then(function () { self.setState({ push: "off", pushMsg: "Varsler er av." }); }, function (e) { self.setState({ pushMsg: e.message }); });
   }
+  // The reminder about today's board: the phone asks first; a no is said, and the switch stays off.
+  remindSet(on, h) {
+    var self = this, R = remindPref();
+    if (!on) { lsSet(REMIND_KEY, { on: false, h: R.h, asked: true }); this.setState({ remindMsg: "" }); remindPlan(); return; }
+    window.WB_REMIND.allow().then(function (p) {
+      if (p !== "granted") { lsSet(REMIND_KEY, { on: false, h: h, asked: true }); self.setState({ remindMsg: "Telefonen sa nei til varsler. Slå dem på for WordBelow i telefonens innstillinger." }); return; }
+      lsSet(REMIND_KEY, { on: true, h: h, asked: true }); self.setState({ remindMsg: "" }); remindPlan();
+    }, function () { self.setState({ remindMsg: "Varsler ble ikke slått på." }); });
+  }
   pushSay() {
     var p = this.state.push;
     return p === "on" ? "På. Du får beskjed når det er din tur, når noen blir med, og 12 timer før tiden går ut." :
       p === "install" ? "På iPhone og iPad kommer varsler bare til appen på Hjem-skjermen. Åpne siden i Safari, trykk Del og «Legg til på Hjem-skjerm», og slå på varsler der." :
-      p === "app" ? "Varsler kommer i en senere versjon av iPhone-appen." :
+      p === "app" ? "Varsler når det er din tur kommer i en senere versjon av appen på Android. Påminnelsen om dagens brett virker." :
       p === "denied" ? "Telefonen har sagt nei til varsler for WordBelow. Slå dem på i telefonens innstillinger." :
       p === "none" ? "Denne nettleseren kan ikke vise varsler." :
       !this.state.account ? "Varsler krever at du har valgt brukernavn." : "Av. Slå på for å få beskjed når det er din tur.";
@@ -1265,7 +1322,7 @@ class Component extends DCLogic {
     var self = this, st = this.state, key = st.daily, all = dailyDone();
     if (!key) return;
     var first = !all[key];
-    if (first) { all[key] = { score: rec.score, words: st.words, best: rec.best ? rec.best.w : "", left: rec.left, bare: !!rec.bare, lay: st.lay, at: Date.now() }; lsSet(DAILY_KEY, all); }
+    if (first) { all[key] = { score: rec.score, words: st.words, best: rec.best ? rec.best.w : "", left: rec.left, bare: !!rec.bare, lay: st.lay, at: Date.now() }; lsSet(DAILY_KEY, all); remindPlan(); }
     this.setState({ dailyTop: null, dailyFirst: first, dailyErr: false });
     if (st.account) this.dailyLoad(key);
   }
@@ -1998,6 +2055,10 @@ class Component extends DCLogic {
       v.fiMissing = !LANGS.fi.avail;
       v.kinds = KINDS.map(function (k) { return { name: k.name, say: k.say, on: k.id === curKind, pick: function () { if (k.id !== curKind) self.setKind(k.id); } }; });
       v.pushSay = this.pushSay(); v.pushMsg = st.pushMsg;
+      var RP = remindPref();
+      v.remind = window.WB_REMIND ? { on: RP.on, say: RP.on ? "På: en melding kl. " + ("0" + RP.h).slice(-2) + ":00 de dagene du ikke har spilt dagens brett ennå." : "Av. Få en melding de dagene du ikke har spilt ennå.",
+        hours: REMIND_HOURS.map(function (h) { var on = RP.on && h === RP.h; return { name: ("0" + h).slice(-2) + ":00", on: on ? "true" : "false", cls: "chip" + (on ? " on" : ""), pick: function () { self.remindSet(true, h); } }; }),
+        toggle: function () { self.remindSet(!RP.on, RP.h); }, msg: st.remindMsg || "" } : null;
       v.pushOn = st.push === "off" && st.account ? function () { self.pushOn(); } : null;
       v.pushOff = st.push === "on" ? function () { self.pushOff(); } : null;
       v.back = function () { self.setState({ pushMsg: "" }); self.goHome(); };
@@ -2265,6 +2326,9 @@ class Component extends DCLogic {
         v.board = dt ? dt.top.map(function (r, i) { return { rank: i + 1, name: r.name, score: r.score, detail: r.words + " ord" + (r.best ? " · «" + r.best + "»" : "") + (r.left ? "" : " · ryddet"), cls: r.me ? "lrow me" : "lrow" }; }) : [];
         v.boardEmpty = !!dt && dt.top.length === 0;
         v.share = function () { self.shareDaily(); };
+        // Once, after today's board: a reminder for the days to come, asked here where it makes sense.
+        var RP2 = remindPref();
+        v.remindAsk = window.WB_REMIND && !RP2.asked ? { yes: function () { self.remindSet(true, RP2.h); }, no: function () { lsSet(REMIND_KEY, { on: false, h: RP2.h, asked: true }); self.setState({}); } } : null;
         v.again = function () { self.startDaily(); }; v.againLabel = "Spill igjen";
       }
       v.toPicker = v.goHome;

@@ -10,6 +10,13 @@
     "AdMob": {}
   },
   "android": {
-    "backgroundColor": "#1E6550"
+    "backgroundColor": "#1E6550",
+    "includePlugins": [
+      "@capacitor-community/admob",
+      "@capacitor-community/contacts",
+      "@capacitor/haptics",
+      "@capacitor/local-notifications",
+      "@capgo/native-purchases"
+    ]
   }
 }

@@ -11,6 +11,7 @@
 // for both, and every request checks too. Phones that allow it get a push message when it is their turn.
 import { DurableObject } from "cloudflare:workers";
 import { makeVapid, sendPush } from "./push.js";
+import { apnsReady, sendApns } from "./apns.js";
 import { tr, UI_LANGS } from "./i18n.js";
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
@@ -136,8 +137,11 @@ export class Hub extends DurableObject {
       const vapid = await this.vapid();
       for (const sub of subs) {
         try {
-          const l = raw ? null : sub.lang;
-          const status = await sendPush(vapid, sub, origin, { title: raw ? title : tr(l, title), body: raw ? body : tr(l, body), game: game || null });
+          const l = raw ? null : sub.lang, msg = { title: raw ? title : tr(l, title), body: raw ? body : tr(l, body), game: game || null };
+          // The iPhone app's phones go through Apple (src/apns.js); until its key is set they are skipped.
+          const native = /^apns(-dev)?:/.test(sub.endpoint);
+          if (native && !apnsReady(this.env)) continue;
+          const status = native ? await sendApns(this.env, sub.endpoint, msg) : await sendPush(vapid, sub, origin, msg);
           if (status === 404 || status === 410) this.sql.exec("DELETE FROM subs WHERE endpoint = ?", sub.endpoint);
         } catch (e) { /* the next message tries again */ }
       }
@@ -290,6 +294,13 @@ export class Hub extends DurableObject {
       if (!/^https:\/\//.test(ep) || !k.p256dh || !k.auth) return err(400, "Mangler abonnement.");
       this.sql.exec("INSERT OR REPLACE INTO subs (endpoint, uid, p256dh, auth, created, lang) VALUES (?, ?, ?, ?, ?, ?)", ep, me.id, String(k.p256dh), String(k.auth), Date.now(), UI_LANGS.includes(body.lang) ? body.lang : "no");
       return json({ ok: true });
+    }
+    // The iPhone app: the phone's own device token from Apple, kept as "apns:<token>" (or "apns-dev:" for a build from Xcode).
+    if (path === "/push/native" && m === "POST") {
+      const t = String(body.token || "");
+      if (!/^[0-9a-f]{32,200}$/i.test(t)) return err(400, "Mangler enhet.");
+      this.sql.exec("INSERT OR REPLACE INTO subs (endpoint, uid, p256dh, auth, created, lang) VALUES (?, ?, '', '', ?, ?)", (body.dev ? "apns-dev:" : "apns:") + t, me.id, Date.now(), UI_LANGS.includes(body.lang) ? body.lang : "no");
+      return json({ ok: true, ready: apnsReady(this.env) });
     }
     if (path === "/push/unsubscribe" && m === "POST") {
       this.sql.exec("DELETE FROM subs WHERE endpoint = ? AND uid = ?", String(body.endpoint || ""), me.id);

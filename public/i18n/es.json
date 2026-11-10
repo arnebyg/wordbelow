@@ -798,5 +798,18 @@
 "Vibrasjon": "Vibración",
 "På: et klikk for hver brikke og en tone når ordet går inn. Følger lydløsbryteren.": "Activado: un clic por cada ficha y un tono cuando la palabra entra. Respeta el modo silencio.",
 "På: telefonen svarer når du legger brikker og ord.": "Activado: el teléfono responde al poner fichas y palabras.",
-"Av.": "Desactivado."
+"Av.": "Desactivado.",
+"dager på rad. Spill i dag for å holde rekken.": "días seguidos. Juega hoy para mantener la racha.",
+"Du spilte i går. Spill i dag, så har du to dager på rad.": "Jugaste ayer. Juega hoy y llevarás dos días seguidos.",
+"Samme bokstaver for alle i dag. Bare det første forsøket teller.": "Las mismas letras para todos hoy. Solo cuenta el primer intento.",
+"Varsler er på.": "Las notificaciones están activadas.",
+"Varsler når det er din tur kommer i en senere versjon av appen på Android. Påminnelsen om dagens brett virker.": "Los avisos cuando sea tu turno llegarán en una versión posterior de la app para Android. El recordatorio del tablero del día funciona.",
+"Påminnelse om dagens brett": "Recordatorio del tablero del día",
+"På: en melding kl.": "Activado: un mensaje a las",
+"de dagene du ikke har spilt dagens brett ennå.": "los días que aún no has jugado el tablero del día.",
+"Av. Få en melding de dagene du ikke har spilt ennå.": "Desactivado. Recibe un mensaje los días que aún no has jugado.",
+"Tidspunkt": "Hora",
+"Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "¿Quieres un recordatorio del tablero del día a las 17:00 los días que no hayas jugado? Puedes cambiar la hora en Ajustes.",
+"Ja takk": "Sí, gracias",
+"Nei": "No"
 }
