@@ -811,5 +811,18 @@
 "Tidspunkt": "Time",
 "Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "Would you like a reminder about today's board at 17:00 on the days you have not played? You can change the time in Settings.",
 "Ja takk": "Yes please",
-"Nei": "No"
+"Nei": "No",
+"Lyse brikker er åpne: ingen brikke ligger oppå dem, og de er fri på minst én side. Trykk på en av dem, så havner bokstaven i ordet nederst.": "Bright tiles are open: no tile lies on top, and they are free on at least one side. Tap one, and its letter goes into the word at the bottom.",
+"Trykk flere åpne brikker i den rekkefølgen ordet staves. Trykker du en bokstav nederst, går den tilbake.": "Tap more open tiles in the order the word is spelt. Tap a letter at the bottom to send it back.",
+"Står det et ord nederst? Trykk den grønne knappen for å legge det. Poengene står på knappen. Er det ikke et ord, sier appen fra.": "Is there a word at the bottom? Tap the green button to play it. The points are on the button. If it is not a word, the app says so.",
+"Brikkene under ordet ditt er åpne nå. Hvert ord åpner nye brikker, og målet er flest mulig poeng, aller helst med brettet ryddet.": "The tiles under your word are open now. Every word opens new tiles, and the aim is as many points as you can, best of all with the board cleared.",
+"Står du fast? «I lommen» tar vare på én åpen brikke til et senere ord. «Hint» viser et godt ord, men koster 5 poeng.": "Stuck? «To pocket» keeps one open tile for a later word. «Hint» shows a good word, but costs 5 points.",
+"Brikker med merke gir bonus: 2×B og 3×B ganger bokstaven, 2×O og 3×O hele ordet. Lange ord gir +5 for hver bokstav over tre. Nå klarer du deg selv!": "Marked tiles give a bonus: 2×L and 3×L multiply the letter, 2×W and 3×W the whole word. Long words give +5 for each letter over three. You are on your own now!",
+"Hopp over": "Skip",
+"Ok": "OK",
+"Øvingsrunde ·": "Practice round ·",
+"Ny i WordBelow?": "New to WordBelow?",
+"Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.": "Play a practice round without the clock. The app shows you each step as you play.",
+"Spill øvingsrunden": "Play the practice round",
+"Spill øvingsrunden med veiledning": "Play the guided practice round"
 }

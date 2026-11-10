@@ -811,5 +811,18 @@
 "Tidspunkt": "Hora",
 "Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "¿Quieres un recordatorio del tablero del día a las 17:00 los días que no hayas jugado? Puedes cambiar la hora en Ajustes.",
 "Ja takk": "Sí, gracias",
-"Nei": "No"
+"Nei": "No",
+"Lyse brikker er åpne: ingen brikke ligger oppå dem, og de er fri på minst én side. Trykk på en av dem, så havner bokstaven i ordet nederst.": "Las fichas claras están libres: no tienen ninguna encima y están despejadas por al menos un lado. Toca una y su letra pasa a la palabra de abajo.",
+"Trykk flere åpne brikker i den rekkefølgen ordet staves. Trykker du en bokstav nederst, går den tilbake.": "Toca más fichas libres en el orden en que se escribe la palabra. Toca una letra abajo para devolverla.",
+"Står det et ord nederst? Trykk den grønne knappen for å legge det. Poengene står på knappen. Er det ikke et ord, sier appen fra.": "¿Hay una palabra abajo? Toca el botón verde para jugarla. Los puntos aparecen en el botón. Si no es una palabra, la app te lo dice.",
+"Brikkene under ordet ditt er åpne nå. Hvert ord åpner nye brikker, og målet er flest mulig poeng, aller helst med brettet ryddet.": "Las fichas bajo tu palabra están libres ahora. Cada palabra libera fichas nuevas, y el objetivo es sumar todos los puntos que puedas, mejor aún vaciando el tablero.",
+"Står du fast? «I lommen» tar vare på én åpen brikke til et senere ord. «Hint» viser et godt ord, men koster 5 poeng.": "¿Atascado? «Al bolsillo» guarda una ficha libre para una palabra posterior. «Pista» muestra una buena palabra, pero cuesta 5 puntos.",
+"Brikker med merke gir bonus: 2×B og 3×B ganger bokstaven, 2×O og 3×O hele ordet. Lange ord gir +5 for hver bokstav over tre. Nå klarer du deg selv!": "Las fichas marcadas dan bonus: 2×L y 3×L multiplican la letra, 2×P y 3×P toda la palabra. Las palabras largas dan +5 por cada letra a partir de la cuarta. ¡Ahora sigues tú solo!",
+"Hopp over": "Saltar",
+"Ok": "OK",
+"Øvingsrunde ·": "Partida de práctica ·",
+"Ny i WordBelow?": "¿Nuevo en WordBelow?",
+"Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.": "Juega una partida de práctica sin reloj. La app te enseña cada paso mientras juegas.",
+"Spill øvingsrunden": "Jugar la práctica",
+"Spill øvingsrunden med veiledning": "Jugar la práctica guiada"
 }

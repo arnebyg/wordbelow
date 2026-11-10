@@ -811,5 +811,18 @@
 "Tidspunkt": "Tidpunkt",
 "Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "Vill du ha en påminnelse om dagens bräde kl. 17 de dagar du inte har spelat? Du kan ändra tiden i Inställningar.",
 "Ja takk": "Ja tack",
-"Nei": "Nej"
+"Nei": "Nej",
+"Lyse brikker er åpne: ingen brikke ligger oppå dem, og de er fri på minst én side. Trykk på en av dem, så havner bokstaven i ordet nederst.": "Ljusa brickor är öppna: ingen bricka ligger ovanpå, och de är fria på minst en sida. Tryck på en, så hamnar bokstaven i ordet längst ner.",
+"Trykk flere åpne brikker i den rekkefølgen ordet staves. Trykker du en bokstav nederst, går den tilbake.": "Tryck fler öppna brickor i den ordning ordet stavas. Trycker du på en bokstav längst ner går den tillbaka.",
+"Står det et ord nederst? Trykk den grønne knappen for å legge det. Poengene står på knappen. Er det ikke et ord, sier appen fra.": "Står det ett ord längst ner? Tryck på den gröna knappen för att lägga det. Poängen står på knappen. Är det inte ett ord säger appen till.",
+"Brikkene under ordet ditt er åpne nå. Hvert ord åpner nye brikker, og målet er flest mulig poeng, aller helst med brettet ryddet.": "Brickorna under ditt ord är öppna nu. Varje ord öppnar nya brickor, och målet är så många poäng som möjligt, helst med brädet tömt.",
+"Står du fast? «I lommen» tar vare på én åpen brikke til et senere ord. «Hint» viser et godt ord, men koster 5 poeng.": "Kört fast? «Till fickan» sparar en öppen bricka till ett senare ord. «Tips» visar ett bra ord men kostar 5 poäng.",
+"Brikker med merke gir bonus: 2×B og 3×B ganger bokstaven, 2×O og 3×O hele ordet. Lange ord gir +5 for hver bokstav over tre. Nå klarer du deg selv!": "Märkta brickor ger bonus: 2×B och 3×B gånger bokstaven, 2×O och 3×O hela ordet. Långa ord ger +5 för varje bokstav över tre. Nu klarar du dig själv!",
+"Hopp over": "Hoppa över",
+"Ok": "OK",
+"Øvingsrunde ·": "Övningsrunda ·",
+"Ny i WordBelow?": "Ny i WordBelow?",
+"Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.": "Spela en övningsrunda utan klocka. Appen visar varje steg medan du spelar.",
+"Spill øvingsrunden": "Spela övningsrundan",
+"Spill øvingsrunden med veiledning": "Spela övningsrundan med vägledning"
 }

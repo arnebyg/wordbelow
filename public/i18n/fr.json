@@ -811,5 +811,18 @@
 "Tidspunkt": "Heure",
 "Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "Veux-tu un rappel du plateau du jour à 17 h les jours où tu n'as pas joué ? Tu peux changer l'heure dans les Réglages.",
 "Ja takk": "Oui, merci",
-"Nei": "Non"
+"Nei": "Non",
+"Lyse brikker er åpne: ingen brikke ligger oppå dem, og de er fri på minst én side. Trykk på en av dem, så havner bokstaven i ordet nederst.": "Les tuiles claires sont libres : aucune tuile dessus, et dégagées d'au moins un côté. Touche-en une, et sa lettre va dans le mot en bas.",
+"Trykk flere åpne brikker i den rekkefølgen ordet staves. Trykker du en bokstav nederst, går den tilbake.": "Touche d'autres tuiles libres dans l'ordre du mot. Touche une lettre en bas pour la remettre.",
+"Står det et ord nederst? Trykk den grønne knappen for å legge det. Poengene står på knappen. Er det ikke et ord, sier appen fra.": "Il y a un mot en bas ? Touche le bouton vert pour le jouer. Les points sont sur le bouton. Si ce n'est pas un mot, l'app te le dit.",
+"Brikkene under ordet ditt er åpne nå. Hvert ord åpner nye brikker, og målet er flest mulig poeng, aller helst med brettet ryddet.": "Les tuiles sous ton mot sont libres maintenant. Chaque mot en libère de nouvelles, et le but est de marquer le plus de points possible, idéalement en vidant le plateau.",
+"Står du fast? «I lommen» tar vare på én åpen brikke til et senere ord. «Hint» viser et godt ord, men koster 5 poeng.": "Bloqué ? «En poche» garde une tuile libre pour un mot plus tard. «Indice» montre un bon mot, mais coûte 5 points.",
+"Brikker med merke gir bonus: 2×B og 3×B ganger bokstaven, 2×O og 3×O hele ordet. Lange ord gir +5 for hver bokstav over tre. Nå klarer du deg selv!": "Les tuiles marquées donnent un bonus : 2×L et 3×L multiplient la lettre, 2×M et 3×M tout le mot. Les mots longs donnent +5 par lettre au-delà de trois. À toi de jouer !",
+"Hopp over": "Passer",
+"Ok": "OK",
+"Øvingsrunde ·": "Partie d'essai ·",
+"Ny i WordBelow?": "Nouveau sur WordBelow ?",
+"Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.": "Joue une partie d'essai sans chrono. L'app te montre chaque étape pendant que tu joues.",
+"Spill øvingsrunden": "Jouer la partie d'essai",
+"Spill øvingsrunden med veiledning": "Jouer la partie d'essai guidée"
 }

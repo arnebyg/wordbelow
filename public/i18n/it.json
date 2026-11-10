@@ -811,5 +811,18 @@
 "Tidspunkt": "Orario",
 "Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "Vuoi un promemoria della plancia del giorno alle 17 nei giorni in cui non hai giocato? Puoi cambiare l'orario nelle Impostazioni.",
 "Ja takk": "Sì, grazie",
-"Nei": "No"
+"Nei": "No",
+"Lyse brikker er åpne: ingen brikke ligger oppå dem, og de er fri på minst én side. Trykk på en av dem, så havner bokstaven i ordet nederst.": "Le tessere chiare sono libere: nessuna tessera sopra, e almeno un lato libero. Toccane una e la sua lettera va nella parola in basso.",
+"Trykk flere åpne brikker i den rekkefølgen ordet staves. Trykker du en bokstav nederst, går den tilbake.": "Tocca altre tessere libere nell'ordine in cui si scrive la parola. Tocca una lettera in basso per rimetterla.",
+"Står det et ord nederst? Trykk den grønne knappen for å legge det. Poengene står på knappen. Er det ikke et ord, sier appen fra.": "C'è una parola in basso? Tocca il pulsante verde per giocarla. I punti sono sul pulsante. Se non è una parola, l'app te lo dice.",
+"Brikkene under ordet ditt er åpne nå. Hvert ord åpner nye brikker, og målet er flest mulig poeng, aller helst med brettet ryddet.": "Le tessere sotto la tua parola ora sono libere. Ogni parola ne libera di nuove, e lo scopo è fare più punti possibile, meglio ancora svuotando la plancia.",
+"Står du fast? «I lommen» tar vare på én åpen brikke til et senere ord. «Hint» viser et godt ord, men koster 5 poeng.": "Bloccato? «In tasca» tiene una tessera libera per una parola successiva. «Aiuto» mostra una buona parola, ma costa 5 punti.",
+"Brikker med merke gir bonus: 2×B og 3×B ganger bokstaven, 2×O og 3×O hele ordet. Lange ord gir +5 for hver bokstav over tre. Nå klarer du deg selv!": "Le tessere con un segno danno un bonus: 2×L e 3×L moltiplicano la lettera, 2×P e 3×P tutta la parola. Le parole lunghe danno +5 per ogni lettera oltre la terza. Ora vai da solo!",
+"Hopp over": "Salta",
+"Ok": "OK",
+"Øvingsrunde ·": "Partita di prova ·",
+"Ny i WordBelow?": "Nuovo su WordBelow?",
+"Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.": "Gioca una partita di prova senza orologio. L'app ti mostra ogni passo mentre giochi.",
+"Spill øvingsrunden": "Gioca la prova",
+"Spill øvingsrunden med veiledning": "Gioca la prova guidata"
 }

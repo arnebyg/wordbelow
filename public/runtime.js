@@ -30,7 +30,7 @@ var App = (function () {
   '<div class="board' + (v.slide ? ' slide-' + v.slide : '') + '"' + (v.canSwipe ? ' data-swipe="swipe"' : '') + '>' +
     '<div class="bfit" data-fit="' + esc(v.boardFit) + '" style="' + esc(v.boardBox) + '">' +
       each(v.tiles, function (t) {
-        return '<button type="button" class="' + t.cls + (t.blocked ? ' blocked' : '') + '" style="' + esc(t.pos) + '"' + (t.blocked ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t.label) + '"' + on(t.pick) + '>' +
+        return '<button type="button" class="' + t.cls + (t.blocked ? ' blocked' : v.tutorFree ? ' tut' : '') + '" style="' + esc(t.pos) + '"' + (t.blocked ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t.label) + '"' + on(t.pick) + '>' +
           (t.bonus ? '<span class="' + t.bnCls + '">' + esc(t.bonus) + '</span>' : '') +
           (t.syms ? '<span class="syms">' + t.syms.map(function (c) { return '<span class="' + c + '"></span>'; }).join('') + '</span>' : '') + '<span class="ch">' + esc(t.ch) + '</span><span class="pt">' + esc(t.p) + '</span></button>';
       }) +
@@ -44,6 +44,8 @@ var App = (function () {
       '<div class="letters">' + each(v.pickLetters, function (k) { return '<button type="button" class="lk"' + on(k.pick) + '>' + esc(k.ch) + '</button>'; }) + '</div>' +
     '</div>' : '') +
   '</div>' +
+  (v.tutor ? '<div class="coach" role="status"><span class="cn">' + v.tutor.n + '/6</span><span class="ctx">' + esc(v.tutor.t) + '</span>' +
+    (v.tutor.end ? '<button type="button" class="pill solid small"' + on(v.tutor.ok) + '>Ok</button>' : '<button type="button" class="cskip"' + on(v.tutor.skip) + '>Hopp over</button>') + '</div>' : '') +
   '<div class="rackrow">' +
     '<div class="pocket" role="group" aria-label="Lommen">' +
       each(v.pocket, function (pk) { return '<button type="button" class="' + pk.cls + '" aria-label="' + esc(pk.label) + '" aria-pressed="' + pk.on + '"' + on(pk.tap) + '>' + (pk.syms ? '<span class="syms">' + pk.syms.map(function (c) { return '<span class="' + c + '"></span>'; }).join('') + '</span>' : '') + '<span class="ch">' + esc(pk.ch) + '</span><span class="pt">' + esc(pk.p) + '</span></button>'; }) +
@@ -151,6 +153,7 @@ var App = (function () {
         '<button type="button" class="ib" aria-label="Innstillinger"' + on(v.openSettings) + '>' + IC.gear + '</button></span></div>' +
       '<div class="scroll">' +
       (v.homeMsg ? '<div class="note"' + (v.closeHomeMsg ? ' role="button" aria-label="Lukk meldingen"' + on(v.closeHomeMsg) : '') + '>' + esc(v.homeMsg) + (v.cancelAsk ? '<div class="cbtns"><button type="button" class="pill small"' + on(v.cancelAsk) + '>Avbryt</button></div>' : '') + '</div>' : '') +
+      (v.tutorCard ? '<div class="card inv tutcard"><span class="ct">Ny i WordBelow?</span><span class="cs">Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.</span><div class="cbtns"><button type="button" class="pill solid"' + on(v.tutorCard.go) + '>Spill øvingsrunden</button><button type="button" class="pill"' + on(v.tutorCard.no) + '>Ikke nå</button></div></div>' : '') +
       '<div class="daily' + (v.daily.done ? ' done' : '') + '"><div class="drow"><div class="dtxt"><span class="dk">Dagens brett · ' + IC.fire + esc(v.daily.streakSay) + '</span>' +
         '<span class="dn">' + esc(v.daily.name) + '<small>' + esc(v.daily.line) + '</small></span></div>' +
         (v.daily.done ? '<button type="button" class="pill solid small"' + on(v.daily.share) + '>Del</button><button type="button" class="pill small"' + on(v.daily.play) + '>Spill</button>' : '<button type="button" class="pill solid"' + on(v.daily.play) + '>Spill</button>') + '</div><button type="button" class="dsee"' + on(v.daily.list) + '>Se listen ›</button></div>' +
@@ -217,6 +220,7 @@ var App = (function () {
       '<div class="helphead"><b>Slik spiller du</b><button type="button" class="x" aria-label="Lukk"' + on(v.closeHelp) + '>' + IC.close + '</button></div>' +
       '<div class="scroll helpbody">' +
       sec("Målet", '<p>Lag ord av brikkene som er åpne, og få flest poeng. Brikkene ligger i lag oppå hverandre, og når du tar bort de øverste, kommer nye bokstaver fram under. Alle ord i ' + esc(v.listName) + ' gjelder, uansett lengde.</p>' + (v.finnish ? '<p>På finsk gjelder grunnformene, substantivenes nominativ flertall (koirat) og verbenes 4. infinitiv (tekeminen), som i Mattels finske Scrabble-regler.</p>' : '') + (v.french ? '<p>På fransk teller ikke aksentene, som i fransk Scrabble: «été» legges som ETE, og «œuf» som OEUF.</p>' : '') + (v.italian ? '<p>På italiensk teller ikke aksentene, som i italiensk Scrabble: «città» legges som CITTA, og «perché» som PERCHE.</p>' : '') + (v.spanish ? '<p>På spansk teller ikke aksentene, som i spansk Scrabble: «canción» legges som CANCION. Ñ er en egen bokstav. CH, LL og RR legges med vanlige bokstaver, og verbformer med pronomen på slutten («dámelo») gjelder.</p>' : '')) +
+      (v.playTutor ? '<div class="cbtns"><button type="button" class="pill solid small"' + on(v.playTutor) + '>Spill øvingsrunden med veiledning</button></div>' : '') +
       sec("Åpne brikker", '<p>En brikke er åpen når ingen brikke ligger oppå den, og den er fri på minst én side, til venstre eller til høyre. Sperrede brikker er mørkere og kan ikke trykkes.</p>') +
       sec("Et trekk", '<p><b>Legg et ord:</b> trykk brikkene i den rekkefølgen ordet staves. Trykk en valgt brikke igjen for å ta den tilbake, og trykk «Send ord».</p>' +
         '<p><b>I lommen:</b> i stedet for et ord kan du legge én åpen brikke i lommen. Lommen tar to brikker, og du kan bruke dem i et senere ord. Et ord må alltid ha minst én brikke fra brettet. Det som ligger igjen i lommen til slutt, koster ingenting.</p>' +

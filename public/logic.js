@@ -530,6 +530,8 @@ function goneOr(e) { return e.status === 404 ? GONE_SAY : e.message; }
 // Online games whose wreath this phone has shown, so a won game cheers once, on whichever phone sees the end first.
 var WREATH_KEY = "ordspill/kranset/v1";
 function wreathOnce(id) { var l = lsGet(WREATH_KEY) || []; if (l.indexOf(id) >= 0) return false; lsSet(WREATH_KEY, l.concat([id]).slice(-200)); return true; }
+// The guided first game: done (or skipped) once, then never offered again; it can be played again from the help sheet.
+var TUTOR_KEY = "ordspill/veiledning/v1";
 var PUSH_TOKEN_KEY = "ordspill/varseltoken/v1", PUSH_OFF_KEY = "ordspill/varselav/v1";
 var MODE_KEY = "ordspill/klassiker/modus/v1", ACCOUNT_KEY = "ordspill/konto/v1", THEME_KEY = "ordspill/tema/v1", STATS_KEY = "ordspill/statistikk/v1", INVITE_CARD_KEY = "ordspill/inviterkort/v1", PICK_KEY = "ordspill/menyvalg/v1", PICK_BY_KEY = "ordspill/menyfaner/v1", PUSH_CARD_KEY = "ordspill/varselkort/v1", PREMIUM_KEY = "ordspill/premium/v1", CHAT_KEY = "ordspill/chat/v1";
 // Word meanings: Bokmålsordboka and Nynorskordboka at ordbokene.no (Språkrådet and the University of Bergen).
@@ -750,7 +752,7 @@ class Component extends DCLogic {
     }, c);
     return { lay: S.L.id, seed: seed || 0, lang: LANG, letters: g.letters, bonus: g.bonus, gone: {}, sel: [], jokerAs: {}, pocket: [], picking: null, score: 0, words: [], hint: false, soloT0: null, pop: null,
       turn: 0, passes: 0, busy: false, P: [{ score: 0, pocket: [], words: [] }, { score: 0, pocket: [], words: [] }], log: [], daily: null,
-      phase: "play", played: null, submitted: false, confirm: null, introMsg: null,
+      phase: "play", played: null, submitted: false, confirm: null, introMsg: null, tutor: false, tutorEnd: false,
       msg: msg || (duel ? this.turnSay(0) + " " : "") + S.L.name + ".", tone: "info" };
   }
   componentDidMount() {
@@ -1312,6 +1314,15 @@ class Component extends DCLogic {
     return st.opp === "cpu" ? (t === 0 ? "Din tur." : "Maskinens tur.") : nm[t] + " sin tur.";
   }
   diffName() { var st = this.state; return DIFFS.filter(function (d) { return d.id === st.diff; })[0].name.toLowerCase(); }
+  // A first game with someone at your side: alone, on letters, without the clock, the steps shown under the board.
+  // The board opens up as it is played (the first of the boards that grow), so there is always something to do.
+  startTutor() {
+    var st = this.state, L = LAYOUTS.filter(function (x) { return x.grp === "grow" && kindOf(x) === "ord"; })[0] || LAYOUTS[0];
+    st.mode = "solo"; st.online = null;
+    this.timers.forEach(clearTimeout); this.timers = [];
+    this.setState(Object.assign(this.fresh(L.id, ""), { tutor: true, tutorEnd: false, help: false }));
+  }
+  tutorDone() { lsSet(TUTOR_KEY, true); this.setState({ tutor: false, tutorEnd: false }); }
   startDaily() {
     var D = dailyOf(dayKey()), st = this.state, played = dailyDone()[D.key];
     st.mode = "solo"; st.online = null;
@@ -1583,6 +1594,7 @@ class Component extends DCLogic {
     // Alone, the tiles still on the board when the game ends cost their points; the pocket costs nothing.
     var self = this, pen = Object.keys(this.live()).reduce(function (n, id) { return n + self.ptsOf(st.letters[id]); }, 0);
     var rec = { lay: st.lay, top: st.board.reduce(function (m, r) { return Math.max(m, r.score || 0); }, 0), timeUp: !!st.timeUp, score: st.score - pen, pen: pen, pocketLeft: st.pocket.join(", "), words: st.words.length, left: left, bare: bare, best: st.words.reduce(function (b, w) { return !b || w.pts > b.pts ? w : b; }, null) };
+    if (st.tutor) lsSet(TUTOR_KEY, true);
     addStat({ mode: "solo", won: -2, my: rec.score, their: 0, best: rec.best, lay: st.lay, words: st.words, cleared: left === 0 && !bare });
     this.setState({ phase: "done", played: rec, submitted: false });
     if (!st.daily) this.saveBest();
@@ -1734,7 +1746,7 @@ class Component extends DCLogic {
       dictHost: DICT_URL.split("/")[2].replace(/^www\./, ""),
       rareSay: Array.from(RARE).sort(function (a, b) { return PTS[a] - PTS[b]; }).join(", "),
       lsub: online ? "Mot " + (st.online.oppName || "…") : duel ? (st.opp === "cpu" ? "Duell mot maskinen, " + this.diffName() : "Duell, to på én telefon") : "",
-      kicker: online ? "Spill · " + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : "") : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : ""),
+      kicker: online ? "Spill · " + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : "") : duel ? "Duell · " + S.L.name : st.daily ? "Dagens brett · " + S.L.name : st.tutor ? "Øvingsrunde · " + S.L.name : (kindOf(S.L) === "tall" ? "Tall · " : kindOf(S.L) === "sett" ? "Sett · " : "Klassiker · ") + S.L.name + (kindOf(S.L) === "ord" && st.lang !== UI ? " · " + LANGS[st.lang].name : ""),
       score: st.score, msg: st.msg, msgColor: tones[st.tone], tone: st.tone, pop: st.pop, account: st.account,
       ads: !st.premium, premium: !!st.premium, adFull: !st.premium && !!st.adFull, closeAd: function () { self.setState({ adFull: null }); },
       openPremium: function () { self.setState({ phase: "premium", premMsg: "", help: false }); },
@@ -1773,7 +1785,7 @@ class Component extends DCLogic {
       playerReport: function () { self.setState({ player: Object.assign({}, st.player, { step: "report", msg: "" }) }); },
       reasons: REPORT_REASONS.map(function (r) { return { r: r, send: function () { self.report(r); } }; }),
       openOppPlayer: online && st.online.oppId ? function () { self.openPlayer(st.online.oppId, st.online.oppName); } : null,
-      help: !!st.help, openHelp: function () { self.setState({ help: true }); }, closeHelp: function () { self.setState({ help: false }); }
+      help: !!st.help, openHelp: function () { self.setState({ help: true }); }, playTutor: st.phase === "home" ? function () { self.startTutor(); } : null, closeHelp: function () { self.setState({ help: false }); }
     };
     v.goHome = function () { self.goHome(); };
     v.toMenu = function () {
@@ -1843,6 +1855,10 @@ class Component extends DCLogic {
       }
       // A tap on the message puts it away, except while it is asking something.
       v.closeHomeMsg = st.cardAsk ? null : function () { self.setState({ homeMsg: "", gamesMsg: "" }); };
+      // New here: the guided first game, offered until it is played or put away. A phone that has played before
+      // (statistics, today's board) is not new.
+      v.tutorCard = !lsGet(TUTOR_KEY) && !(lsGet(STATS_KEY) || []).length && !Object.keys(dailyDone()).length ?
+        { go: function () { self.startTutor(); }, no: function () { lsSet(TUTOR_KEY, true); self.setState({}); } } : null;
       v.inviteCard = st.inviteCard;
       v.closeInviteCard = function () { lsSet(INVITE_CARD_KEY, true); self.setState({ inviteCard: false }); };
       v.inviteNow = function () { self.invite(); };
@@ -2150,8 +2166,8 @@ class Component extends DCLogic {
       var live = this.live(), nFree = 0;
       var kL = LAYOUTS.filter(function (L) { return kindOf(L) === kindOf(S.L); }), nL = kL.length, iL = 0; kL.forEach(function (L, k) { if (L.id === st.lay) iL = k; });
       v.boardBar = { name: S.L.name, group: GROUPS.filter(function (G) { return G.id === S.L.grp; })[0].name, n: (iL + 1) + " av " + nL,
-        show: !online && !this.started() && !st.daily, can: !online && !this.started() && !locked && !st.daily, prev: function () { self.cycleLay(-1, true); }, next: function () { self.cycleLay(1, true); } };
-      v.canSwipe = !online && !this.started() && !st.daily;
+        show: !online && !this.started() && !st.daily && !st.tutor, can: !online && !this.started() && !locked && !st.daily && !st.tutor, prev: function () { self.cycleLay(-1, true); }, next: function () { self.cycleLay(1, true); } };
+      v.canSwipe = !online && !this.started() && !st.daily && !st.tutor;
       v.swipe = function (dir) { self.cycleLay(dir, true); };
       v.dots = v.canSwipe ? this.dots() : null;
       v.slide = st.slide;
@@ -2179,11 +2195,24 @@ class Component extends DCLogic {
             var s0 = self.state, s = s0.sel.slice(), j = s.indexOf(id);
             if (j >= 0) { s.splice(j, 1); var ja = Object.assign({}, s0.jokerAs); delete ja[id]; feel("back"); self.setState({ sel: s, jokerAs: ja }); }
             else if (jk) { feel("tap"); self.setState({ picking: id }); }
-            else { s.push(id); feel("tap"); self.setState(!self.duel() && !s0.soloT0 ? { sel: s, soloT0: Date.now(), timeUp: false } : { sel: s }); }
+            else { s.push(id); feel("tap"); self.setState(!self.duel() && !s0.soloT0 && !s0.tutor ? { sel: s, soloT0: Date.now(), timeUp: false } : { sel: s }); }
           }
         };
       });
       v.nFree = nFree;
+      // The guided first game: what to do next, read from where the game is. The last step is put away by the player.
+      if (st.tutor && !duel) {
+        var nw = st.words.length, ns = st.sel.length, step;
+        if (st.tutorEnd) step = null;
+        else if (nw === 0 && ns === 0) step = { n: 1, t: "Lyse brikker er åpne: ingen brikke ligger oppå dem, og de er fri på minst én side. Trykk på en av dem, så havner bokstaven i ordet nederst." };
+        else if (nw === 0 && ns === 1) step = { n: 2, t: "Trykk flere åpne brikker i den rekkefølgen ordet staves. Trykker du en bokstav nederst, går den tilbake." };
+        else if (nw === 0) step = { n: 3, t: "Står det et ord nederst? Trykk den grønne knappen for å legge det. Poengene står på knappen. Er det ikke et ord, sier appen fra." };
+        else if (nw === 1) step = { n: 4, t: "Brikkene under ordet ditt er åpne nå. Hvert ord åpner nye brikker, og målet er flest mulig poeng, aller helst med brettet ryddet." };
+        else if (nw === 2 && !st.pocket.length && !st.hint) step = { n: 5, t: "Står du fast? «I lommen» tar vare på én åpen brikke til et senere ord. «Hint» viser et godt ord, men koster 5 poeng." };
+        else step = { n: 6, t: "Brikker med merke gir bonus: 2×B og 3×B ganger bokstaven, 2×O og 3×O hele ordet. Lange ord gir +5 for hver bokstav over tre. Nå klarer du deg selv!", end: true };
+        v.tutor = step ? { n: step.n, t: step.t, end: !!step.end, ok: function () { lsSet(TUTOR_KEY, true); self.setState({ tutorEnd: true }); }, skip: function () { self.tutorDone(); } } : null;
+        v.tutorFree = !!step && step.n === 1;
+      }
       if (duel) {
         var sc = st.P.map(function (p, i) { return i === st.turn ? st.score : p.score; });
         var order = online && st.online.you === 1 ? [1, 0] : [0, 1];
@@ -2196,7 +2225,7 @@ class Component extends DCLogic {
       } else {
         var ms = this.soloLeft(), sec = Math.ceil(ms / 1000);
         v.stats = [{ k: "Poeng", v: st.score, cls: "stat mine" }, { k: "Igjen av " + this.S().pos.length, v: v.left, cls: "stat" },
-          { k: "Tid", v: Math.floor(sec / 60) + ":" + ("0" + sec % 60).slice(-2), cls: "stat" + (st.soloT0 && ms < 60e3 ? " warn" : "") }];
+          st.tutor ? { k: "Tid", v: "–", cls: "stat" } : { k: "Tid", v: Math.floor(sec / 60) + ":" + ("0" + sec % 60).slice(-2), cls: "stat" + (st.soloT0 && ms < 60e3 ? " warn" : "") }];
       }
       if (online) {
         v.onlineBar = { board: "Brett: " + S.L.name + (st.online.status === "waiting" ? " · venter på motspiller" : ""), resign: function () { self.resign(); }, canResign: st.online.status === "active" };

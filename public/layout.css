@@ -483,3 +483,13 @@ button.wlink{background:none;border:0;padding:0;font:inherit;color:inherit;text-
 /* A Sett tile with a bonus band: the symbols sit below the band, a little closer together. */
 .tile .bn + .syms{top:13px;gap:2px}
 #mail{text-transform:none;letter-spacing:0}
+
+/* The guided first game: a band between the board and the word, and the open tiles breathing in its first step. */
+.coach{flex:none;display:flex;align-items:center;gap:10px;margin:4px 0 6px;padding:10px 12px;border-radius:14px;background:#F4EFE2;color:#1C2626;font-size:14px;line-height:1.35;box-shadow:0 3px 0 #C2702C}
+.coach .cn{flex:none;font-size:12px;font-weight:800;color:#C2702C}
+.coach .ctx{flex:1;min-width:0}
+.coach .cskip{flex:none;border:0;background:transparent;color:#4E5C58;font-family:inherit;font-size:13px;font-weight:700;text-decoration:underline;padding:0;min-height:44px;cursor:pointer}
+.coach .pill.solid{background:#1E6550;border-color:#1E6550;color:#F4EFE2}
+.tile.tut{animation:tutpulse 1.4s ease-in-out infinite}
+@keyframes tutpulse{0%,100%{filter:none}50%{filter:brightness(1.18) drop-shadow(0 0 6px rgba(242,196,107,.9))}}
+@media (prefers-reduced-motion:reduce){.tile.tut{animation:none;filter:drop-shadow(0 0 5px rgba(242,196,107,.9))}}

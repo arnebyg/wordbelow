@@ -811,5 +811,18 @@
 "Tidspunkt": "Tijdstip",
 "Vil du ha en påminnelse om dagens brett kl. 17 de dagene du ikke har spilt? Du kan endre tiden i Innstillinger.": "Wil je een herinnering aan het bord van vandaag om 17.00 uur op de dagen dat je niet hebt gespeeld? Je kunt de tijd wijzigen in Instellingen.",
 "Ja takk": "Ja, graag",
-"Nei": "Nee"
+"Nei": "Nee",
+"Lyse brikker er åpne: ingen brikke ligger oppå dem, og de er fri på minst én side. Trykk på en av dem, så havner bokstaven i ordet nederst.": "Lichte stenen zijn open: er ligt niets op en ze zijn aan minstens één kant vrij. Tik er een aan, dan komt de letter in het woord onderaan.",
+"Trykk flere åpne brikker i den rekkefølgen ordet staves. Trykker du en bokstav nederst, går den tilbake.": "Tik meer open stenen aan in de volgorde van het woord. Tik een letter onderaan aan om hem terug te leggen.",
+"Står det et ord nederst? Trykk den grønne knappen for å legge det. Poengene står på knappen. Er det ikke et ord, sier appen fra.": "Staat er een woord onderaan? Tik op de groene knop om het te spelen. De punten staan op de knop. Is het geen woord, dan zegt de app het.",
+"Brikkene under ordet ditt er åpne nå. Hvert ord åpner nye brikker, og målet er flest mulig poeng, aller helst med brettet ryddet.": "De stenen onder je woord zijn nu open. Elk woord maakt nieuwe stenen vrij, en het doel is zoveel mogelijk punten, het liefst met een leeg bord.",
+"Står du fast? «I lommen» tar vare på én åpen brikke til et senere ord. «Hint» viser et godt ord, men koster 5 poeng.": "Vast? «Naar bakje» bewaart één open steen voor een later woord. «Hint» toont een goed woord, maar kost 5 punten.",
+"Brikker med merke gir bonus: 2×B og 3×B ganger bokstaven, 2×O og 3×O hele ordet. Lange ord gir +5 for hver bokstav over tre. Nå klarer du deg selv!": "Stenen met een teken geven bonus: 2×L en 3×L vermenigvuldigen de letter, 2×W en 3×W het hele woord. Lange woorden geven +5 voor elke letter boven drie. Nu kun je het zelf!",
+"Hopp over": "Overslaan",
+"Ok": "OK",
+"Øvingsrunde ·": "Oefenronde ·",
+"Ny i WordBelow?": "Nieuw in WordBelow?",
+"Spill en øvingsrunde uten klokke. Appen viser deg hvert steg mens du spiller.": "Speel een oefenronde zonder klok. De app laat je elke stap zien terwijl je speelt.",
+"Spill øvingsrunden": "Speel de oefenronde",
+"Spill øvingsrunden med veiledning": "Speel de oefenronde met uitleg"
 }
