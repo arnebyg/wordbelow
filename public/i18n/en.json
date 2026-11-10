@@ -792,5 +792,11 @@
 "1 poeng": "1 point",
 "brikke igjen": "tile left",
 "brikke ble liggende": "tile was left",
-"brikke ligger igjen og trekkes fra.": "tile is left and counts against you."
+"brikke ligger igjen og trekkes fra.": "tile is left and counts against you.",
+"Lyd og vibrasjon": "Sound and vibration",
+"Lyd": "Sound",
+"Vibrasjon": "Vibration",
+"På: et klikk for hver brikke og en tone når ordet går inn. Følger lydløsbryteren.": "On: a click for each tile and a chime when the word is taken. Follows the silent switch.",
+"På: telefonen svarer når du legger brikker og ord.": "On: the phone responds as you place tiles and words.",
+"Av.": "Off."
 }

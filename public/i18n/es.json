@@ -792,5 +792,11 @@
 "1 poeng": "1 punto",
 "brikke igjen": "ficha restante",
 "brikke ble liggende": "ficha quedó",
-"brikke ligger igjen og trekkes fra.": "ficha queda y se resta."
+"brikke ligger igjen og trekkes fra.": "ficha queda y se resta.",
+"Lyd og vibrasjon": "Sonido y vibración",
+"Lyd": "Sonido",
+"Vibrasjon": "Vibración",
+"På: et klikk for hver brikke og en tone når ordet går inn. Følger lydløsbryteren.": "Activado: un clic por cada ficha y un tono cuando la palabra entra. Respeta el modo silencio.",
+"På: telefonen svarer når du legger brikker og ord.": "Activado: el teléfono responde al poner fichas y palabras.",
+"Av.": "Desactivado."
 }

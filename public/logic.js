@@ -508,6 +508,8 @@ function openAtStart(list) {
   S.pos.forEach(function (p) { all[p.id] = true; });
   return S.pos.filter(function (p) { return freeIn(S, p.id, all); }).length;
 }
+// Sound and vibration (feel.js); nothing happens if it is missing.
+function feel(k) { if (window.WB_FEEL) window.WB_FEEL.play(k); }
 function lsGet(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 ownLoad();
@@ -1188,7 +1190,11 @@ class Component extends DCLogic {
         next.played = { duel: true, res: s.result.res || self.resultOf(P, Object.keys(base.letters).length - Object.keys(next.gone).length), left: s.result.left || 0, bare: !!s.result.bare, lay: g.layout, resigned: s.result.resigned, timeout: s.result.timeout };
         self.statOnline({ id: g.id, you: g.you, layout: g.layout, opp: g.opp, result: Object.assign({}, s.result, { res: next.played.res }), scores: P.map(function (p) { return p.score; }) }, P[g.you].words || []);
       }
+      // The other player has moved and it is your turn now: a short sound, only for a game open on the screen.
+      var nowMine = g.status === "active" && turn === g.you && (st.online.turn !== undefined && st.online.turn !== g.you);
+      o.turn = turn;
       self.setState(next);
+      if (nowMine) feel("turn");
       // The winner gets the wreath here too when the other player ended the game: the last word, giving up, or time.
       if (next.phase === "done") {
         var pr = next.played, rr = pr.res, w = pr.resigned !== undefined ? 1 - pr.resigned : pr.timeout !== undefined ? 1 - pr.timeout : rr[0].score === rr[1].score ? -1 : rr[0].score > rr[1].score ? 0 : 1;
@@ -1402,13 +1408,13 @@ class Component extends DCLogic {
     var self = this, s2 = this.state, w2 = this.word(s2.sel), human = this.humanMove();
     var kind = this.kind(), chars = s2.sel.map(function (id) { return self.chOf(id); });
     if (kind === "ord" && !DICT && LANGS[LANG].loading) { this.setState({ msg: "Ordlista lastes fortsatt. Prøv igjen om et øyeblikk.", tone: "info" }); return false; }
-    if (kind === "ord" && !isWord(w2)) { this.setState({ msg: "«" + w2 + "» står ikke i ordlista.", tone: "bad" }); return false; }
-    if (kind === "tall" && tallCheck(chars) === null) { this.setState({ msg: chars.indexOf("=") < 0 ? "Et regnestykke trenger «=». Trykk «=»-knappen." : "«" + w2 + "» går ikke opp.", tone: "bad" }); return false; }
+    if (kind === "ord" && !isWord(w2)) { this.setState({ msg: "«" + w2 + "» står ikke i ordlista.", tone: "bad" }); if (human) feel("bad"); return false; }
+    if (kind === "tall" && tallCheck(chars) === null) { this.setState({ msg: chars.indexOf("=") < 0 ? "Et regnestykke trenger «=». Trykk «=»-knappen." : "«" + w2 + "» går ikke opp.", tone: "bad" }); if (human) feel("bad"); return false; }
     if (kind === "sett") {
-      if (s2.sel.length !== 3) { this.setState({ msg: "Et sett er tre brikker.", tone: "bad" }); return false; }
-      var why = settWhy(chars); if (why.length) { this.setState({ msg: "Ikke et sett: " + andList(why.map(function (x) { return SETT_NAMES[x]; })) + (why.length > 1 ? " er" : " er") + " lik på to, men ikke på den tredje.", tone: "bad" }); return false; }
+      if (s2.sel.length !== 3) { this.setState({ msg: "Et sett er tre brikker.", tone: "bad" }); if (human) feel("bad"); return false; }
+      var why = settWhy(chars); if (why.length) { this.setState({ msg: "Ikke et sett: " + andList(why.map(function (x) { return SETT_NAMES[x]; })) + (why.length > 1 ? " er" : " er") + " lik på to, men ikke på den tredje.", tone: "bad" }); if (human) feel("bad"); return false; }
     }
-    if (!s2.sel.some(function (id) { return id[0] !== "p" && id !== "eq"; })) { this.setState({ msg: "Et ord må ha minst én brikke fra brettet.", tone: "bad" }); return false; }
+    if (!s2.sel.some(function (id) { return id[0] !== "p" && id !== "eq"; })) { this.setState({ msg: "Et ord må ha minst én brikke fra brettet.", tone: "bad" }); if (human) feel("bad"); return false; }
     var ev = this.evaluate(s2.sel), gone = Object.assign({}, s2.gone), usedP = [];
     // For your own words, the best word there was, so the history and the result can show what you missed.
     var top = human ? this.candidates(null, 80)[0] : null, missed = top && top.pts > ev.total && top.w !== w2 ? { w: top.w, pts: top.pts } : null;
@@ -1421,6 +1427,7 @@ class Component extends DCLogic {
     this.setState({ log: (s2.log || []).concat([entry]), gone: gone, sel: [], pocket: pocket, confirm: null, passes: 0, score: s2.score + ev.total, words: s2.words.concat([{ w: w2, pts: ev.total }]), msg: who + "«" + w2 + "» +" + ev.total + (this.duel() || pct === null ? "" : pct >= 100 ? " · Beste trekk!" : " · " + pct + " % av beste trekk"), tone: "good" });
     if (ev.cleared) { if (this.online()) this.finishGame(); else this.timers.push(setTimeout(function () { self.finishGame(); }, 1300)); }
     else this.endTurn(this.online() ? 0 : 1300);
+    if (human) feel(ev.cleared || (pct !== null && pct >= 100) ? "great" : "good");
     if (human) this.adAfterMove();
     return true;
   }
@@ -1428,6 +1435,7 @@ class Component extends DCLogic {
     var human = this.humanMove(), s2 = this.state, ch = s2.letters[id], gone = Object.assign({}, s2.gone); gone[id] = true;
     var me = this.online() ? (s2.account ? s2.account.name : "Du") : this.names()[s2.turn];
     var who = this.duel() ? me + " tok " + ch + " i lommen." : ch + " ligger i lommen. Bruk den i et ord senere.";
+    if (human) feel("pocket");
     this.setState({ log: (s2.log || []).concat([{ p: this.duel() ? s2.turn : 0, k: "p", w: ch }]), gone: gone, sel: [], confirm: null, passes: 0, pocket: s2.pocket.concat([ch]), tone: "info", msg: who });
     // The last tile into the pocket empties the board, but no word cleared it: no bonus, and not counted as cleared.
     if (!Object.keys(this.live()).length) { this.setState({ msg: who + " Brettet er tomt, men ikke ryddet med et ord." }); this.finishGame(); return true; }
@@ -1464,6 +1472,7 @@ class Component extends DCLogic {
         // time; whose turn it is shows in the score boxes.
         msg: st.opp === "cpu" && t === 1 && s.msg ? s.msg : self.turnSay(n), tone: st.opp === "cpu" && t === 1 && s.msg ? s.tone : "info" });
       if (self.cpuTurn()) self.timers.push(setTimeout(function () { self.cpuMove(); }, 700));
+      else if (st.opp === "cpu" && t === 1) feel("turn");
     }, delay || 0));
   }
   cpuMove() {
@@ -1541,6 +1550,7 @@ class Component extends DCLogic {
   celebrate(c) {
     var self = this;
     this.setState({ celeb: Object.assign({ at: Date.now() }, c) });
+    feel("win");
     if (c.kind === "cheer") for (var i = 1; i <= 24; i++) this.timers.push(setTimeout(function () { self.setState({}); }, i * 100));
   }
   // A game alone keeps your best on this board by itself; the list is this phone's, so no name is asked for.
@@ -1974,6 +1984,10 @@ class Component extends DCLogic {
         lightNow ? "De mørke bakgrunnene vises i mørkt tema. Nå er lyst tema på, så du ser dem ikke før du velger Mørkt tema (eller telefonen går over til mørkt)." :
         "De mørke bakgrunnene vises i mørkt tema; Sand er lys.";
       v.chatPref = st.chatPref;
+      var F = window.WB_FEEL;
+      v.soundOn = !!(F && F.sound()); v.buzzOn = !!(F && F.buzz()); v.canBuzz = !!(F && F.canBuzz());
+      v.toggleSound = function () { if (F) F.setSound(!F.sound()); self.setState({}); };
+      v.toggleBuzz = function () { if (F) F.setBuzz(!F.buzz()); self.setState({}); };
       v.blockedList = (st.blocked || []).map(function (u) { return { name: u.name, unblock: function () { self.state.player = { id: u.id, name: u.name, step: "menu", msg: "" }; self.block(false); } }; });
       v.toggleChat = function () { self.setChatPref(!st.chatPref); };
       var curKind = kindOf(S.L);
@@ -2102,9 +2116,9 @@ class Component extends DCLogic {
           pick: function () {
             if (!free || self.state.busy || self.cpuTurn() || self.waitTurn()) return;
             var s0 = self.state, s = s0.sel.slice(), j = s.indexOf(id);
-            if (j >= 0) { s.splice(j, 1); var ja = Object.assign({}, s0.jokerAs); delete ja[id]; self.setState({ sel: s, jokerAs: ja }); }
-            else if (jk) self.setState({ picking: id });
-            else { s.push(id); self.setState(!self.duel() && !s0.soloT0 ? { sel: s, soloT0: Date.now(), timeUp: false } : { sel: s }); }
+            if (j >= 0) { s.splice(j, 1); var ja = Object.assign({}, s0.jokerAs); delete ja[id]; feel("back"); self.setState({ sel: s, jokerAs: ja }); }
+            else if (jk) { feel("tap"); self.setState({ picking: id }); }
+            else { s.push(id); feel("tap"); self.setState(!self.duel() && !s0.soloT0 ? { sel: s, soloT0: Date.now(), timeUp: false } : { sel: s }); }
           }
         };
       });
@@ -2130,7 +2144,7 @@ class Component extends DCLogic {
       v.pickLetters = Array.from(ALPHABET).map(function (L) {
         return { ch: L, pick: function () {
           var s0 = self.state, ja = Object.assign({}, s0.jokerAs); ja[s0.picking] = L;
-          self.setState({ jokerAs: ja, sel: s0.sel.concat([s0.picking]), picking: null });
+          feel("tap"); self.setState({ jokerAs: ja, sel: s0.sel.concat([s0.picking]), picking: null });
         } };
       });
       v.cancelPick = function () { self.setState({ picking: null }); };
@@ -2138,7 +2152,7 @@ class Component extends DCLogic {
         var jk = id[0] !== "p" && st.letters[id] === "*", ch = self.chOf(id), sy = kindOf(S.L) === "sett" ? symsOf(ch) : null;
         return { ch: sy ? "" : ch, syms: sy, p: jk || sy || id === "eq" ? "" : self.ptShow(ch), cls: "rk" + (jk ? " jk" : "") + (id[0] === "p" ? " pk" : "") + (id === "eq" ? " eqk" : ""), label: "Fjern " + ch + " fra ordet", back: function () {
           if (locked) return;
-          var ja = Object.assign({}, self.state.jokerAs); delete ja[id];
+          var ja = Object.assign({}, self.state.jokerAs); delete ja[id]; feel("back");
           self.setState({ sel: self.state.sel.filter(function (x) { return x !== id; }), jokerAs: ja });
         } };
       });
@@ -2155,7 +2169,7 @@ class Component extends DCLogic {
           if (locked) return;
           var s0 = self.state.sel.slice(), j = s0.indexOf(pid);
           if (j >= 0) s0.splice(j, 1); else s0.push(pid);
-          self.setState({ sel: s0 });
+          feel(j >= 0 ? "back" : "tap"); self.setState({ sel: s0 });
         } };
       });
       v.slots = Array.from({ length: Math.max(0, 2 - myPocket.length) }, function () { return {}; });

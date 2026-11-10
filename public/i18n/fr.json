@@ -792,5 +792,11 @@
 "1 poeng": "1 point",
 "brikke igjen": "tuile restante",
 "brikke ble liggende": "tuile est restée",
-"brikke ligger igjen og trekkes fra.": "tuile reste et est déduite."
+"brikke ligger igjen og trekkes fra.": "tuile reste et est déduite.",
+"Lyd og vibrasjon": "Son et vibration",
+"Lyd": "Son",
+"Vibrasjon": "Vibration",
+"På: et klikk for hver brikke og en tone når ordet går inn. Følger lydløsbryteren.": "Activé : un clic pour chaque tuile et une note quand le mot est accepté. Suit le mode silencieux.",
+"På: telefonen svarer når du legger brikker og ord.": "Activé : le téléphone réagit quand vous posez des tuiles et des mots.",
+"Av.": "Désactivé."
 }

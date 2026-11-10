@@ -792,5 +792,11 @@
 "1 poeng": "1 punto",
 "brikke igjen": "tessera rimasta",
 "brikke ble liggende": "tessera rimasta",
-"brikke ligger igjen og trekkes fra.": "tessera resta e viene sottratta."
+"brikke ligger igjen og trekkes fra.": "tessera resta e viene sottratta.",
+"Lyd og vibrasjon": "Suono e vibrazione",
+"Lyd": "Suono",
+"Vibrasjon": "Vibrazione",
+"På: et klikk for hver brikke og en tone når ordet går inn. Følger lydløsbryteren.": "Attivo: un clic per ogni tessera e un suono quando la parola entra. Segue l'interruttore silenzioso.",
+"På: telefonen svarer når du legger brikker og ord.": "Attivo: il telefono risponde quando metti tessere e parole.",
+"Av.": "Disattivo."
 }

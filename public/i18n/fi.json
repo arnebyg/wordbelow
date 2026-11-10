@@ -792,5 +792,11 @@
 "1 poeng": "1 piste",
 "brikke igjen": "laatta jäljellä",
 "brikke ble liggende": "laatta jäi",
-"brikke ligger igjen og trekkes fra.": "laatta jää jäljelle ja vähennetään."
+"brikke ligger igjen og trekkes fra.": "laatta jää jäljelle ja vähennetään.",
+"Lyd og vibrasjon": "Ääni ja värinä",
+"Lyd": "Ääni",
+"Vibrasjon": "Värinä",
+"På: et klikk for hver brikke og en tone når ordet går inn. Følger lydløsbryteren.": "Päällä: napsahdus jokaisesta laatasta ja ääni, kun sana hyväksytään. Noudattaa äänetöntä tilaa.",
+"På: telefonen svarer når du legger brikker og ord.": "Päällä: puhelin reagoi, kun asetat laattoja ja sanoja.",
+"Av.": "Pois."
 }
