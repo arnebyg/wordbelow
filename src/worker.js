@@ -162,8 +162,10 @@ export class Hub extends DurableObject {
           const ios = /^apns(-dev)?:/.test(sub.endpoint), android = sub.endpoint.startsWith("fcm:");
           if ((ios && !apnsReady(this.env)) || (android && !fcmReady(this.env))) continue;
           const status = ios ? await sendApns(this.env, sub.endpoint, msg) : android ? await sendFcm(this.env, sub.endpoint, msg) : await sendPush(vapid, sub, origin, msg);
+          // One line per message (wrangler tail shows it): which service, and what it answered.
+          console.log("push", ios ? "apns" : android ? "fcm" : "web", status);
           if (status === 404 || status === 410) this.sql.exec("DELETE FROM subs WHERE endpoint = ?", sub.endpoint);
-        } catch (e) { /* the next message tries again */ }
+        } catch (e) { console.log("push failed", sub.endpoint.split(":")[0], String(e && e.message || e)); /* the next message tries again */ }
       }
     })());
   }
