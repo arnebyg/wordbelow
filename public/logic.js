@@ -784,7 +784,7 @@ class Component extends DCLogic {
     this.loadBlocked();
     try { if (sessionStorage.getItem("wb-reopen") === "settings") { sessionStorage.removeItem("wb-reopen"); this.openSettings(); } } catch (e) {}
     this.pushCheck();
-    if (window.WB_PUSH) window.WB_PUSH.onOpen(function (g) { if (self.state.account) self.openOnline(g); });
+    if (window.WB_PUSH) { window.WB_PUSH.onOpen(function (g) { if (self.state.account) self.openOnline(g); }); window.WB_PUSH.channel(tr("Din tur")); }
     if (window.WB_REMIND) { remindPlan(); window.WB_REMIND.onTap(function () { self.startDaily(); }); document.addEventListener("visibilitychange", function () { if (!document.hidden) remindPlan(); }); }
     // In the iPhone app the App Store says whether Premium is bought (also on a new phone), and gives the price.
     if (window.WB_IAP) {
