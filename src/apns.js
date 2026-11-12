@@ -38,9 +38,11 @@ export async function sendApns(env, endpoint, data) {
     "apns-expiration": String(Math.floor(Date.now() / 1000) + 86400), "content-type": "application/json" } });
   if (r.status === 400) {
     const why = await r.json().catch(() => ({}));
+    console.log("apns 400", why.reason || "");
     // A phone running a build from Xcode has a sandbox token, which the production service calls bad: try the sandbox once.
     if (why.reason === "BadDeviceToken" && !dev) return sendApns(env, "apns-dev:" + token, data);
     return why.reason === "BadDeviceToken" ? 410 : 400;
   }
+  if (r.status !== 200) console.log("apns", r.status, (await r.text().catch(() => "")).slice(0, 120));
   return r.status;
 }

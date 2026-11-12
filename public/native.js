@@ -54,7 +54,13 @@
       // At start, when already allowed: the token again (it can change), so the server has the current one.
       again: function () { return PN.checkPermissions().then(function (p) { return p.receive === "granted" ? register() : null; }); },
       onOpen: function (fn) { opened = fn; if (openedGame) { var g = openedGame; openedGame = null; fn(g); } },
-      platform: C.getPlatform ? C.getPlatform() : "ios"
+      platform: C.getPlatform ? C.getPlatform() : "ios",
+      // Android: the channel the server names for turn messages (src/fcm.js, "turns"), with sound and vibration on.
+      // Made once the app's texts are loaded, so its name in the phone's settings is in the app's language.
+      channel: function (name) {
+        if (!PN.createChannel || C.getPlatform() !== "android") return Promise.resolve();
+        return PN.createChannel({ id: "turns", name: name, importance: 4, visibility: 1, vibration: true, sound: "default" }).catch(function () {});
+      }
     };
   }
   // The reminder about today's board is made by the phone itself (no server): one message a day for the week ahead,

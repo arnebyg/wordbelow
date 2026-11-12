@@ -36,7 +36,8 @@ async function access(env) {
 export async function sendFcm(env, endpoint, data) {
   const a = await access(env), token = endpoint.slice(4);
   const message = { token, notification: { title: data.title, body: data.body }, data: { game: data.game || "" },
-    android: { priority: "HIGH", ttl: "86400s", notification: { tag: data.game || "wordbelow", sound: "default" } } };
+    android: { priority: "HIGH", ttl: "86400s", notification: { channel_id: "turns", tag: data.game || "wordbelow", sound: "default",
+      default_vibrate_timings: true, notification_priority: "PRIORITY_HIGH" } } };
   const r = await fetch("https://fcm.googleapis.com/v1/projects/" + a.project + "/messages:send", { method: "POST",
     headers: { authorization: "Bearer " + a.token, "content-type": "application/json" }, body: JSON.stringify({ message }) });
   if (r.status === 400) { const e = (await r.json().catch(() => ({}))).error || {}; return e.status === "INVALID_ARGUMENT" && /token/i.test(e.message || "") ? 410 : 400; }
