@@ -514,7 +514,7 @@ var App = (function () {
   function showAds(v) {
     adBanner = adBanner || document.getElementById("adbar"); adFull = adFull || document.getElementById("adfull");
     if (!adBanner || !adFull) return;
-    var banner = !!v.ads && (v.phase === "home" || v.phase === "play" || v.phase === "done"), full = !!v.adFull && v.phase !== "premium";
+    var banner = !!v.ads && !sideBand && (v.phase === "home" || v.phase === "play" || v.phase === "done"), full = !!v.adFull && v.phase !== "premium";
     if (banner !== adShown.banner) {
       adShown.banner = banner; adBanner.hidden = !banner;
       if (window.WB_ADS && window.WB_ADS.bannerShow) window.WB_ADS.bannerShow(banner);
@@ -561,7 +561,7 @@ var App = (function () {
   }
 
   // Scale the 390 × 844 game to the screen, inside the notch and home-bar insets.
-  var probe = null;
+  var probe = null, sideBand = false;
   var scaleNow = 1, fullW = 0, fullH = 0;
   var useZoom = !!(window.CSS && CSS.supports && CSS.supports("zoom", "2"));
   function fit() {
@@ -578,6 +578,10 @@ var App = (function () {
     // Left and right: the iPhone Duo's outer screen keeps its status bar and camera in a band down the right side
     // (84 pt), and nothing of the game may lie under it.
     var lft = parseFloat(cs.paddingLeft) || 0, rgt = parseFloat(cs.paddingRight) || 0;
+    // A screen with a band down one side (the iPhone Duo's outer screen) has no room for the banner: the ad SDK
+    // places it across the full width and it would run into the band, so there it is not shown (showAds).
+    var hadBand = sideBand; sideBand = lft + rgt > 0;
+    if (hadBand !== sideBand && comp && !queued) { queued = true; requestAnimationFrame(render); }
     // The game is 390 wide and as tall as the screen allows: it fills the width of a phone, and the board
     // takes whatever height is left. Only a short, wide window (a tablet, a phone on its side) caps it at 640.
     // The background runs under the status bar and the home bar; the content keeps clear of both, and of the
