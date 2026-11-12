@@ -31,10 +31,11 @@
       });
     }
   };
-  // Push when it is your turn, through Apple's own service. Only on the iPhone: Android would need Firebase, which is
-  // not set up. enable() asks the phone and resolves to the device token, which logic.js gives the server (/push/native).
+  // Push when it is your turn: Apple's own service on the iPhone, Firebase Cloud Messaging on Android (the project
+  // wordbelow, android/app/google-services.json). enable() asks the phone and resolves to the token, which logic.js gives
+  // the server (/push/native) with the platform.
   var PN = C.Plugins && C.Plugins.PushNotifications;
-  if (PN && C.getPlatform && C.getPlatform() === "ios") {
+  if (PN) {
     var tokenWait = null, opened = null, openedGame = null;
     PN.addListener("registration", function (t) { if (tokenWait) { tokenWait.ok(t.value); tokenWait = null; } });
     PN.addListener("registrationError", function (e) { if (tokenWait) { tokenWait.no(new Error((e && e.error) || "registration")); tokenWait = null; } });
@@ -52,7 +53,8 @@
       },
       // At start, when already allowed: the token again (it can change), so the server has the current one.
       again: function () { return PN.checkPermissions().then(function (p) { return p.receive === "granted" ? register() : null; }); },
-      onOpen: function (fn) { opened = fn; if (openedGame) { var g = openedGame; openedGame = null; fn(g); } }
+      onOpen: function (fn) { opened = fn; if (openedGame) { var g = openedGame; openedGame = null; fn(g); } },
+      platform: C.getPlatform ? C.getPlatform() : "ios"
     };
   }
   // The reminder about today's board is made by the phone itself (no server): one message a day for the week ahead,

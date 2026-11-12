@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "462628981577",
+    "project_id": "wordbelow-ca98c",
+    "storage_bucket": "wordbelow-ca98c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:462628981577:android:4766c726bbcd30f74f2898",
+        "android_client_info": {
+          "package_name": "app.wordbelow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRuxKCJ4vppb80CR-Xn-3nlIzlJTobano"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
