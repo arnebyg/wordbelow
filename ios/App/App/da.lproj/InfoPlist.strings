@@ -1,0 +1,4 @@
+"NSUserTrackingUsageDescription" = "Bruges kun til at vise annoncer, der passer bedre til dig. Spillet virker ens, uanset hvad du svarer.";
+"NSCameraUsageDescription" = "Bruges kun, når du tager et profilbillede.";
+"NSPhotoLibraryUsageDescription" = "Bruges kun, når du vælger et profilbillede.";
+"NSContactsUsageDescription" = "Bruges kun, når du vælger nogen at invitere. Intet fra dine kontakter gemmes eller sendes nogen steder.";

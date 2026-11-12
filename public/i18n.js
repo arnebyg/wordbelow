@@ -6,7 +6,7 @@
 // The app is shown in the language the game is played in (logic.js reads the same choice): the one chosen in
 // Settings, else the phone's own if the game has it, else English. Changing it reloads the app.
 var LANG_PICK_KEY = "ordspill/spillsprak/v1";
-var UI_LANGS = ["no", "nl", "fi", "sv", "fr", "it", "es", "en"];
+var UI_LANGS = ["no", "da", "nl", "fi", "sv", "fr", "it", "es", "en"];
 function phoneLang() {
   var n = String((navigator.languages && navigator.languages[0]) || navigator.language || "").slice(0, 2).toLowerCase();
   return n === "nb" || n === "nn" ? "no" : UI_LANGS.indexOf(n) >= 0 ? n : "en";

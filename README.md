@@ -154,6 +154,7 @@ egen pose, poeng og vokalandel (`LANGS` øverst i `public/logic.js`):
 | Norsk | NSF-ordlista 2026 (`words/nsf-2026.txt`) | Scrabble-posen med seks konsonanter byttet mot vokaler | 40 % |
 | Nederlandsk | OpenTaal 2.20.23, BSD / CC BY 3.0 (`words/nl.txt`, 296 451 ord) | den nederlandske Scrabble-posen, 102 brikker | 38 % |
 | Finsk | Kotus, Nykysuomen sanalista, CC BY 4.0 (`words/fi.txt`) | den finske Scrabble-posen, 100 brikker | 46 % |
+| Dansk | Stavekontrolden 2.9.101, MPL 1.1 av valget GPL/LGPL/MPL (`words/da.txt`, 346 265 ord, med bøyde former, uten genitiv-s) | det danske Scrabble-settet med én C, X og Z byttet mot E, E og R | 38 % |
 | Svensk | SALDOs morfologi, Språkbanken Text, CC BY 4.0 (`words/sv.txt`, 707 692 ord, med bøyde former) | den svenske Scrabble-posen (Mattel 2002) med fire konsonanter byttet mot vokaler | 40 % |
 | Fransk | Grammalecte, Lexique des formes fléchies v7.7, MPL 2.0 (`words/fr.txt`, 409 709 ord, med bøyde former, uten aksenter) | den franske Scrabble-posen, 102 brikker | 45 % |
 | Italiensk | Morph-it! 0.48, Baroni og Zanchetta, CC BY-SA 2.0 (`words/it.txt`, 326 171 ord, med bøyde former, uten aksenter) | den italienske Scrabble-posen (120 brikker) med tre O og én A byttet mot R, S, T og N | 45 % |
@@ -178,6 +179,22 @@ python3 tools/saldo.py ~/Downloads/saldom.xml
 Posen er Mattels svenske Scrabble-pose (2002, 100 brikker, C 8 og Z 10) med én R, S, T og N byttet mot A, E, I og O.
 Simulert alene (60 brett, en spiller med ord på 3–5 bokstaver) ble 9,5 % av brikkene liggende med posen som den
 selges, 3,5 % med fire byttet (6,7 % med to, 5,8 % med seks). Poengene er uendret.
+
+**Dansk** (fra versjon 1.2) bruker Stavekontrolden, Hunspell-ordboka LibreOffice leverer (© Foreningen for frit
+tilgængelige sprogværktøjer, GPL 2.0, LGPL 2.1 eller MPL 1.1 etter eget valg; vi bruker MPL 1.1, og `words/da.txt` ligger
+åpent under samme lisens). Ingen tillatelse trengs. `tools/stavekontrolden.py` utvider stammene med bøyningsreglene selv.
+Genitiv-s (bils, husenes), ledd som bare brukes i sammensetninger, egennavn, forkortelser og ord med Q, W eller aksenter
+er tatt ut; en fri sammensetning teller bare når den står som eget ord i ordboka. Det Centrale Ordregister (COR) fra
+Dansk Sprognævn har ingen oppgitt lisens for fullformslista og krever tillatelse (cor.adm@dsn.dk); den er ikke brukt.
+
+```bash
+# last ned da_DK.dic og da_DK.aff fra https://github.com/LibreOffice/dictionaries/tree/master/da_DK
+python3 tools/stavekontrolden.py ~/Downloads/da_DK.dic ~/Downloads/da_DK.aff
+```
+
+Posen er det danske Scrabble-settet slik jeg kjenner det (100 brikker med to blanke; sjekk mot et fysisk sett) med én C,
+X og Z byttet mot E, E og R. En grov simulering (rader med 10 åpne brikker, en spiller med ord på 3–5 bokstaver) lot
+3,4 % av bokstavene ligge igjen, mot 8,5 % med settet som det selges. X og Z kan fortsatt legges med joker.
 
 **Fransk** bruker Grammalectes liste over bøyde former (MPL 2.0; `words/fr.txt` er en endret kopi og ligger åpent
 under samme lisens). Som i fransk Scrabble er aksentene tatt bort (été → ETE, œuf → OEUF). Egennavn, fornavn,

@@ -46,6 +46,18 @@ var LANGS = {
     bag: "AAAAAAAAABBCDDDDDEEEEEEEEFFGGGHHIIIIIIJKKKLLLLLMMMNNNNNOOOOOOPPRRRRRRRSSSSSSSTTTTTTTUUUVVXYZÅÅÄÄÖÖ**",
     words: "AV DE DU EN ER ET HA JA MAN NI OM PÅ SE SÅ TA VI ÄR ÖL ARM BAD BAK BIL BOK BRA BRO DAG DAL DEG DEL DIG DÖR EGG FAR FEM FIN FOT FRÅN GÅR HAN HAR HON HUS KAN KO LAG LAM MAT MED MIG MOR " +
       "NU OST REN RIS ROS SOL SER SIN SKO SUR TAK TID TRE TÅG UNG UT BAKA BERG BLAD BORD BRÖD DEGEN FISK FOLK GATA HAND HUND KAKA KALL KATT KORN LAND LÅNG MJÖL NATT NAMN RING SALT SAND SÄNG SKOG SMAK STOL STOR TAND VARM VATTEN VÄN VIND BAGARE STEN" },
+  // Danish: Stavekontrolden, the Hunspell dictionary LibreOffice ships (© Foreningen for frit tilgængelige sprogværktøjer,
+  // taken under MPL 1.1 of its GPL / LGPL / MPL choice), expanded by tools/stavekontrolden.py without the genitive -s and
+  // without the forms that only build compounds. The bag is the Danish Scrabble set (100 tiles with two blanks, as I know
+  // it; check against a physical set) with one C, the X and the Z swapped for E, E and R: 38 vowels of 98, near the 38 %
+  // in the 3–5-letter words. A rough simulation (60 rows of 10 open tiles, a 3–5-letter player) left 3.4 % of the
+  // letters, against 8.5 % for the set as sold. X and Z can still be laid with a joker.
+  da: { name: "Dansk", list: "Stavekontrolden", credit: "Stavekontrolden, Foreningen for frit tilgængelige sprogværktøjer (MPL 1.1)", url: "words/da.txt", re: /^[A-ZÆØÅ]+$/,
+    dict: "https://ordnet.dk/ddo/ordbog?query=", vow: "AEIOUYÆØÅ", alphabet: "ABCDEFGHIJKLMNOPRSTUVXYZÆØÅ",
+    pts: { A:1,B:3,C:8,D:2,E:1,F:3,G:3,H:4,I:3,J:4,K:3,L:2,M:4,N:1,O:2,P:4,R:1,S:2,T:2,U:3,V:3,X:8,Y:4,Z:8,Æ:4,Ø:4,Å:4 },
+    bag: "AAAAAAABBBBCDDDDDEEEEEEEEEEEFFFGGGHHIIIIJJKKKKLLLLLMMMNNNNNNOOOOOPPRRRRRRRSSSSSTTTTTUUUVVVYYÆÆØØÅÅ**",
+    words: "AF DE DU EN ER ET HA JA OG OM PÅ SE SÅ TO VI ÅR ØL ARM BAD BAG BIL BOG BOR DAG DAL DEJ DEL DIG DØR ÆG FAR FEM FIN FOD FRA GÅR HAN HAR HUN HUS KAN KO LAM MAD MED MIG MOR " +
+      "NU OST REN RIS ROS SOL SER SIN SKO SUR TAG TID TRE TOG UNG UD BAGE BJERG BLAD BORD BRØD FISK FOLK GADE HÅND HUND KAGE KOLD KAT KORN LAND LANG MEL NAT NAVN RING SALT SAND SANG SENG SKOV SMAG STOL STOR TAND VARM VAND VEN VIND BAGER STEN" },
   // French: Grammalecte's lexicon of inflected forms v7.7 (MPL 2.0), built by tools/grammalecte.py; as in French Scrabble the
   // accents are dropped (été → ETE). The bag is the French Scrabble set as sold, 102 tiles: simulated alone (60 boards, a
   // 3–5-letter player) it left 0.1 % of the tiles, with 45 % vowels in both the bag and the 3–5-letter words.
@@ -539,8 +551,8 @@ function dictUrl(w) { return DICT_URL + encodeURIComponent(String(w).toLowerCase
 // A word's meaning, from Wiktionary in the game's own language: the part of the page for that language, without
 // pronunciation, etymology, translations and the like. A form of another word («bøyningsform av brød») is looked up
 // once more under that word. Fetched from the phone straight to Wikimedia; kept for this visit.
-var WIKI_HEAD = { no: "Norsk", sv: "Svenska", nl: "Nederlands", fi: "Suomi", fr: "Français", it: "Italiano", es: "Español", en: "English" };
-var WIKI_SKIP = /uttale|etymologi|oversett|faste uttrykk|sitat|referanser|uttal|översättning|uitspraak|woordafbreking|woordherkomst|vertaling|ääntäminen|etymologia|käännök|prononciation|étymologie|traduction|anagramme|références|voir aussi|pronuncia|etimologia|traduzion|sillabazione|pronunciación|etimología|traducci|pronunciation|etymology|translation|anagram|references|see also|further reading|alternative|varianter|varianten|descendants|derived|hyponym|synonym|antonym|related|kilder|källor|bronnen|lähteet|fonti|fuentes|bøyning|böjning|taivutus|flexion|conjugaison|flessione|conjugación|declension|inflection/i;
+var WIKI_HEAD = { no: "Norsk", da: "Dansk", sv: "Svenska", nl: "Nederlands", fi: "Suomi", fr: "Français", it: "Italiano", es: "Español", en: "English" };
+var WIKI_SKIP = /uttale|udtale|oversættelse|bøjning|etymologi|oversett|faste uttrykk|sitat|referanser|uttal|översättning|uitspraak|woordafbreking|woordherkomst|vertaling|ääntäminen|etymologia|käännök|prononciation|étymologie|traduction|anagramme|références|voir aussi|pronuncia|etimologia|traduzion|sillabazione|pronunciación|etimología|traducci|pronunciation|etymology|translation|anagram|references|see also|further reading|alternative|varianter|varianten|descendants|derived|hyponym|synonym|antonym|related|kilder|källor|bronnen|lähteet|fonti|fuentes|bøyning|böjning|taivutus|flexion|conjugaison|flessione|conjugación|declension|inflection/i;
 var WIKI_MEMO = {};
 var WIKI_FORM = /(?:bøyningsform av|böjningsform av|(?:meervoud|verkleinwoord|vervoeging|vrouwelijke vorm|vergrotende trap|overtreffende trap) van|muoto sanasta|sanan|pluriel de|féminin de|forme (?:conjuguée )?de|plurale di|femminile di|forma (?:del plural |femenina |plural )?de|plural of|form of|participle of|(?:simple )?(?:past|present)(?: tense)? of|indicative of)\s+(?:(?:het|de|zelfstandig|naamwoord|werkwoord|bijvoeglijk|du verbe|del verbo|the)\s+)*«?([^\s«».,;:()]+)/i;
 function wikiOne(lang, w) {
@@ -577,9 +589,9 @@ function wikiLook(lang, w) {
 // a letter and the word in Bokstaver, a tile and the whole sum in Tall, the set in Sett (which has only that one).
 // In the code a bonus is "B" (one tile) or "O" (the whole move).
 var BONUS_TAGS = {
-  ord: { no: "BO", sv: "BO", nl: "LW", fi: "KS", fr: "LM", it: "LP", es: "LP", en: "LW" },
-  tall: { no: "BR", sv: "BU", nl: "SR", fi: "LS", fr: "TC", it: "TO", es: "FC", en: "TS" },
-  sett: { no: "BS", sv: "BS", nl: "SS", fi: "LS", fr: "TS", it: "TS", es: "FT", en: "TS" }
+  ord: { no: "BO", da: "BO", sv: "BO", nl: "LW", fi: "KS", fr: "LM", it: "LP", es: "LP", en: "LW" },
+  tall: { no: "BR", da: "BR", sv: "BU", nl: "SR", fi: "LS", fr: "TC", it: "TO", es: "FC", en: "TS" },
+  sett: { no: "BS", da: "BS", sv: "BS", nl: "SS", fi: "LS", fr: "TS", it: "TS", es: "FT", en: "TS" }
 };
 function bonusTag(t, kind) { var g = (BONUS_TAGS[kind] || BONUS_TAGS.ord)[UI] || "BO"; return t === "B" ? g[0] : g[1]; }
 // Invitations. The link always points to wordbelow.app (the iPhone app's own address is not one anyone else can open).
@@ -1904,7 +1916,7 @@ class Component extends DCLogic {
         friend: ["V", 4, "Velg eller inviter"], local: ["E", 1, "Over bordet"], code: ["K", 2, "Bli med i et spill"] };
       // In another language the tile carries the first letter of the mode's name there, and its value in that language's bag.
       var TILE_L = { en: { cpu: "C", random: "R", solo: "S", friend: "F", local: "O", code: "H" },
-        sv: { cpu: "D", random: "S", solo: "E", friend: "V", local: "T", code: "H" }, nl: { cpu: "C", random: "W", solo: "S", friend: "V", local: "E", code: "M" },
+        sv: { cpu: "D", random: "S", solo: "E", friend: "V", local: "T", code: "H" }, da: { cpu: "C", random: "T", solo: "A", friend: "V", local: "E", code: "K" }, nl: { cpu: "C", random: "W", solo: "S", friend: "V", local: "E", code: "M" },
         fi: { cpu: "T", random: "S", solo: "Y", friend: "K", local: "P", code: "L" }, fr: { cpu: "O", random: "H", solo: "S", friend: "A", local: "U", code: "C" },
         it: { cpu: "I", random: "C", solo: "S", friend: "A", local: "U", code: "H" }, es: { cpu: "M", random: "R", solo: "S", friend: "A", local: "U", code: "C" } };
       v.modes = ["random", "friend", "solo", "cpu", "local", "code"].map(function (id) {

@@ -4,11 +4,12 @@ import en from "../public/i18n/en.json";
 import nl from "../public/i18n/nl.json";
 import fi from "../public/i18n/fi.json";
 import sv from "../public/i18n/sv.json";
+import da from "../public/i18n/da.json";
 import fr from "../public/i18n/fr.json";
 import it from "../public/i18n/it.json";
 import es from "../public/i18n/es.json";
 
-const CATS = { en, nl, fi, sv, fr, it, es };
+const CATS = { en, nl, fi, sv, da, fr, it, es };
 const LETTER = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
 const RES = {};
 
@@ -25,4 +26,4 @@ export function tr(lang, s) {
     return cat[k];
   });
 }
-export const UI_LANGS = ["no", "nl", "fi", "sv", "fr", "it", "es", "en"];
+export const UI_LANGS = ["no", "da", "nl", "fi", "sv", "fr", "it", "es", "en"];

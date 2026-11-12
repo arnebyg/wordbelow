@@ -22,7 +22,7 @@ const code = () => { const a = new Uint8Array(6); crypto.getRandomValues(a); ret
 // The boards re-laid in the app (public/logic.js REBUILT): old id → new.
 const REBUILT = { fjellet: "fjellet-2", skredet: "skredet-2", klofta: "klofta-2", trappen: "trappen-2", bolgen: "bolgen-2", bikuben: "bikuben-2", lokket: "lokket-2", bakken: "bakken-2" };
 const NAME_RE = /^[A-Za-z0-9ÆØÅæøå_.-]{3,16}$/;
-const LANGS = ["no", "nl", "fi", "sv", "fr", "it", "es", "en"];
+const LANGS = ["no", "da", "nl", "fi", "sv", "fr", "it", "es", "en"];
 const langOf = (body) => LANGS.includes(body && body.lang) ? body.lang : "no";
 const MOVE_LIMIT = 72 * 3600e3, REMIND_BEFORE = 12 * 3600e3;
 
