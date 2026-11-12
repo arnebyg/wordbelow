@@ -128,7 +128,7 @@ da: {
   f1t: "Ord under hver brik", f1d: "Bogstaverne ligger i lag. Hvert ord, du tager, afslører nye, og en brik er kun åben, når intet ligger oven på den.",
   f2t: "Et nyt bræt hver dag", f2d: "Dagens bræt giver alle spillere de samme bogstaver, ti minutter på uret, én topliste og dage i træk at holde fast i.",
   f3t: "Spil mod venner online", f3d: "Udfordr en ven eller en tilfældig modspiller. Du har 72 timer til hvert træk, med chat og reaktioner undervejs.",
-  f4t: "Computeren, eller én telefon", f4d: "Spil mod computeren, fra let til stærk, eller send én telefon over bordet. Eller spil alene mod uret.",
+  f4t: "Computeren, eller én telefon", f4d: "Spil mod computeren, fra let til svær, eller send én telefon over bordet. Eller spil alene mod uret.",
   f5t: "Ni sprog", f5d: "Dansk, norsk, engelsk, svensk, nederlandsk, finsk, fransk, italiensk og spansk, hvert tjekket mod en åben ordliste. Eller skift til Tal eller Sæt.",
   f6t: "Brætter i alle former", f6d: "Fra smalle tårne til åbne landskaber. Tegn dit eget med op til 100 brikker, og del det med en kode.",
   howH: "Sådan spiller du",
