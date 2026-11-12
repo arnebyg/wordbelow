@@ -913,7 +913,7 @@ class Component extends DCLogic {
         if (p === "denied") { self.setState({ push: "denied" }); return; }
         if (p !== "granted" || lsGet(PUSH_OFF_KEY)) { self.setState({ push: "off" }); return; }
         self.setState({ push: "on" });
-        return window.WB_PUSH.again().then(function (t) { if (t) { lsSet(PUSH_TOKEN_KEY, t); if (self.state.account) return api("/push/native", { method: "POST", body: { token: t, lang: UI } }); } });
+        return window.WB_PUSH.again().then(function (t) { if (t) { lsSet(PUSH_TOKEN_KEY, t); if (self.state.account) return api("/push/native", { method: "POST", body: { token: t, lang: UI, platform: window.WB_PUSH.platform } }); } });
       }).catch(function () {});
       return;
     }
@@ -933,7 +933,7 @@ class Component extends DCLogic {
       window.WB_PUSH.enable().then(function (t) {
         lsSet(PUSH_TOKEN_KEY, t); lsSet(PUSH_OFF_KEY, false); lsSet(PUSH_CARD_KEY, true);
         self.setState({ push: "on", pushCard: false, pushMsg: "Varsler er på." });
-        return api("/push/native", { method: "POST", body: { token: t, lang: UI } }).then(function (d) { if (d && d.ready) return api("/push/test", { method: "POST" }).then(function () { self.setState({ pushMsg: "Varsler er på. Du skal ha fått et prøvevarsel nå." }); }); }, function () {});
+        return api("/push/native", { method: "POST", body: { token: t, lang: UI, platform: window.WB_PUSH.platform } }).then(function (d) { if (d && d.ready) return api("/push/test", { method: "POST" }).then(function () { self.setState({ pushMsg: "Varsler er på. Du skal ha fått et prøvevarsel nå." }); }); }, function () {});
       }, function (e) {
         self.setState({ push: e && e.message === "denied" ? "denied" : "off", pushMsg: e && e.message === "denied" ? "Telefonen sa nei til varsler. Slå dem på for WordBelow i telefonens innstillinger." : "Varsler ble ikke slått på." });
       });
@@ -956,7 +956,7 @@ class Component extends DCLogic {
     var self = this;
     if (window.WB_PUSH) {
       var t = lsGet(PUSH_TOKEN_KEY); lsSet(PUSH_OFF_KEY, true);
-      if (t) api("/push/unsubscribe", { method: "POST", body: { endpoint: "apns:" + t } }).catch(function () {});
+      if (t) api("/push/unsubscribe", { method: "POST", body: { endpoint: (window.WB_PUSH.platform === "android" ? "fcm:" : "apns:") + t } }).catch(function () {});
       this.setState({ push: "off", pushMsg: "Varsler er av." });
       return;
     }

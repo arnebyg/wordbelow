@@ -12,7 +12,9 @@ export ANDROID_HOME="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 node tools/strip.mjs > /dev/null   # the app carries the copy without comments (tools/strip.mjs)
 npx cap sync android > /dev/null
 N="$(git rev-list --count HEAD)"
-printf 'versionCode=%s\nversionName=1.0.%s\n' "$N" "$N" > android/version.properties
+# The version the iPhone app has (MARKETING_VERSION), so both stores show the same: 1.1.<commit count>.
+V="$(grep -m1 'MARKETING_VERSION' ios/App/App.xcodeproj/project.pbxproj | sed 's/[^0-9.]//g')"
+printf 'versionCode=%s\nversionName=%s.%s\n' "$N" "$V" "$N" > android/version.properties
 cd android
 ./gradlew bundleRelease --no-daemon -q
 OUT=app/build/outputs/bundle/release/app-release.aab
