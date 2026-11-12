@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="[[tag]]" data-lang="{{lang}}" data-loc="[[loc]]">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{title}}</title>
+<meta name="description" content="{{desc}}">
+<link rel="canonical" href="[[canon]]">
+[[alternates]]
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="wordbelow">
+<meta property="og:url" content="[[canon]]">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{desc}}">
+<meta property="og:image" content="[[ogimage]]">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="[[oglocale]]">
+[[ogalternates]]
+<meta name="twitter:card" content="summary_large_image">
+<meta name="apple-itunes-app" content="app-id=[[appleId]]">
+<meta name="theme-color" content="#1E6550">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<script type="application/ld+json">[[jsonld]]</script>
+<!-- The font lives here, not at Google: no reader's address goes to a third party for it. -->
+<link rel="preload" href="/fonts/bricolage-v9-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/fonts/bricolage-v9-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-display:swap;src:url(/fonts/bricolage-v9-latin.woff2) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}
+
+:root{
+  --ground:#FBF6EA; --band:#F1E9D6; --card:#FFFFFF; --line:#E3D6B8;
+  --ink:#1C2626; --muted:#4A5552; --soft:#5E6A66;
+  --green:#1E6550; --green-dark:#164C3D; --gold:#F2C46B; --gold-dark:#A9741E; --cream:#F4EFE2;
+  --tile:#FBF6EA; --tile-edge:#C2702C;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:'Bricolage Grotesque','Avenir Next',system-ui,sans-serif}
+a{color:var(--green)}a:hover{color:var(--green-dark)}
+.wrap{max-width:1160px;margin:0 auto;padding-left:24px;padding-right:24px}
+h1,h2,h3{margin:0;font-weight:800;letter-spacing:-.01em}
+p{margin:0}
+
+/* a link the game once opened on the web */
+#shared{display:none;background:#FFF1CC;border-bottom:1px solid #EBD38F}
+#shared p{padding:14px 0;font-size:17px;font-weight:700;line-height:1.45;color:#4A3608}
+#shared b{font-size:20px;letter-spacing:.08em;background:#FBF6EA;border:1px solid #E3D3B2;border-radius:8px;padding:1px 8px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;padding-top:20px;padding-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);min-height:44px}
+.brand img{width:40px;height:40px;border-radius:11px}
+.brand span{font-size:22px;font-weight:500}.brand b{font-weight:800}
+.nav{display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;font-size:16px;font-weight:700}
+.nav a{text-decoration:none;color:var(--muted)}
+.nav a.get{color:#3B2405;background:var(--gold);padding:11px 18px;border-radius:999px;min-height:44px;display:inline-flex;align-items:center;box-shadow:0 3px 0 var(--gold-dark)}
+.nav a.get:hover{color:#3B2405;background:#F6D088}
+.nav a.lg{display:inline-flex;align-items:center;gap:5px;min-height:44px;text-transform:uppercase}
+
+/* hero: the game's own green */
+.band{background:var(--band);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.hero-band{background:radial-gradient(circle at 30% 40%,#2A7A62 0,#1E6550 55%,#164C3D 100%);color:var(--cream)}
+.hero{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:56px;padding-top:56px;padding-bottom:64px}
+.pitch{flex:1 1 420px;max-width:540px;display:flex;flex-direction:column;gap:20px}
+.kicker{font-size:15px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--gold)}
+.hero h1{font-size:clamp(36px,5.2vw,58px);line-height:1.04;letter-spacing:-.02em}
+.lead{font-size:19px;line-height:1.55;color:#D9E6DF}
+.badges{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.badges a{display:block}
+.badges img{display:block;height:48px;width:auto}
+.platforms{font-size:16px;font-weight:700;color:#CFE0D9}
+
+/* the phone: a real game, recorded from the app */
+.demo{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:12px}
+.phone{width:300px;border-radius:44px;background:#0E2A22;padding:12px;box-shadow:0 30px 60px rgba(0,0,0,.35)}
+.screen{border-radius:34px;overflow:hidden;background:#1E6550;aspect-ratio:886/1920}
+.screen video{display:block;width:100%;height:100%;object-fit:cover}
+.vbtn{display:none;min-height:44px;min-width:96px;padding:0 18px;border:1px solid rgba(244,239,226,.45);border-radius:999px;background:transparent;color:var(--cream);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.vbtn:hover{background:rgba(255,255,255,.1)}
+
+/* today's board: the five best, from the server; hidden until five have played */
+#daily{display:none}
+.daily{display:flex;flex-wrap:wrap;align-items:center;gap:24px 48px;margin-top:-36px;position:relative;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px 32px;box-shadow:0 16px 40px rgba(28,38,38,.10)}
+.daily .dh{flex:1 1 260px;display:flex;flex-direction:column;gap:8px}
+.daily .dh .k{font-size:14px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.daily .dh h2{font-size:28px}
+.daily .dh p{font-size:16px;line-height:1.5;color:var(--muted)}
+.daily ol{flex:1 1 320px;margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.daily li{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:700;padding:8px 12px;border-radius:12px;background:var(--ground)}
+.daily li .r{width:28px;height:34px;border-radius:5px;background:var(--tile);box-shadow:0 2px 0 #E3D3B2,0 4px 0 var(--tile-edge);display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.daily li .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.daily li .pts{font-variant-numeric:tabular-nums;font-size:19px;font-weight:800;color:var(--green)}
+
+/* sections */
+section.block{padding-top:80px;padding-bottom:16px}
+section.block h2{font-size:clamp(28px,3.4vw,38px);text-align:center;margin-bottom:34px}
+.grid{display:flex;flex-wrap:wrap;gap:20px}
+.feat{flex:1 1 300px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:10px}
+.ic{width:48px;height:48px;border-radius:14px;background:#E2EEE8;display:flex;align-items:center;justify-content:center}
+.feat h3{font-size:21px;margin-top:4px}
+.feat p,.how p{font-size:16px;line-height:1.55;color:var(--muted)}
+.how{flex:1 1 300px;display:flex;gap:16px;align-items:flex-start}
+.num{flex:0 0 auto;width:44px;height:52px;border-radius:7px;background:var(--tile);color:var(--ink);font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 0 #E3D3B2,0 5px 0 var(--tile-edge)}
+.how h3{font-size:21px;margin-bottom:6px}
+
+.tiers{display:flex;flex-wrap:wrap;gap:20px;padding-top:64px;padding-bottom:64px}
+.tier{flex:1 1 340px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:32px}
+.tier.pro{background:var(--green);color:var(--cream);border-color:var(--green)}
+.tier .k{font-size:14px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tier.pro .k{color:var(--gold)}
+.tier h3{font-size:27px;margin:8px 0 16px}
+.tier ul{margin:0;padding-left:20px;font-size:16px;line-height:1.9;color:var(--muted)}
+.tier.pro ul{color:#D9E6DF}
+
+.trust{text-align:center;padding-top:72px;padding-bottom:72px}
+.trust h2{font-size:clamp(26px,3vw,34px);margin-bottom:12px}
+.trust p{max-width:580px;margin:0 auto;font-size:18px;line-height:1.55;color:var(--muted)}
+
+footer{border-top:1px solid var(--line)}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:16px;padding-top:28px;padding-bottom:36px;font-size:15px;color:var(--soft)}
+.foot nav{display:flex;flex-wrap:wrap;align-items:center;gap:0 22px}
+.foot nav a{display:inline-flex;align-items:center;min-height:44px}
+.langs{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:0 18px;border-top:1px solid var(--line);padding-top:10px}
+.langs span{font-weight:700;margin-right:4px}
+.langs a{display:inline-flex;align-items:center;min-height:44px}
+.langs a[aria-current]{font-weight:800;color:var(--ink);text-decoration:none}
+
+/* questions: the browser's own disclosure, open or shut without a script */
+.faq{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:0 20px}
+.faq summary{min-height:56px;display:flex;align-items:center;font-size:18px;font-weight:700;cursor:pointer;padding:12px 0}
+.faq p{font-size:16px;line-height:1.55;color:var(--muted);padding-bottom:18px}
+
+/* the root page, offering the reader's own language; never a redirect */
+#suggest{display:none;background:var(--green-dark);color:var(--cream)}
+#suggest .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:0 12px;font-size:16px;font-weight:700}
+#suggest a{color:var(--gold);display:inline-flex;align-items:center;min-height:44px}
+#suggest button{min-width:44px;min-height:44px;border:0;background:transparent;color:var(--cream);font:inherit;font-size:20px;cursor:pointer}
+
+@media (max-width:720px){
+  .hero{padding-top:36px;gap:36px}
+  .demo{order:2}
+  .nav a:not(.get):not(.lg){display:none}
+}
+@media (max-width:480px){
+  .top{flex-wrap:nowrap;padding-top:12px;padding-bottom:12px}
+  .nav a.get{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+
+<!-- Links the game used to open on the web (an invitation, a shared board, a game from a notification) still arrive here. -->
+<div id="shared" role="status"><div class="wrap"><p id="sharedP"></p></div></div>
+<div id="suggest"><div class="wrap"><a id="suggestA" href="/"></a><button id="suggestX" type="button" aria-label="OK">×</button></div></div>
+
+<header class="wrap top">
+  <a class="brand" href="[[home]]"><img src="/icons/icon-192.png" alt="" width="40" height="40"><span><b>word</b>below</span></a>
+  <nav class="nav">
+    <a href="#how">{{navHow}}</a>
+    <a href="#features">{{navFeat}}</a>
+    <a href="#premium">{{navPro}}</a>
+    <a class="lg" href="#languages" aria-label="{{language}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>{{lang}}</a>
+    <a class="get" href="#get">{{navGet}}</a>
+  </nav>
+</header>
+
+<div class="hero-band">
+  <div class="wrap hero">
+    <div class="demo">
+      <div class="phone">
+        <div class="screen">
+          <video id="demo" controls muted playsinline loop preload="none" width="276" height="598" poster="/poster/{{lang}}.jpg" aria-label="{{phone}}"><source src="/video/{{lang}}.mp4" type="video/mp4"></video>
+        </div>
+      </div>
+      <button id="vbtn" class="vbtn" type="button" data-pause="{{pause}}" data-play="{{play}}">{{play}}</button>
+    </div>
+
+    <div class="pitch">
+      <p class="kicker">{{kicker}}</p>
+      <h1>{{h1}}</h1>
+      <p class="lead">{{lead}}</p>
+      <div class="badges" id="get">
+        <a href="[[apple]]"><img src="/icons/appstore/[[badge]].svg" alt="{{appStore}}" height="48"></a>
+        <a href="[[play]]"><img src="/icons/googleplay/[[badge]].png" alt="{{googlePlay}}" height="48"></a>
+      </div>
+      <p class="platforms">{{platforms}}</p>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" id="daily" data-n="{{dailyN}}">
+  <div class="daily">
+    <div class="dh"><p class="k">{{dailyK}}</p><h2 id="dailyDate"></h2><p id="dailyN"></p></div>
+    <ol id="dailyTop"></ol>
+  </div>
+</div>
+
+<main>
+  <section class="wrap block" id="features">
+    <h2>{{featH}}</h2>
+    <div class="grid">
+      <div class="feat">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E6550" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5zM3 13l9 5 9-5"/></svg></div>
+        <h3>{{f1t}}</h3>
+        <p>{{f1d}}</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E6550" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h14v15H5zM5 9h14M9 3v4M15 3v4M9 14l2 2 4-4"/></svg></div>
+        <h3>{{f2t}}</h3>
+        <p>{{f2d}}</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E6550" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM2 20a6 6 0 0 1 12 0M17 11a3 3 0 1 0 0-6M22 20a6 6 0 0 0-5-5.9"/></svg></div>
+        <h3>{{f3t}}</h3>
+        <p>{{f3d}}</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E6550" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v12H7zM10 20h4M12 16v4M10 8h.01M14 8h.01M10 12h4"/></svg></div>
+        <h3>{{f4t}}</h3>
+        <p>{{f4d}}</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E6550" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg></div>
+        <h3>{{f5t}}</h3>
+        <p>{{f5d}}</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1E6550" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1 11-11-3-3L5 16zM14 7l3 3"/></svg></div>
+        <h3>{{f6t}}</h3>
+        <p>{{f6d}}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap block" id="how">
+    <h2>{{howH}}</h2>
+    <div class="grid">
+      <div class="how"><span class="num" aria-hidden="true">1</span><div><h3>{{s1t}}</h3><p>{{s1d}}</p></div></div>
+      <div class="how"><span class="num" aria-hidden="true">2</span><div><h3>{{s2t}}</h3><p>{{s2d}}</p></div></div>
+      <div class="how"><span class="num" aria-hidden="true">3</span><div><h3>{{s3t}}</h3><p>{{s3d}}</p></div></div>
+    </div>
+  </section>
+
+  <div class="band" id="premium" style="margin-top:80px">
+    <div class="wrap tiers">
+      <div class="tier">
+        <p class="k">{{freeK}}</p>
+        <h3>{{freeH}}</h3>
+        <ul>
+          <li>{{free1}}</li>
+          <li>{{free2}}</li>
+          <li>{{free3}}</li>
+          <li>{{free4}}</li>
+        </ul>
+      </div>
+      <div class="tier pro">
+        <p class="k">{{proK}}</p>
+        <h3>{{proH}}</h3>
+        <ul>
+          <li>{{pro1}}</li>
+          <li>{{pro2}}</li>
+          <li>{{pro3}}</li>
+          <li>{{pro4}}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <section class="wrap trust">
+    <h2>{{trustH}}</h2>
+    <p>{{trustP}}</p>
+  </section>
+
+  <section class="wrap block" id="questions" style="padding-top:0;padding-bottom:72px">
+    <h2>{{faqH}}</h2>
+    <div class="faq">
+      <details><summary>{{q1}}</summary><p>{{a1}}</p></details>
+      <details><summary>{{q2}}</summary><p>{{a2}}</p></details>
+      <details><summary>{{q3}}</summary><p>{{a3}}</p></details>
+      <details><summary>{{q4}}</summary><p>{{a4}}</p></details>
+      <details><summary>{{q5}}</summary><p>{{a5}}</p></details>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>© Bygdås Futurium</span>
+    <nav>
+      <a href="[[privacy]]">{{privacy}}</a>
+      <a href="mailto:feedback@wordbelow.app">feedback@wordbelow.app</a>
+    </nav>
+    <nav class="langs" id="languages" aria-label="{{language}}"><span>{{language}}</span>[[langlinks]]</nav>
+  </div>
+</footer>
+
+<script src="/site.js" defer></script>
+</body>
+</html>
