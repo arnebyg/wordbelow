@@ -31,6 +31,10 @@
       });
     }
   };
+  // The store's own rating window (App Store / Google Play), asked for by logic.js after a good moment (reviewDue).
+  // The store decides whether it shows; nothing comes back either way.
+  var IAR = C.Plugins && C.Plugins.InAppReview;
+  if (IAR) window.WB_REVIEW = { ask: function () { IAR.requestReview().catch(function () {}); } };
   // Push when it is your turn: Apple's own service on the iPhone, Firebase Cloud Messaging on Android (the project
   // wordbelow, android/app/google-services.json). enable() asks the phone and resolves to the token, which logic.js gives
   // the server (/push/native) with the platform.

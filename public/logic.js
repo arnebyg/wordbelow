@@ -541,6 +541,7 @@ var GONE_SAY = "Spillet finnes ikke lenger. Det kan være trukket tilbake eller 
 function goneOr(e) { return e.status === 404 ? GONE_SAY : e.message; }
 // Online games whose wreath this phone has shown, so a won game cheers once, on whichever phone sees the end first.
 var WREATH_KEY = "ordspill/kranset/v1";
+function wreathSeen(id) { return (lsGet(WREATH_KEY) || []).indexOf(id) >= 0; }
 function wreathOnce(id) { var l = lsGet(WREATH_KEY) || []; if (l.indexOf(id) >= 0) return false; lsSet(WREATH_KEY, l.concat([id]).slice(-200)); return true; }
 // The guided first game: done (or skipped) once, then never offered again; it can be played again from the help sheet.
 var TUTOR_KEY = "ordspill/veiledning/v1";
@@ -744,6 +745,23 @@ function addStat(rec) {
   lsSet(STATS_KEY, all.slice(-1000));
 }
 
+// Asking for a rating in the App Store or Google Play, right after a good moment: a won game against the computer or
+// another player, a cleared board, or today's board three days in a row. Only after at least 5 finished games on at
+// least 3 different days, never within 10 seconds of a full-screen ad, at most once in 90 days and 3 times in a year
+// (the app's own numbers; Apple and Google also cap how often their window shows, and may show nothing at all).
+// The store's own window, no question of our own first (Apple guideline 5.6.1, Google's in-app review policy).
+var REVIEW_KEY = "ordspill/vurdering/v1", REVIEW_GAMES = 5, REVIEW_DAYS = 3, REVIEW_GAP = 90 * 864e5, REVIEW_AD_QUIET = 10e3;
+function reviewDue(lastAd) {
+  if (!window.WB_REVIEW) return false;
+  var now = Date.now(), asked = lsGet(REVIEW_KEY) || [], stats = lsGet(STATS_KEY) || [], days = {};
+  if (asked.some(function (t) { return now - t < REVIEW_GAP; }) || asked.filter(function (t) { return now - t < 365 * 864e5; }).length >= 3) return false;
+  if (lastAd && now - lastAd < REVIEW_AD_QUIET) return false;
+  if (stats.length < REVIEW_GAMES) return false;
+  stats.forEach(function (r) { if (r.at) days[new Date(r.at).toDateString()] = true; });
+  Object.keys(dailyDone()).forEach(function (k) { days[k] = true; });
+  return Object.keys(days).length >= REVIEW_DAYS;
+}
+
 class Component extends DCLogic {
   constructor(p) {
     super(p);
@@ -889,7 +907,14 @@ class Component extends DCLogic {
     this.adMoves = (this.adMoves || 0) + 1;
     // An ad that had not loaded when its turn came is owed, and shown after the next move that has one.
     if (!this.adOwed && this.adMoves % (this.online() ? AD_EVERY.online : AD_EVERY.other)) return;
-    if (window.WB_ADS && window.WB_ADS.interstitialNative) this.adOwed = !window.WB_ADS.interstitialNative(); else this.setState({ adFull: Date.now() });
+    if (window.WB_ADS && window.WB_ADS.interstitialNative) { this.adOwed = !window.WB_ADS.interstitialNative(); if (!this.adOwed) this.lastAd = Date.now(); } else { this.setState({ adFull: Date.now() }); this.lastAd = Date.now(); }
+  }
+  // A good moment has just happened (see reviewDue): the store's rating window, a moment after the wreath.
+  reviewAfterGood() {
+    var st = this.state;
+    if (st.tutor || st.archive || !reviewDue(this.lastAd)) return;
+    var asked = lsGet(REVIEW_KEY) || []; asked.push(Date.now()); lsSet(REVIEW_KEY, asked.slice(-5));
+    this.timers.push(setTimeout(function () { window.WB_REVIEW.ask(); }, 1500));
   }
   setKind(id) {
     lsSet(KIND_KEY, id);
@@ -1275,6 +1300,7 @@ class Component extends DCLogic {
       if (next.phase === "done") {
         var pr = next.played, rr = pr.res, w = pr.resigned !== undefined ? 1 - pr.resigned : pr.timeout !== undefined ? 1 - pr.timeout : rr[0].score === rr[1].score ? -1 : rr[0].score > rr[1].score ? 0 : 1;
         // Only for a game that ended in the last week, so old won games do not cheer the first time after this update.
+        if (w === g.you && Date.now() - (g.updated || 0) < 864e5 && !wreathSeen(g.id)) self.reviewAfterGood();
         if (w === g.you && Date.now() - (g.updated || 0) < 7 * 864e5 && wreathOnce(g.id)) self.celebrate({ kind: "win", score: rr[w].score, head: "Du vant duellen",
           sub: rr[w].score + " mot " + rr[1 - w].score + " · mot " + (o.oppName || "motspilleren") + (pr.resigned !== undefined ? " · " + (o.oppName || "motspilleren") + " ga opp" : pr.timeout !== undefined ? " · tiden gikk ut for " + (o.oppName || "motspilleren") : "") });
       }
@@ -1358,6 +1384,7 @@ class Component extends DCLogic {
     if (!key) return;
     var first = !all[key];
     if (first) { all[key] = { score: rec.score, words: st.words, best: rec.best ? rec.best.w : "", left: rec.left, bare: !!rec.bare, lay: st.lay, at: Date.now() }; lsSet(DAILY_KEY, all); remindPlan(); }
+    if (first && ((rec.left === 0 && !rec.bare) || streakOf(dailyDone()) >= 3)) this.reviewAfterGood();
     this.setState({ dailyTop: null, dailyFirst: first, dailyErr: false });
     if (st.account) this.dailyLoad(key);
   }
@@ -1606,6 +1633,7 @@ class Component extends DCLogic {
       var res = this.resultOf(P), win = res[0].score === res[1].score ? -1 : res[0].score > res[1].score ? 0 : 1;
       this.setState({ phase: "done", P: P, played: { duel: true, res: res, left: left, bare: bare, lay: st.lay }, submitted: true, busy: false, sel: [] });
       var me = this.online() ? st.online.you : st.opp === "cpu" ? 0 : win;
+      if (win >= 0 && win === me && st.opp !== "local") this.reviewAfterGood();
       if (win >= 0 && win === me && (!this.online() || wreathOnce(st.online.id))) this.celebrate({ kind: "win", score: res[win].score, head: st.opp === "local" ? this.names()[win] + " vant duellen" : "Du vant duellen",
         sub: res[win].score + " mot " + res[1 - win].score + (this.online() ? " · mot " + st.online.oppName : st.opp === "cpu" ? " · mot maskinen" : "") });
       if (this.online()) {
@@ -1625,6 +1653,7 @@ class Component extends DCLogic {
     else if (!st.daily) this.saveBest();
     // The wreath only when the board is cleared; handed in with tiles left, the score stands without a cheer.
     if (left === 0 && !bare) this.celebrate({ kind: "win", score: rec.score, head: "Brettet er ryddet", sub: rec.words + " ord" });
+    if (left === 0 && !bare && !st.daily) this.reviewAfterGood();
     if (st.daily) this.dailyFinish(rec);
   }
   // Alone, when the board was not cleared: the score against the best on the board's list, without praise.
