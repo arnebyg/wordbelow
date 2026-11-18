@@ -32,7 +32,7 @@ var App = (function () {
       each(v.tiles, function (t) {
         return '<button type="button" class="' + t.cls + (t.blocked ? ' blocked' : v.tutorFree ? ' tut' : '') + '" style="' + esc(t.pos) + '"' + (t.blocked ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t.label) + '"' + on(t.pick) + '>' +
           (t.bonus ? '<span class="' + t.bnCls + '">' + esc(t.bonus) + '</span>' : '') +
-          (t.syms ? '<span class="syms">' + t.syms.map(function (c) { return '<span class="' + c + '"></span>'; }).join('') + '</span>' : '') + '<span class="ch">' + esc(t.ch) + '</span><span class="pt">' + esc(t.p) + '</span></button>';
+          (t.syms ? '<span class="syms">' + t.syms.map(function (c) { return '<span class="' + c + '"></span>'; }).join('') + '</span>' : '') + '<span class="ch"' + (t.chSt ? ' style="' + esc(t.chSt) + '"' : '') + '>' + esc(t.ch) + '</span><span class="pt">' + esc(t.p) + '</span></button>';
       }) +
     '</div>' +
     (v.pop ? '<div class="pop" aria-hidden="true">' + esc(v.pop) + '</div>' : '') +
