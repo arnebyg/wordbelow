@@ -419,60 +419,6 @@ function freeIn(S, id, live) {
   }
   return !(left && right);
 }
-// Where a covered tile shows its letter. A tile on the layer above lies half a tile over, so it hides half of a
-// letter drawn in the middle (on an iPad the board is smaller, and the letters below could not be read). The letter
-// moves into the part of its own tile that is still in view, as large as that part allows (29 px at most, 13 px at
-// least); a tile in full view, or one with no room for 13 px, keeps the letter where it always was.
-// Units are the tile's own: 46 × 56, a tile drawn at c·49 − l·4, r·60 − l·7, its edge and shadow 7 px below.
-// The ink box is measured from Bricolage Grotesque at line-height 1: capitals from 0.17 to 0.83 of the size,
-// an accent from 0, a Q's tail to 1.0; the widths are the letters' own advance widths.
-var CH_WIDE = { M: .83, W: .92, "Æ": .87, "Œ": .9, N: .7, I: .25, J: .33, L: .47 };
-function chInk(ch, s) {
-  var w = (CH_WIDE[ch] || .69) * s * (ch && ch.length > 1 ? ch.length * .8 : 1);
-  return { w: w, t: (/[ÅÄÖÜÉÈÊÀÁÂÑÕÔÛÙÚÍÌÎ]/.test(ch) ? 0 : .17) * s, b: (ch === "Q" ? 1.01 : .84) * s };
-}
-var CH_MEMO = {}, CH_MEMO_N = 0;
-function chSpot(S, id, live, ch, bonus, pts) {
-  var p = S.map[id], cov = [], ks = Object.keys(live), over = [];
-  for (var i = 0; i < ks.length; i++) {
-    var q = S.map[ks[i]]; if (!q || q.l <= p.l) continue;
-    var dx = (q.c - p.c) * 49 - (q.l - p.l) * 4, dy = (q.r - p.r) * 60 - (q.l - p.l) * 7;
-    if (dx < 46 && dx + 48 > 0 && dy < 56 && dy + 63 > 0) { cov.push([dx - 1, dy - 1, dx + 49, dy + 64]); over.push(dx + "," + dy); }
-  }
-  if (!cov.length || !ch) return null;
-  // The same cover gives the same answer, and the screen is drawn again every second while the clock runs.
-  var key = over.sort().join(";") + "|" + ch + "|" + (bonus ? 1 : 0) + (pts ? 1 : 0);
-  if (key in CH_MEMO) return CH_MEMO[key];
-  if (++CH_MEMO_N > 2000) { CH_MEMO = {}; CH_MEMO_N = 1; }
-  return (CH_MEMO[key] = chFind(cov, ch, bonus, pts));
-}
-function chFind(cov, ch, bonus, pts) {
-  for (var j = 0; j < cov.length; j++) if (cov[j][0] <= 3 && cov[j][1] <= 2 && cov[j][2] >= 43 && cov[j][3] >= 53) return null;
-  // The tile's own marks stay clear: the bonus band along the top, the points in the bottom right corner.
-  var own = [];
-  if (bonus) own.push([-9, -9, 55, 14]);
-  if (pts) own.push([26, 37, 55, 65]);
-  var hit = function (x0, y0, x1, y1) {
-    for (var k = 0; k < cov.length; k++) { var c = cov[k]; if (x0 < c[2] && x1 > c[0] && y0 < c[3] && y1 > c[1]) return true; }
-    for (k = 0; k < own.length; k++) { c = own[k]; if (x0 < c[2] && x1 > c[0] && y0 < c[3] && y1 > c[1]) return true; }
-    return false;
-  };
-  var t0 = bonus ? 16 : 7, cx = 23, cy = t0 + 14.5;
-  for (var s = 29; s >= 13; s--) {
-    var ink = chInk(ch, s), best = null, bd = 1e9;
-    for (var y = 0; y <= 56; y++) for (var x = 3; x + ink.w <= 43; x++) {
-      var y0 = y + ink.t, y1 = y + ink.b;
-      if (y0 < 2 || y1 > 53 || hit(x, y0, x + ink.w, y1)) continue;
-      var d = Math.pow(x + ink.w / 2 - cx, 2) + Math.pow(y + s / 2 - cy, 2);
-      if (d < bd) { bd = d; best = [x, y]; }
-    }
-    if (best) {
-      if (s === 29 && Math.abs(best[0] + ink.w / 2 - cx) < 1 && best[1] === t0) return null;
-      return "left:" + best[0] + "px;right:auto;top:" + best[1] + "px;font-size:" + s + "px;text-align:left";
-    }
-  }
-  return null;
-}
 function rng(seed) {
   return function () {
     seed |= 0; seed = seed + 0x6D2B79F5 | 0;
@@ -2308,8 +2254,7 @@ class Component extends DCLogic {
         if (free) nFree++;
         var x = S.offX + p.c * 49 - p.l * 4, y = S.offY + p.r * 60 - p.l * 7;
         return {
-          ch: syms ? "" : ch, p: jk || syms ? "" : self.ptShow(raw), syms: syms, bonus: bonus,
-          chSt: syms || free ? null : chSpot(S, id, live, ch, !!bonus, !(jk || syms) && self.ptShow(raw) !== ""), bnCls: "bn " + (b && b.t === "O" ? "ob" : "lb"),
+          ch: syms ? "" : ch, p: jk || syms ? "" : self.ptShow(raw), syms: syms, bonus: bonus, bnCls: "bn " + (b && b.t === "O" ? "ob" : "lb"),
           cls: "tile l" + p.l + (jk ? " jk" : "") + (kd === "tall" && TALL_PTS[raw] ? " op" : "") + (b ? " bonus" : "") + (st.sel.indexOf(id) >= 0 ? (self.cpuTurn() ? " sel cpu" : " sel") : ""),
           blocked: !free, pos: "left:" + x + "px;top:" + y + "px;z-index:" + Math.round(p.l * 1000 + p.r * 20 + p.c * 2 + 1),
           label: (jk ? "Joker" + (st.jokerAs[id] ? " som " + st.jokerAs[id] : "") : syms ? settSay(raw) : ch + ", " + pts + " poeng") + (bonus ? ", bonus " + bonus : "") + (free ? ", åpen" : ", sperret"),

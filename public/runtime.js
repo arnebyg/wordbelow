@@ -32,7 +32,7 @@ var App = (function () {
       each(v.tiles, function (t) {
         return '<button type="button" class="' + t.cls + (t.blocked ? ' blocked' : v.tutorFree ? ' tut' : '') + '" style="' + esc(t.pos) + '"' + (t.blocked ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t.label) + '"' + on(t.pick) + '>' +
           (t.bonus ? '<span class="' + t.bnCls + '">' + esc(t.bonus) + '</span>' : '') +
-          (t.syms ? '<span class="syms">' + t.syms.map(function (c) { return '<span class="' + c + '"></span>'; }).join('') + '</span>' : '') + '<span class="ch"' + (t.chSt ? ' style="' + esc(t.chSt) + '"' : '') + '>' + esc(t.ch) + '</span><span class="pt">' + esc(t.p) + '</span></button>';
+          (t.syms ? '<span class="syms">' + t.syms.map(function (c) { return '<span class="' + c + '"></span>'; }).join('') + '</span>' : '') + '<span class="ch">' + esc(t.ch) + '</span><span class="pt">' + esc(t.p) + '</span></button>';
       }) +
     '</div>' +
     (v.pop ? '<div class="pop" aria-hidden="true">' + esc(v.pop) + '</div>' : '') +
@@ -564,6 +564,19 @@ var App = (function () {
   var probe = null, sideBand = false;
   var scaleNow = 1, fullW = 0, fullH = 0;
   var useZoom = !!(window.CSS && CSS.supports && CSS.supports("zoom", "2"));
+  // On iOS, zoom scales the boxes but not the text: on an iPad (scale about 1.9) every letter came out at about
+  // 60 % of its size against its tile, card or button. Measured once: text in a box zoomed 2× must be twice as wide.
+  var zoomText = null;
+  function zoomScalesText() {
+    if (zoomText !== null) return zoomText;
+    var a = document.createElement("span"), b = document.createElement("span");
+    a.style.cssText = b.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap;font:20px sans-serif";
+    b.style.zoom = "2"; a.textContent = b.textContent = "MMMMMMMMMM";
+    document.body.appendChild(a); document.body.appendChild(b);
+    var wa = a.getBoundingClientRect().width, wb = b.getBoundingClientRect().width;
+    a.remove(); b.remove();
+    return (zoomText = !wa || wb / wa > 1.8);
+  }
   function fit() {
     if (!probe) {
       probe = document.createElement("div");
@@ -610,8 +623,9 @@ var App = (function () {
     scaleNow = s;
     // zoom lays the page out again at the new size, so text is drawn sharp; a transform shrinks a picture of it,
     // and Safari showed the part above the scrolling list blurred. A zoomed element's own left and top are zoomed too.
-    if (useZoom) { root.style.zoom = s; root.style.transform = ""; root.style.left = x / s + "px"; root.style.top = y / s + "px"; }
-    else { root.style.transform = "scale(" + s + ")"; root.style.left = x + "px"; root.style.top = y + "px"; }
+    // Where zoom leaves the text unscaled (iOS), a tablet takes the transform; a phone, at about 1×, keeps zoom.
+    if (useZoom && (s < 1.15 || zoomScalesText())) { root.style.zoom = s; root.style.transform = ""; root.style.left = x / s + "px"; root.style.top = y / s + "px"; }
+    else { root.style.zoom = ""; root.style.transform = "scale(" + s + ")"; root.style.left = x + "px"; root.style.top = y + "px"; }
     fitBoard();
   }
 
