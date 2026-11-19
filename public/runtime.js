@@ -619,6 +619,8 @@ var App = (function () {
     root.style.setProperty("--sb", Math.round(bot / s) + "px");
     root.style.setProperty("--sbar", Math.round(top / s) + "px");
     root.classList.toggle("edge", EDGE > 0);
+    // On an iPad the letters are drawn at 90 % of the phone's size against the tile (owner, 19 Nov 2026).
+    root.classList.toggle("tab", ios && s >= 1.15);
     var x = Math.round(lft + Math.max(0, (w - lft - rgt - 390 * s) / 2)), y = 0;
     scaleNow = s;
     // zoom lays the page out again at the new size, so text is drawn sharp; a transform shrinks a picture of it,
